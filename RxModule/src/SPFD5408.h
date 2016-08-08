@@ -1,5 +1,5 @@
 /*
- * SPFD5408.h
+ * spfd5408.h
  *
  *  Created on: 02-05-2015
  *      Author: lukasz based on UTFT library

@@ -1,13 +1,16 @@
 /*
- * _SPFD5408.c
+ * _spfd5408.c
  *
  *  Created on: 02-05-2015
  *      Author: lukasz
  */
-#include "utils.h"
-#include "SPFD5408.h"
+#include "../emdrv/ustimer/ustimer.h"
+#include "spfd5408.h"
 #include "defaultFonts.h"
 #include <math.h>
+
+
+
 
 static uint8_t orientation = LANDSCAPE;
 static struct CurrentFont cfont;

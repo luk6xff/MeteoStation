@@ -72,10 +72,10 @@ int main(void) {
 
 	SPFD5408init();
 	ADS7843Init();
-	UARTDRV_InitUart(handle, &initData);
+	//UARTDRV_InitUart(handle, &initData);
 
 	// Transmit data using a non-blocking transmit function
-	UARTDRV_Transmit(handle, buffer, 10, NULL);
+	//UARTDRV_Transmit(handle, buffer, 10, NULL);
 
 	/*
 	SPFD5408printChar('H', 10, 10, BLACK);
@@ -84,21 +84,27 @@ int main(void) {
 	SPFD5408printChar('L', 55, 10, BLACK);
 	SPFD5408printChar('O', 70, 10, BLACK);
 	SPFD5408printChar('!', 85, 10, BLACK);
-	SPFD5408print("*TFTLibrary- TEST*", 10, 50, 0, RED);
-	Delay(2000);
+		Delay(2000);
 	for (int i = 1; i < 318; i++) {
 		SPFD5408drawPixel(i, 119 + (sin(((i * 1.13) * 3.14) / 180) * 95),
 				BLACK);
-        //Delay(1);
-
 	}
 	*/
+	SPFD5408print("*TFTLibrary- TEST*", 10, 50, 0, RED);
+	int i = 0;
 	while (1) {
 		if (mADS7843ScreenTouched) {
 
 					SPFD5408drawPixel(getCoordinates().x / 100,
 							getCoordinates().y / 100, RED);
+					uint16_t x, y;
+					ADS7843ReadADXYRaw(&x, &y);
+					//ADS7843ReadPointXY(&x, &y);
+					mADS7843ScreenTouched=false;
+					ADS7843_INT_IRQ_CONFIG_FALLING(true);
+					SPFD5408drawPixel(i++%320, i%320,BLACK);
 				}
+
 	}
 
 }

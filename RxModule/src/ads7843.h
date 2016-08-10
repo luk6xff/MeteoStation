@@ -94,7 +94,7 @@ extern "C"
 #define TOUCH_SCREEN_HEIGHT        320
 
 #define TOUCH_SMAPLE_LEN            8
-//#define TOUCH_DISCARD_SAMPLES      1
+#define TOUCH_MAX_NUM_OF_SAMPLES    20
 
 #define TOUCH_AD_X_MAX             1840
 #define TOUCH_AD_X_MIN             200
@@ -112,9 +112,15 @@ extern "C"
 //*****************************************************************************
 #define ADS7843_READ_X             0xD0
 #define ADS7843_READ_Y             0x90
+#define ADS7843_SER            	   0x04
+#define ADS7843_DER            	   0x00
+#define ADS7843_NO_POWERDOWN       0x03
+#define ADS7843_POWERDOWN          0x00
+#define ADS7843_12_BIT             0x00
+#define ADS7843_8_BIT              0x08
 #define ADS7843_READ_IN3           0xA0
 #define ADS7843_READ_IN4           0xE0
-#define ADS7843_NO_POWERDOWN       0x03
+
 
 #define TOUCH_STATUS_PENDOWN       0x01
 #define TOUCH_STATUS_PENUP         0x02
@@ -139,6 +145,9 @@ typedef struct {
 extern TouchInfo tTouchData;
 
 void ADS7843Init(void);
+
+// Enables IqrPin on startup and enables powerdown between conversions
+void ADS7843SetIrqAndPowerDown(void);
 
 // Read raw value of x,y axis's AD conversion value.
 void ADS7843ReadADXYRaw(uint16_t *x, uint16_t *y);

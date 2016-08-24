@@ -15,82 +15,13 @@
 #include "../emdrv/spidrv/spidrv.h"
 
 //privates
-/* USART used for SPI access */
-#define USART_USED        USART1
-#define USART_CLK         cmuClock_USART1
-
-#define SPI_HW_ENABLED 0
-#define SPI_SW_ENABLED 0
-#define SPI_DRV_ENABLED 1
-
-#if SPI_DRV_ENABLED
 static SPIDRV_HandleData_t handleData;
 static SPIDRV_Handle_t handle = &handleData;
-#endif
 
-static const USART_InitSync_TypeDef initSpi = { usartEnable, /* Enable RX/TX when init completed. */
-1000000, /* Use 1MHz reference clock */
-1000, /* 1 Mbits/s. */
-usartDatabits8, /* 8 databits. */
-true, /* Master mode. */
-true, /* Send most significant bit first. */
-usartClockMode0, false, usartPrsRxCh0, false };
-
-static StatusTypeDef spiPeripheralsConfig(void) {
-
-#if SPI_HW_ENABLED
-	CMU_ClockEnable(cmuClock_HFPER, true);
-	// Enable clock for USART1
-	CMU_ClockEnable(USART_CLK, true);
-	CMU_ClockEnable(cmuClock_GPIO, true);
-
-	// Reset USART just in case
-	USART_Reset(USART_USED );
-
-	USART_InitSync(USART_USED, &initSpi);
-
-	// Module USART1 is configured to location 1
-	USART_USED ->ROUTE = (USART_USED ->ROUTE & ~_USART_ROUTE_LOCATION_MASK)
-	| USART_ROUTE_LOCATION_LOC1;
-
-	// Enable signals TX, RX, CLK, CS
-	USART_USED ->ROUTE |= USART_ROUTE_TXPEN | USART_ROUTE_RXPEN
-	| USART_ROUTE_CLKPEN;
-
-	//USART_USED ->CTRL |= USART_CTRL_CLKPOL_IDLEHIGH;
-	//USART_USED ->CTRL |= USART_CTRL_CLKPHA_SAMPLELEADING;
-	USART_USED ->CMD = USART_CMD_TXEN | USART_CMD_RXEN;
-	// Clear previous interrupts
-	USART_USED ->IFC = _USART_IFC_MASK;
-#endif
-
-#ifdef ADS7843_USE_PIN_BUSY
-	ADS7843_BUSY_INPUT();
-#endif
-	ADS7843_MOSI_OUTPUT();
-	ADS7843_MISO_INPUT();
-	ADS7843_CLK_OUTPUT();
-	ADS7843_CS_OUTPUT();
-	return STATUS_OK;
-}
-
-void ADS7843spiInitSoftware(void) {
-	CMU_ClockEnable(cmuClock_GPIO, true);
-	ADS7843_MOSI_OUTPUT();
-	ADS7843_MISO_INPUT();
-	ADS7843_CLK_OUTPUT();
-	// Keep CS high to not activate slave
-	ADS7843_CS_OUTPUT();
-	ADS7843_CLK_LOW();
-	ADS7843_MOSI_LOW();
-}
-
-TouchInfo tTouchData;
-static TouchPoint mPointCoordinates = { 100 };
+static TouchInfo touchInfoData;
 extern volatile bool mADS7843ScreenTouched;
 #define ADS7843_ENABLE_TOUCH_INT
 
-static SpiHandleTypeDef spiHandle;
 static void ADS7843PenIRQCallback(uint8_t pin);
 //*****************************************************************************
 // \brief Initialize ADS7843
@@ -99,23 +30,12 @@ static void ADS7843PenIRQCallback(uint8_t pin);
 //return None.
 //*****************************************************************************
 void ADS7843Init(void) {
-
-#if SPI_SW_ENABLED
-	ADS7843spiInitSoftware();
-
-#elif SPI_HW_ENABLED
-	spiHandle.spiInstance = USART_USED;
-	spiHandle.init = &initSpi;
-	spiHandle.spiModeHwSw = false;
-	spiHandle.spiGpioClockInit = spiPeripheralsConfig;
-	spiInit(&spiHandle);
-#elif SPI_DRV_ENABLED
 	/// Configuration data for SPI master using USART1.
 #define SPIDRV_MASTER_USART1_LOC1                                         \
 	{                                                                         \
 	  USART1,                       /* USART port                       */    \
 	  _USART_ROUTE_LOCATION_LOC1,   /* USART pins location number       */    \
-	  1000000,                      /* Bitrate                          */    \
+	  50000,                      /* Bitrate                          */    \
 	  8,                            /* Frame length                     */    \
 	  0,                            /* Dummy tx value for rx only funcs */    \
 	  spidrvMaster,                 /* SPI mode                         */    \
@@ -127,7 +47,7 @@ void ADS7843Init(void) {
 
 	CMU_ClockEnable(cmuClock_HFPER, true);
 	// Enable clock for USART1
-	CMU_ClockEnable(USART_CLK, true);
+	CMU_ClockEnable(cmuClock_USART1, true);
 	CMU_ClockEnable(cmuClock_GPIO, true);
 	ADS7843_MOSI_OUTPUT();
 	ADS7843_MISO_INPUT();
@@ -136,9 +56,6 @@ void ADS7843Init(void) {
 	SPIDRV_Init_t initData = SPIDRV_MASTER_USART1_LOC1;
 	// Initialize a SPI driver instance
 	SPIDRV_Init(handle, &initData);
-#else
-#error "No SPI Configured !!!!!";
-#endif
 
 #ifdef ADS7843_USE_PIN_BUSY
 	ADS7843_BUSY_INPUT();
@@ -157,120 +74,21 @@ void ADS7843Init(void) {
 #endif
 
 	// assign default values
-	tTouchData.thAdLeft = TOUCH_AD_X_MIN;
-	tTouchData.thAdRight = TOUCH_AD_X_MAX;
-	tTouchData.thAdUp = TOUCH_AD_Y_MAX;
-	tTouchData.thAdDown = TOUCH_AD_Y_MIN;
-	tTouchData.touchStatus = 0;
+	touchInfoData.thAdLeft = TOUCH_AD_X_MIN;
+	touchInfoData.thAdRight = TOUCH_AD_X_MAX;
+	touchInfoData.thAdUp = TOUCH_AD_Y_MAX;
+	touchInfoData.thAdDown = TOUCH_AD_Y_MIN;
+	touchInfoData.touchStatus = 0;
 
 	ADS7843SetIrqAndPowerDown();
 }
 
 void ADS7843SetIrqAndPowerDown(void) {
-	uint8_t buf[3] = { ADS7843_READ_X | ADS7843_SER, 0, 0 };
+	uint8_t buf[3] = { ADS7843_READ_X | ADS7843_DFR, 0, 0 };
 	ADS7843_CS_LOW();
 	SPIDRV_MTransmitB(handle, buf, 1);
 	SPIDRV_MTransmitB(handle, &buf[1], 2);
 	ADS7843_CS_HIGH();
-}
-
-void TransferComplete(SPIDRV_Handle_t handle, Ecode_t transferStatus,
-		int itemsTransferred) {
-	if (transferStatus == ECODE_EMDRV_SPIDRV_OK) {
-		return;
-	}
-}
-
-static uint16_t ADS7843SpiReadData(uint8_t reg) {
-#if SPI_HW_ENABLED
-	uint8_t txBuf[3] = {reg, 0, 0};
-	uint8_t rxBuf[3] = {0};
-
-	if (spiTransmitReceive(&spiHandle, txBuf, rxBuf, 3, 0) == STATUS_OK) {
-
-		uint16_t retVal = ((rxBuf[1] << 4) | (rxBuf[2] >> 4)) & 0x0FFF;
-		return retVal;
-	} else
-	return 0xffff;
-
-#elif SPI_DRV_ENABLED
-	uint8_t txBuf = reg;
-	uint8_t dummyTxBuf[2] = { 0, 0 };
-	uint8_t rxBuf[2] = { 0, 0 };
-	uint16_t prev = 0x0000, cur = 0x0000;
-	//SPIDRV_SetFramelength( handle, 8);
-	// Transmit data using a blocking transmit function
-	//SPIDRV_MTransmit( handle, txBuf, 8,TransferComplete );
-
-
-	//ADS7843_CS_HIGH();
-	//cur = ((rxBuf[1] << 4) | (rxBuf[2] >> 4)) & 0x0FFF;
-	 uint8_t i = 0;
-	 do {
-		 prev = cur;
-		 ADS7843_CS_LOW();
-		 SPIDRV_MTransmitB(handle, &txBuf, 1);
-		 SPIDRV_MReceiveB(handle, rxBuf, 2);
-		 ADS7843_CS_HIGH();
-		 cur = ((rxBuf[1] << 4) | (rxBuf[2] >> 4)) & 0x0FFF;
-	 } while ((prev != cur) && (++i < TOUCH_MAX_NUM_OF_SAMPLES));
-
-	 return cur;
-#endif
-}
-
-static void ADS7843SpiWriteByteSoftware(uint8_t data) {
-	///////////////////////////////////////////////////////////////	Delay(1);
-
-	for (int i = 0; i < 100; i++)
-		;
-
-	for (int i = 0; i < 8; i++) {
-
-		if (data & 0x80) {
-			ADS7843_MOSI_HIGH();
-		} else {
-			ADS7843_MOSI_LOW();
-		}
-		ADS7843_CLK_HIGH();
-		for (int i = 0; i < 100; i++)
-			;
-		///////////////////////////////////////////////////////////////		Delay(1);
-		ADS7843_CLK_LOW();
-		data <<= 1;
-		for (int i = 0; i < 100; i++)
-			;
-		///////////////////////////////////////////////////////////////		Delay(1);
-
-	}
-	//ADS7843_MOSI_LOW();
-}
-
-static uint8_t ADS7843SpiReadByteSoftware(void) {
-	uint8_t data = 0;
-
-	for (int i = 0; i < 100; i++)
-		;
-
-	for (int i = 0; i < 8; i++) {
-		ADS7843_CLK_HIGH();
-
-		for (int i = 0; i < 100; i++)
-			;
-
-		data |=
-				((GPIO_PinInGet(ADS7843_PORT_MISO, ADS7843_PIN_MISO) << (7 - i)));
-		ADS7843_CLK_LOW();
-
-		for (int i = 0; i < 100; i++)
-			;
-	}
-
-	//ADS7843_MOSI_LOW();
-	for (int i = 0; i < 100; i++)
-		;
-	return data;
-
 }
 
 static void ADS7843PenIRQCallback(uint8_t pin) {
@@ -284,94 +102,42 @@ uint16_t ADS7843PenInq(void) {
 	return (uint16_t) ADS7843_GET_INT_PIN();
 }
 
+void TransferComplete(SPIDRV_Handle_t handle, Ecode_t transferStatus,
+		int itemsTransferred) {
+	if (transferStatus == ECODE_EMDRV_SPIDRV_OK) {
+		return;
+	}
+}
+
+static uint16_t ADS7843SpiReadData(uint8_t reg) {
+	uint8_t txBuf = reg;
+	uint8_t rxBuf[2] = { 0, 0 };
+	uint16_t cur = 0x0000;
+	//SPIDRV_MTransmit( handle, txBuf, 8,TransferComplete );
+	ADS7843_CS_LOW();
+	SPIDRV_MTransmitB(handle, &txBuf, 1);
+	SPIDRV_MReceiveB(handle, rxBuf, 2);
+	cur = ((rxBuf[0] << 4) | (rxBuf[1] >> 4)) & 0x0FFF;
+	ADS7843_CS_HIGH();
+	return cur;
+}
+
 //****************************************************************************
 // \brief Read the x, y axis ADC convert value once from ADS7843
 // \param x To save the x axis ADC convert value.
 // \param y To save the y axis ADC convert value.
 // \return None.
 //*****************************************************************************
-#if SPI_SW_ENABLED
-void ADS7843ReadADXYRaw(uint16_t *x, uint16_t *y) {
-// Chip select
-
-	ADS7843_CS_LOW();
-	// Send read x command
-	ADS7843SpiWriteByteSoftware(ADS7843_READ_X);//read x command
-#ifdef ADS7843_USE_PIN_BUSY
-	// wait for conversion complete
-	while (ADS7843_GET_BUSY_PIN())
-	;
-#else
-	for (volatile int i = 0; i < 1000; i++);
-#endif
-
-	// Read the high 8bit of the 12bit conversion result
-	*x = (uint16_t) ADS7843SpiReadByteSoftware() & 0xFF;
-	*x <<= 4;
-	// Read the low 4bit of the 12bit conversion result
-	*x |= (uint16_t) ADS7843SpiReadByteSoftware() >> 4;
-	ADS7843_CS_HIGH();
-
-	for (int ii = 0; ii < 1000; ii++)
-	;
-
-// Send read y command
-	ADS7843_CS_LOW();
-	//for (int x = 0; x < 0x100; x++);
-	ADS7843SpiWriteByteSoftware(ADS7843_READ_Y);//read y command
-#ifdef ADS7843_USE_PIN_BUSY
-	// wait for conversion complete
-	while (ADS7843_GET_BUSY_PIN())
-	;
-#else
-	// The conversion needs 8us to complete
-	for (volatile int i = 0; i < 1000; i++);
-#endif
-
-	// Read the high 8bit of the 12bit conversion result
-	*y = (uint16_t) ADS7843SpiReadByteSoftware() & 0xFF;
-	*y <<= 4;
-
-	// Read the low 4bit of the 12bit conversion result
-	*y |= (uint16_t) ADS7843SpiReadByteSoftware() >> 4;
-	ADS7843_CS_HIGH();
-	for (int ii = 0; ii < 1000; ii++)
-	;
-
-}
-#elif SPI_HW_ENABLED
-// HW SPI
-void ADS7843ReadADXYRaw(uint16_t *x, uint16_t *y) {
-// Chip select
-	for (int i = 0; i < 10000; i++)
-	;
-	ADS7843_CS_LOW();
-
-	*x = ADS7843SpiReadData(ADS7843_READ_X|ADS7843_SER);
-#ifdef ADS7843_USE_PIN_BUSY
-	// wait for conversion complete
-	while(ADS7843_GET_BUSY_PIN());
-#else
-	for (volatile int i = 0; i < 1000; i++);
-#endif
-	*y = ADS7843SpiReadData(ADS7843_READ_Y|ADS7843_SER);
-	ADS7843_CS_HIGH();
-
-}
-
-#elif SPI_DRV_ENABLED
-void ADS7843ReadADXYRaw(uint16_t *x, uint16_t *y) {
-	*x = ADS7843SpiReadData(ADS7843_READ_X | ADS7843_SER);
+void ADS7843ReadRawXY(uint16_t *x, uint16_t *y) {
+	*x = ADS7843SpiReadData(ADS7843_READ_X | ADS7843_DFR);
 #ifdef ADS7843_USE_PIN_BUSY
 	// wait for conversion complete
 	while(ADS7843_GET_BUSY_PIN());
 #else
 	//for (volatile int i = 0; i < 1000; i++);
 #endif
-	*y = ADS7843SpiReadData(ADS7843_READ_Y | ADS7843_SER);
+	*y = ADS7843SpiReadData(ADS7843_READ_Y | ADS7843_DFR);
 }
-
-#endif
 
 //*****************************************************************************
 //brief read the x, y axis ADC convert value from ADS7843(with software filter)
@@ -384,44 +150,41 @@ void ADS7843ReadADXYRaw(uint16_t *x, uint16_t *y) {
 // value of the final remained data.
 // \return None.
 //*****************************************************************************
-void ADS7843ReadADXY(uint16_t *x, uint16_t *y) {
-	uint16_t usXYArray[2][TOUCH_SMAPLE_LEN];
+void ADS7843ReadXY(uint16_t *x, uint16_t *y) {
+	uint16_t xyDataBuf[2][TOUCH_MAX_NUM_OF_SAMPLES];
 	uint8_t i, j;
 	uint16_t temp;
 
-	for (i = 0; i < TOUCH_SMAPLE_LEN; i++) {
-		ADS7843ReadADXYRaw(&usXYArray[0][i], &usXYArray[1][i]);
+	for (i = 0; i < TOUCH_MAX_NUM_OF_SAMPLES; i++) {
+		ADS7843ReadRawXY(&xyDataBuf[0][i], &xyDataBuf[1][i]);
 	}
 // Discard the first and the last one of the data and sort remained data
-	for (i = 1; i < TOUCH_SMAPLE_LEN - 2; i++) {
-		for (j = i + 1; j < TOUCH_SMAPLE_LEN - 1; j++) {
-			if (usXYArray[0][i] > usXYArray[0][j]) {
-				temp = usXYArray[0][i];
-				usXYArray[0][i] = usXYArray[0][j];
-				usXYArray[0][j] = temp;
+	for (i = 1; i < TOUCH_MAX_NUM_OF_SAMPLES - 2; i++) {
+		for (j = i + 1; j < TOUCH_MAX_NUM_OF_SAMPLES - 1; j++) {
+			if (xyDataBuf[0][i] > xyDataBuf[0][j]) {
+				temp = xyDataBuf[0][i];
+				xyDataBuf[0][i] = xyDataBuf[0][j];
+				xyDataBuf[0][j] = temp;
 			}
 
-			if (usXYArray[1][i] > usXYArray[1][j]) {
-				temp = usXYArray[1][i];
-				usXYArray[1][i] = usXYArray[1][j];
-				usXYArray[1][j] = temp;
+			if (xyDataBuf[1][i] > xyDataBuf[1][j]) {
+				temp = xyDataBuf[1][i];
+				xyDataBuf[1][i] = xyDataBuf[1][j];
+				xyDataBuf[1][j] = temp;
 			}
 		}
 	}
-	usXYArray[0][0] = 0;
-	usXYArray[1][0] = 0;
+	xyDataBuf[0][0] = 0;
+	xyDataBuf[1][0] = 0;
 
-//
 // Discard the first and the last one of the sorted data
 // and compute the average value of the remained data.
-//
-	for (i = 2; i < TOUCH_SMAPLE_LEN - 2; i++) {
-		usXYArray[0][0] += usXYArray[0][i];
-		usXYArray[1][0] += usXYArray[1][i];
+	for (i = 2; i < TOUCH_MAX_NUM_OF_SAMPLES - 2; i++) {
+		xyDataBuf[0][0] += xyDataBuf[0][i];
+		xyDataBuf[1][0] += xyDataBuf[1][i];
 	}
-	*x = usXYArray[0][0] / (TOUCH_SMAPLE_LEN - 4);
-	*y = usXYArray[1][0] / (TOUCH_SMAPLE_LEN - 4);
-
+	*x = xyDataBuf[0][0] / (TOUCH_MAX_NUM_OF_SAMPLES - 4);
+	*y = xyDataBuf[1][0] / (TOUCH_MAX_NUM_OF_SAMPLES - 4);
 }
 
 //*****************************************************************************
@@ -435,85 +198,56 @@ void ADS7843ReadADXY(uint16_t *x, uint16_t *y) {
 // \return None.
 //*****************************************************************************
 uint8_t ADS7843ReadPointXY(uint16_t *x, uint16_t *y) {
-	uint16_t usADX;
-	uint16_t usADY;
-	uint32_t temp = 0;
+	uint16_t adX;
+	uint16_t adY;
+	uint32_t diff = 0;
 
 	if (!ADS7843_GET_INT_PIN()) {
 		//  If pen down
-		ADS7843ReadADXY(&usADX, &usADY);
-		*x = usADX;
-		*y = usADY;
-		return 0;
-		//  calculate the difference
-		temp = usADX - tTouchData.thAdLeft;
-
-		//  limit the left edge
-		if (temp > tTouchData.thAdRight)
-			temp = 0;
-
+		ADS7843ReadXY(&adX, &adY);
+		//x
+		diff = touchInfoData.thAdRight - touchInfoData.thAdLeft;
+		//  limit the edges
+		if (adX < (touchInfoData.thAdLeft - TOUCH_AD_CALIB_ERROR)
+				|| adX > (touchInfoData.thAdRight + TOUCH_AD_CALIB_ERROR)) {
+			adX = 0;
+		}
 		//  calculate the x coordinate
-		*x = temp * TOUCH_SCREEN_WIDTH
-				/ (tTouchData.thAdRight - tTouchData.thAdLeft);
-		tTouchData.lastX = tTouchData.curX;
-		tTouchData.curX = *x;
+		*x = (adX * TOUCH_SCREEN_WIDTH) / diff;
+		touchInfoData.lastX = touchInfoData.curX;
+		touchInfoData.curX = *x;
 
-		temp = tTouchData.thAdUp - usADY;
-
-		//  limit the top edge
-		if (temp > tTouchData.thAdUp)
-			temp = 0;
-
+		//y
+		diff = touchInfoData.thAdUp - touchInfoData.thAdDown;
+		//  limit the edges
+		if (adY < (touchInfoData.thAdDown - TOUCH_AD_CALIB_ERROR)
+				|| adY > (touchInfoData.thAdUp + TOUCH_AD_CALIB_ERROR)) {
+			adY = 0;
+		}
 		//  calculate the y coordinate
-		*y = temp * TOUCH_SCREEN_HEIGHT
-				/ (tTouchData.thAdUp - tTouchData.thAdDown);
-		tTouchData.lastY = tTouchData.curY;
-		tTouchData.curY = *y;
+		*y = (adY * TOUCH_SCREEN_HEIGHT) / diff;
+		touchInfoData.lastY = touchInfoData.curY;
+		touchInfoData.curY = *y;
 		return 0;
-	} else {
+	}
+	else
+	{
 		//  if pen up
-		if (tTouchData.touchStatus & TOUCH_STATUS_PENUP) {
-			tTouchData.lastX = tTouchData.curX;
-			*x = tTouchData.curX;
-			tTouchData.lastY = tTouchData.curY;
-			*y = tTouchData.curY;
-			tTouchData.touchStatus = 0;
+		if (touchInfoData.touchStatus & TOUCH_STATUS_PENUP) {
+			touchInfoData.lastX = touchInfoData.curX;
+			*x = touchInfoData.curX;
+			touchInfoData.lastY = touchInfoData.curY;
+			*y = touchInfoData.curY;
+			touchInfoData.touchStatus = 0;
 			return 0;
 		}
-
 		return 1;
 	}
 }
 
-TouchPoint getCoordinates(void) {
-
-	return mPointCoordinates;
-}
-
-uint16_t ADS7843ReadInputChannel(unsigned char ucChannel) {
-	uint16_t res;
-
-	if ((ucChannel != ADS7843_READ_IN4) || (ucChannel != ADS7843_READ_IN3)
-			|| (ucChannel != ADS7843_READ_X) || (ucChannel != ADS7843_READ_Y)) {
-		return 0;
-	}
-	ADS7843_CS_LOW();
-	Delay(10);
-	ADS7843SpiWriteByteSoftware(ucChannel);
-#ifdef ADS7843_USE_PIN_BUSY
-	// wait for conversion complete
-	while (ADS7843_GET_BUSY_PIN())
-	;
-#else
-	for (volatile int i = 0; i < 1000; i++)
-		;
-#endif
-	res = (uint16_t) ADS7843SpiReadByteSoftware() & 0x00FF;
-	res <<= 4;
-	res |= (uint16_t) ADS7843SpiReadByteSoftware() >> 4;
-	ADS7843_CS_HIGH();
-
-	return res;
+void getCoordinates(uint16_t* x, uint16_t* y) {
+	*x=touchInfoData.curX;
+	*y=touchInfoData.curY;
 }
 
 //*****************************************************************************
@@ -558,7 +292,7 @@ uint8_t ADS7843Calibration(void) {
 			// maximum and minimum value
 			//
 			while (!ADS7843_GET_INT_PIN()) {
-				ADS7843ReadADXY(&adx, &ady);
+				ADS7843ReadXY(&adx, &ady);
 				if (adx < adxmin) {
 					adxmin = adx;
 				} else if (adx > adxmax) {
@@ -583,8 +317,8 @@ uint8_t ADS7843Calibration(void) {
 					&& (adxmin > (TOUCH_AD_X_MIN - TOUCH_AD_CALIB_ERROR))
 					&& (adxmin < (TOUCH_AD_X_MIN + TOUCH_AD_CALIB_ERROR))) {
 
-				tTouchData.thAdLeft = adxmin;
-				tTouchData.thAdRight = adxmax;
+				touchInfoData.thAdLeft = adxmin;
+				touchInfoData.thAdRight = adxmax;
 				calibrationFlag |= 1;
 			}
 		}
@@ -596,8 +330,8 @@ uint8_t ADS7843Calibration(void) {
 					&& (adymax < (TOUCH_AD_Y_MAX + TOUCH_AD_CALIB_ERROR))
 					&& (adymin > (TOUCH_AD_Y_MIN - TOUCH_AD_CALIB_ERROR))
 					&& (adymin < (TOUCH_AD_Y_MIN + TOUCH_AD_CALIB_ERROR))) {
-				tTouchData.thAdUp = adymax;
-				tTouchData.thAdDown = adymin;
+				touchInfoData.thAdUp = adymax;
+				touchInfoData.thAdDown = adymin;
 				calibrationFlag |= 2;
 			}
 		}

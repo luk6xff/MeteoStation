@@ -1,12 +1,12 @@
 /*
- * spfd5408.h
+ * ili9320.h
  *
- *  Created on: 02-05-2015
- *      Author: lukasz based on UTFT library
+ *  Created on: 25-08-2016
+ *      Author: lukasz
  */
 
-#ifndef SPFD5408_H_
-#define SPFD5408_H_
+#ifndef ILI9320_H_
+#define ILI9320_H_
 
 
 
@@ -193,40 +193,40 @@ struct CurrentFont {
 #endif
 /*********************************Hardware dependent part - END*****************************************/
 
-void SPFD5408init(void);
-void SPFD5408clrScr();
-void SPFD5408drawPixel(int x, int y, uint16_t color);
-void SPFD5408drawLine(int x1, int y1, int x2, int y2, uint16_t color);
-void SPFD5408fillScreenBackground(uint16_t color);
-void SPFD5408drawRect(int x1, int y1, int x2, int y2, uint16_t color);
-void SPFD5408drawRoundRect(int x1, int y1, int x2, int y2, uint16_t color);
-void SPFD5408fillRect(int x1, int y1, int x2, int y2, uint16_t color);
-void SPFD5408fillRoundRect(int x1, int y1, int x2, int y2, uint16_t color);
-void SPFD5408drawCircle(int x, int y, int radius, uint16_t color);
-void SPFD5408fillCircle(int x, int y, int radius, uint16_t color);
-void SPFD5408setFont(const uint8_t* font);
-uint8_t* SPFD5408getFont();
-uint8_t SPFD5408getFontXsize();
-uint8_t SPFD5408getFontYsize();
-void SPFD5408drawBitmap(int x, int y, int sx, int sy, const uint16_t* bitmap, int scale);
-void SPFD5408lcdOff();
-void SPFD5408lcdOn();
-void SPFD5408setContrast(char c);
-void SPFD5408lcdWriteCOMMAND(uint16_t data);
-void SPFD5408lcdWriteDATA(uint16_t data);
-void SPFD5408lcdWriteCOMMAND_DATA(uint16_t com1, uint16_t dat1);
-void SPFD5408setPixel(uint16_t color);
-void SPFD5408drawHLine(int x, int y, int l, uint16_t color);
-void SPFD5408drawVLine(int x, int y, int l, uint16_t color);
-void SPFD5408printChar(uint8_t c, int x, int y, uint16_t color);
-void SPFD5408rotateChar(uint8_t c, int x, int y, int pos, int deg,uint16_t color);
-void SPFD5408print(char *st, int x, int y, int deg, uint16_t color);
-void SPFD5408printNumI(long num, int x, int y, int length, char filler, uint16_t color);
-void SPFD5408printNumF(double num, uint8_t dec, int x, int y, char divider, int length,
+void ILI9320init(void);
+void ILI9320clrScr();
+void ILI9320drawPixel(int x, int y, uint16_t color);
+void ILI9320drawLine(int x1, int y1, int x2, int y2, uint16_t color);
+void ILI9320fillScreenBackground(uint16_t color);
+void ILI9320drawRect(int x1, int y1, int x2, int y2, uint16_t color);
+void ILI9320drawRoundRect(int x1, int y1, int x2, int y2, uint16_t color);
+void ILI9320fillRect(int x1, int y1, int x2, int y2, uint16_t color);
+void ILI9320fillRoundRect(int x1, int y1, int x2, int y2, uint16_t color);
+void ILI9320drawCircle(int x, int y, int radius, uint16_t color);
+void ILI9320fillCircle(int x, int y, int radius, uint16_t color);
+void ILI9320setFont(const uint8_t* font);
+uint8_t* ILI9320getFont();
+uint8_t ILI9320getFontXsize();
+uint8_t ILI9320getFontYsize();
+void ILI9320drawBitmap(int x, int y, int sx, int sy, const uint16_t* bitmap, int scale);
+void ILI9320lcdOff();
+void ILI9320lcdOn();
+void ILI9320setContrast(char c);
+void ILI9320lcdWriteCOMMAND(uint16_t data);
+void ILI9320lcdWriteDATA(uint16_t data);
+void ILI9320lcdWriteCOMMAND_DATA(uint16_t com1, uint16_t dat1);
+void ILI9320setPixel(uint16_t color);
+void ILI9320drawHLine(int x, int y, int l, uint16_t color);
+void ILI9320drawVLine(int x, int y, int l, uint16_t color);
+void ILI9320printChar(uint8_t c, int x, int y, uint16_t color);
+void ILI9320rotateChar(uint8_t c, int x, int y, int pos, int deg,uint16_t color);
+void ILI9320print(char *st, int x, int y, int deg, uint16_t color);
+void ILI9320printNumI(long num, int x, int y, int length, char filler, uint16_t color);
+void ILI9320printNumF(double num, uint8_t dec, int x, int y, char divider, int length,
 		char filler, uint16_t color);
-void SPFD5408setXY(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2);
-void SPFD5408clrXY(void);
+void ILI9320setXY(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2);
+void ILI9320clrXY(void);
 
 void convertFloat(char *buf, double num, int width, uint8_t prec);
 
-#endif /* SPFD5408_H_ */
+#endif /* ILI9320_H_ */

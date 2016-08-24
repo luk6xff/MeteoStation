@@ -93,15 +93,14 @@ extern "C"
 #define TOUCH_SCREEN_WIDTH         240
 #define TOUCH_SCREEN_HEIGHT        320
 
-#define TOUCH_SMAPLE_LEN            8
-#define TOUCH_MAX_NUM_OF_SAMPLES    20
+#define TOUCH_MAX_NUM_OF_SAMPLES    20  //Note! must be >= 7
 
-#define TOUCH_AD_X_MAX             1840
-#define TOUCH_AD_X_MIN             200
-#define TOUCH_AD_Y_MAX             1830
-#define TOUCH_AD_Y_MIN             125
-//#define TOUCH_AD_Y_MIN_SCREEN      200
-#define TOUCH_AD_CALIB_ERROR       80
+//Configure it correctly to your display
+#define TOUCH_AD_X_MAX             1880
+#define TOUCH_AD_X_MIN             150
+#define TOUCH_AD_Y_MAX             2020
+#define TOUCH_AD_Y_MIN             170
+#define TOUCH_AD_CALIB_ERROR       50
 
 //*****************************************************************************
 //
@@ -113,7 +112,7 @@ extern "C"
 #define ADS7843_READ_X             0xD0
 #define ADS7843_READ_Y             0x90
 #define ADS7843_SER            	   0x04
-#define ADS7843_DER            	   0x00
+#define ADS7843_DFR            	   0x00
 #define ADS7843_NO_POWERDOWN       0x03
 #define ADS7843_POWERDOWN          0x00
 #define ADS7843_12_BIT             0x00
@@ -142,36 +141,29 @@ typedef struct {
 	uint8_t touchStatus;
 } TouchInfo;
 
-extern TouchInfo tTouchData;
-
 void ADS7843Init(void);
 
 // Enables IqrPin on startup and enables powerdown between conversions
 void ADS7843SetIrqAndPowerDown(void);
+//! Get pen status (pen down or pen up).
+uint16_t ADS7843PenInq(void);
 
 // Read raw value of x,y axis's AD conversion value.
-void ADS7843ReadADXYRaw(uint16_t *x, uint16_t *y);
+void ADS7843ReadRawXY(uint16_t *x, uint16_t *y);
 
 // Read x,y axis's AD conversion value with software filter.
-void ADS7843ReadADXY(uint16_t *x, uint16_t *y);
+void ADS7843ReadXY(uint16_t *x, uint16_t *y);
 
 // Read x,y coordinate.
 uint8_t ADS7843ReadPointXY(uint16_t *x, uint16_t *y);
 
-//! Get pen status (pen down or pen up).
-uint16_t ADS7843PenInq(void);
+
 
 //! Touch screen calibration.
 uint8_t ADS7843Calibration(void);
 
-//! Read single channel of conversion(x,y,IN3,IN4).
-uint16_t ADS7843ReadInputChannel(uint8_t ucChannel);
 
-TouchPoint getCoordinates(void);
-
-//software SPI
-void ADS7843spiInitSoftware(void);
-
+void getCoordinates(uint16_t* x, uint16_t* y);
 
 
 

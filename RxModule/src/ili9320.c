@@ -1,11 +1,11 @@
 /*
- * _spfd5408.c
+ * _ili9320.c
  *
- *  Created on: 02-05-2015
+ *  Created on: 25-08-2016
  *      Author: lukasz
  */
 #include "../emdrv/ustimer/ustimer.h"
-#include "spfd5408.h"
+#include "ili9320.h"
 #include "defaultFonts.h"
 #include <math.h>
 
@@ -168,7 +168,7 @@ static uint16_t getData(void) {
 
 }
 
-static void SPFD5408SendCommand(uint16_t index) {
+static void ILI9320SendCommand(uint16_t index) {
 	RS_LOW();
 	RD_HIGH();
 	WR_HIGH();
@@ -188,7 +188,7 @@ static void SPFD5408SendCommand(uint16_t index) {
 
 }
 
-static void SPFD5408SendData(uint16_t data) {
+static void ILI9320SendData(uint16_t data) {
 	RS_HIGH();
 	RD_HIGH();
 	WR_LOW();
@@ -206,20 +206,20 @@ static void SPFD5408SendData(uint16_t data) {
 	WR_HIGH();
 }
 
-static void SPFD5408WriteData(uint16_t data) {
+static void ILI9320WriteData(uint16_t data) {
 	CS_LOW();
-	SPFD5408SendData(data);
+	ILI9320SendData(data);
 	CS_HIGH();
 }
 
-static void SPFD5408WriteCommand(uint16_t data) {
+static void ILI9320WriteCommand(uint16_t data) {
 	CS_LOW();
-	SPFD5408SendCommand(data);
+	ILI9320SendCommand(data);
 	CS_HIGH();
 }
 
 /************************************************************************
- * void SPFD5408WriteRegister(uint16_t index, uint16_t data)
+ * void ILI9320WriteRegister(uint16_t index, uint16_t data)
  **                                                                    **
  ** CS       ----\__________________________________________/-------  **
  ** RS       ------\____________/-----------------------------------  **
@@ -228,15 +228,15 @@ static void SPFD5408WriteCommand(uint16_t data) {
  ** DB[15:0] ---------[index]----------[data]-----------------------  **
  **                                                                    **
  ************************************************************************/
-static void SPFD5408WriteRegister(uint16_t index, uint16_t data) {
+static void ILI9320WriteRegister(uint16_t index, uint16_t data) {
 	CS_LOW();
-	SPFD5408SendCommand(index);
-	SPFD5408SendData(data);
+	ILI9320SendCommand(index);
+	ILI9320SendData(data);
 	CS_HIGH();
 
 }
 /***********************************************************************
- * uint16_t SPFD5408ReadRegister(uint16_t index)      (16BIT)          **
+ * uint16_t ILI9320ReadRegister(uint16_t index)      (16BIT)          **
  **                                                                    **
  ** nCS       ----\__________________________________________/-------  **
  ** RS        ------\____________/-----------------------------------  **
@@ -246,7 +246,7 @@ static void SPFD5408WriteRegister(uint16_t index, uint16_t data) {
  **                                                                    **
  ************************************************************************/
 /*
- static uint16_t SPFD5408ReadRegister(uint16_t index) {   //NOT USED
+ static uint16_t ILI9320ReadRegister(uint16_t index) {   //NOT USED
  uint16_t data = 0;
 
  CS_LOW();
@@ -290,16 +290,16 @@ static void SPFD5408WriteRegister(uint16_t index, uint16_t data) {
  }
  */
 
-void SPFD5408lcdWriteCOMMAND(uint16_t data) {
-	SPFD5408SendCommand(data);
+void ILI9320lcdWriteCOMMAND(uint16_t data) {
+	ILI9320SendCommand(data);
 }
 
-void SPFD5408lcdWriteDATA(uint16_t data) {
-	SPFD5408SendData(data);
+void ILI9320lcdWriteDATA(uint16_t data) {
+	ILI9320SendData(data);
 }
 
 /************************************************************************
- * void SPFD5408lcdWriteCOMMAND_DATA(uint16_t command, uint16_t data)
+ * void ILI9320lcdWriteCOMMAND_DATA(uint16_t command, uint16_t data)
  **                                                                    **
  ** CS       ----\__________________________________________/-------  **
  ** RS       ------\____________/-----------------------------------  **
@@ -308,12 +308,12 @@ void SPFD5408lcdWriteDATA(uint16_t data) {
  ** DB[15:0] ---------[command]----------[data]-----------------------  **
  **                                                                    **
  ************************************************************************/
-void SPFD5408lcdWriteCOMMAND_DATA(uint16_t command, uint16_t data) {
-	SPFD5408SendCommand(command);
-	SPFD5408SendData(data);
+void ILI9320lcdWriteCOMMAND_DATA(uint16_t command, uint16_t data) {
+	ILI9320SendCommand(command);
+	ILI9320SendData(data);
 }
 
-void SPFD5408init(void) {
+void ILI9320init(void) {
 	CLOCKS_ENABLE();
 
 	LCD_TRANS_ENABLE_OUTPUT(); //LCD ENABLE
@@ -330,85 +330,85 @@ void SPFD5408init(void) {
 	allDataPinsLow();
 	Delay(1);
 	// NEW SETUP
-	SPFD5408WriteRegister(0xe5, 0x8000);
+	ILI9320WriteRegister(0xe5, 0x8000);
 	Delay(500);
-	SPFD5408WriteRegister(0x00, 0x0001);
-	SPFD5408WriteRegister(0x01, 0x0100);	//Driver Output Contral.
-	SPFD5408WriteRegister(0x02, 0x0700);	//LCD Driver Waveform Contral.
-	SPFD5408WriteRegister(0x03, 0x1030);	//Entry Mode Set.
+	ILI9320WriteRegister(0x00, 0x0001);
+	ILI9320WriteRegister(0x01, 0x0100);	//Driver Output Contral.
+	ILI9320WriteRegister(0x02, 0x0700);	//LCD Driver Waveform Contral.
+	ILI9320WriteRegister(0x03, 0x1030);	//Entry Mode Set.
 
-	SPFD5408WriteRegister(0x04, 0x0000);	//Scalling Control.
-	SPFD5408WriteRegister(0x08, 0x0202);	//Display Control 2.(0x0207)
-	SPFD5408WriteRegister(0x09, 0x0000);	//Display Control 3.(0x0000)
-	SPFD5408WriteRegister(0x0a, 0x0000);	//Frame Cycle Contal.(0x0000)
-	SPFD5408WriteRegister(0x0c, 0x0000); //Extern Display Interface Control 1.(0x0000)
-	SPFD5408WriteRegister(0x0d, 0x0000);	//Frame Maker Position.
-	SPFD5408WriteRegister(0x0f, 0x0000);   //Extern Display Interface Control 2.
+	ILI9320WriteRegister(0x04, 0x0000);	//Scalling Control.
+	ILI9320WriteRegister(0x08, 0x0202);	//Display Control 2.(0x0207)
+	ILI9320WriteRegister(0x09, 0x0000);	//Display Control 3.(0x0000)
+	ILI9320WriteRegister(0x0a, 0x0000);	//Frame Cycle Contal.(0x0000)
+	ILI9320WriteRegister(0x0c, 0x0000); //Extern Display Interface Control 1.(0x0000)
+	ILI9320WriteRegister(0x0d, 0x0000);	//Frame Maker Position.
+	ILI9320WriteRegister(0x0f, 0x0000);   //Extern Display Interface Control 2.
 	Delay(200);
 	//********Power On sequence*******************
-	SPFD5408WriteRegister(0x10, 0x0000);   //Power Control 1
-	SPFD5408WriteRegister(0x11, 0x0007);   //Power Control 2
-	SPFD5408WriteRegister(0x12, 0x0000);   //Power Control 3
-	SPFD5408WriteRegister(0x13, 0x0000);   //Power Control 4
+	ILI9320WriteRegister(0x10, 0x0000);   //Power Control 1
+	ILI9320WriteRegister(0x11, 0x0007);   //Power Control 2
+	ILI9320WriteRegister(0x12, 0x0000);   //Power Control 3
+	ILI9320WriteRegister(0x13, 0x0000);   //Power Control 4
 	Delay(50);
-	SPFD5408WriteRegister(0x10, 0x17B0);
-	SPFD5408WriteRegister(0x11, 0x0007);
+	ILI9320WriteRegister(0x10, 0x17B0);
+	ILI9320WriteRegister(0x11, 0x0007);
 	Delay(10);
-	SPFD5408WriteRegister(0x12, 0x013A);
+	ILI9320WriteRegister(0x12, 0x013A);
 	Delay(10);
-	SPFD5408WriteRegister(0x13, 0x1A00);
-	SPFD5408WriteRegister(0x29, 0x000c);   //Power Control 7
+	ILI9320WriteRegister(0x13, 0x1A00);
+	ILI9320WriteRegister(0x29, 0x000c);   //Power Control 7
 	Delay(10);
 
 	//********Gamma control***********************
-	SPFD5408WriteRegister(0x30, 0x0000);
-	SPFD5408WriteRegister(0x31, 0x0505);
-	SPFD5408WriteRegister(0x32, 0x0004);
-	SPFD5408WriteRegister(0x35, 0x0006);
-	SPFD5408WriteRegister(0x36, 0x0707);
-	SPFD5408WriteRegister(0x37, 0x0105);
-	SPFD5408WriteRegister(0x38, 0x0002);
-	SPFD5408WriteRegister(0x39, 0x0707);
-	SPFD5408WriteRegister(0x3C, 0x0704);
-	SPFD5408WriteRegister(0x3D, 0x0807);
+	ILI9320WriteRegister(0x30, 0x0000);
+	ILI9320WriteRegister(0x31, 0x0505);
+	ILI9320WriteRegister(0x32, 0x0004);
+	ILI9320WriteRegister(0x35, 0x0006);
+	ILI9320WriteRegister(0x36, 0x0707);
+	ILI9320WriteRegister(0x37, 0x0105);
+	ILI9320WriteRegister(0x38, 0x0002);
+	ILI9320WriteRegister(0x39, 0x0707);
+	ILI9320WriteRegister(0x3C, 0x0704);
+	ILI9320WriteRegister(0x3D, 0x0807);
 
 	//********Set RAM area************************
-	SPFD5408WriteRegister(0x50, 0x0000);   //Set X Start.
-	SPFD5408WriteRegister(0x51, MAX_X);   //Set X End. (239)
-	SPFD5408WriteRegister(0x52, 0x0000);   //Set Y Start.
-	SPFD5408WriteRegister(0x53, MAX_Y);   //Set Y End. (319)
-	SPFD5408WriteRegister(0x60, 0x2700);   //Driver Output Control.
-	SPFD5408WriteRegister(0x61, 0x0001);   //Driver Output Control.
-	SPFD5408WriteRegister(0x6A, 0x0000);   //Vertical Srcoll Control.
-	SPFD5408WriteRegister(0x21, 0x0000);
-	SPFD5408WriteRegister(0x20, 0x0000);
+	ILI9320WriteRegister(0x50, 0x0000);   //Set X Start.
+	ILI9320WriteRegister(0x51, MAX_X);   //Set X End. (239)
+	ILI9320WriteRegister(0x52, 0x0000);   //Set Y Start.
+	ILI9320WriteRegister(0x53, MAX_Y);   //Set Y End. (319)
+	ILI9320WriteRegister(0x60, 0x2700);   //Driver Output Control.
+	ILI9320WriteRegister(0x61, 0x0001);   //Driver Output Control.
+	ILI9320WriteRegister(0x6A, 0x0000);   //Vertical Srcoll Control.
+	ILI9320WriteRegister(0x21, 0x0000);
+	ILI9320WriteRegister(0x20, 0x0000);
 	//********Partial Display Control*********
-	SPFD5408WriteRegister(0x80, 0x0000);  //Display Position? Partial Display 1.
-	SPFD5408WriteRegister(0x81, 0x0000); //RAM Address Start? Partial Display 1.
-	SPFD5408WriteRegister(0x82, 0x0000);	//RAM Address End-Partial Display 1.
-	SPFD5408WriteRegister(0x83, 0x0000);//Displsy Position? Partial Display 2.
-	SPFD5408WriteRegister(0x84, 0x0000);//RAM Address Start? Partial Display 2.
-	SPFD5408WriteRegister(0x85, 0x0000);//RAM Address End? Partial Display 2.
+	ILI9320WriteRegister(0x80, 0x0000);  //Display Position? Partial Display 1.
+	ILI9320WriteRegister(0x81, 0x0000); //RAM Address Start? Partial Display 1.
+	ILI9320WriteRegister(0x82, 0x0000);	//RAM Address End-Partial Display 1.
+	ILI9320WriteRegister(0x83, 0x0000);//Displsy Position? Partial Display 2.
+	ILI9320WriteRegister(0x84, 0x0000);//RAM Address Start? Partial Display 2.
+	ILI9320WriteRegister(0x85, 0x0000);//RAM Address End? Partial Display 2.
 	//********Panel Control******************
-	SPFD5408WriteRegister(0x90, 0x0010);	//Frame Cycle Contral.(0x0013)
-	SPFD5408WriteRegister(0x92, 0x0000);	//Panel Interface Contral 2.(0x0000)
-	SPFD5408WriteRegister(0x93, 0x0003);	//Panel Interface Contral 3.
-	SPFD5408WriteRegister(0x95, 0x0110);	//Frame Cycle Contral.(0x0110)
-	SPFD5408WriteRegister(0x97, 0x0000);	//
-	SPFD5408WriteRegister(0x98, 0x0000);	//Frame Cycle Contral.
+	ILI9320WriteRegister(0x90, 0x0010);	//Frame Cycle Contral.(0x0013)
+	ILI9320WriteRegister(0x92, 0x0000);	//Panel Interface Contral 2.(0x0000)
+	ILI9320WriteRegister(0x93, 0x0003);	//Panel Interface Contral 3.
+	ILI9320WriteRegister(0x95, 0x0110);	//Frame Cycle Contral.(0x0110)
+	ILI9320WriteRegister(0x97, 0x0000);	//
+	ILI9320WriteRegister(0x98, 0x0000);	//Frame Cycle Contral.
 	//********Display On******************
 	Delay(100);
-	SPFD5408WriteRegister(0x07, 0x0173);
+	ILI9320WriteRegister(0x07, 0x0173);
 	Delay(100);
-	SPFD5408WriteCommand(0x0022);
-	SPFD5408fillScreenBackground(YELLOW);
+	ILI9320WriteCommand(0x0022);
+	ILI9320fillScreenBackground(YELLOW);
 	// NEW SETUP _ END
 
-	SPFD5408setFont(BigFont);
+	ILI9320setFont(BigFont);
 
 }
 
-void SPFD5408setXY(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2) {
+void ILI9320setXY(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2) {
 	if (orientation == LANDSCAPE) {
 		uint16_t temp = y1;
 		y1 = x1;
@@ -426,62 +426,62 @@ void SPFD5408setXY(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2) {
 	}
 
 
-	SPFD5408lcdWriteCOMMAND_DATA(0x50, x1);
-	SPFD5408lcdWriteCOMMAND_DATA(0x52, y1);
-	SPFD5408lcdWriteCOMMAND_DATA(0x51, x2);
-	SPFD5408lcdWriteCOMMAND_DATA(0x53, y2);
+	ILI9320lcdWriteCOMMAND_DATA(0x50, x1);
+	ILI9320lcdWriteCOMMAND_DATA(0x52, y1);
+	ILI9320lcdWriteCOMMAND_DATA(0x51, x2);
+	ILI9320lcdWriteCOMMAND_DATA(0x53, y2);
 	//for(volatile int i= 0;i<100000;i++);
 	Delay(1);	//kludge for hanging and strange stuff
-	SPFD5408lcdWriteCOMMAND_DATA(0x20, x1);
-	SPFD5408lcdWriteCOMMAND_DATA(0x21, y1);
-	SPFD5408lcdWriteCOMMAND(0x22);
+	ILI9320lcdWriteCOMMAND_DATA(0x20, x1);
+	ILI9320lcdWriteCOMMAND_DATA(0x21, y1);
+	ILI9320lcdWriteCOMMAND(0x22);
 
 }
 
-void SPFD5408clrXY() {
+void ILI9320clrXY() {
 	///CS_LOW();
 	if (orientation == PORTRAIT)
-		SPFD5408setXY(0, 0, MAX_X, MAX_Y);
+		ILI9320setXY(0, 0, MAX_X, MAX_Y);
 	else
-		SPFD5408setXY(0, 0, MAX_Y, MAX_X);
+		ILI9320setXY(0, 0, MAX_Y, MAX_X);
 	//CS_HIGH();
 }
 
-void SPFD5408drawHLine(int x, int y, int l, uint16_t color) {
+void ILI9320drawHLine(int x, int y, int l, uint16_t color) {
 	if (l < 0) {
 		l = -l;
 		x -= l;
 	}
 	CS_LOW();
-	SPFD5408setXY(x, y, x + l, y);
+	ILI9320setXY(x, y, x + l, y);
 	for (int i = 0; i < l + 1; i++) {
-		SPFD5408lcdWriteDATA(color);
+		ILI9320lcdWriteDATA(color);
 	}
 	CS_HIGH();
-	SPFD5408clrXY();
+	ILI9320clrXY();
 }
 
-void SPFD5408drawVLine(int x, int y, int l, uint16_t color) {
+void ILI9320drawVLine(int x, int y, int l, uint16_t color) {
 	if (l < 0) {
 		l = -l;
 		y -= l;
 	}
 	CS_LOW();
-	SPFD5408setXY(x, y, x, y + l);
+	ILI9320setXY(x, y, x, y + l);
 
 	for (int i = 0; i < l + 1; i++) {
-		SPFD5408lcdWriteDATA(color);
+		ILI9320lcdWriteDATA(color);
 	}
 
 	CS_HIGH();
-	SPFD5408clrXY();
+	ILI9320clrXY();
 }
 
-void SPFD5408drawLine(int x1, int y1, int x2, int y2, uint16_t color) {
+void ILI9320drawLine(int x1, int y1, int x2, int y2, uint16_t color) {
 	if (y1 == y2)
-		SPFD5408drawHLine(x1, y1, x2 - x1, color);
+		ILI9320drawHLine(x1, y1, x2 - x1, color);
 	else if (x1 == x2)
-		SPFD5408drawVLine(x1, y1, y2 - y1, color);
+		ILI9320drawVLine(x1, y1, y2 - y1, color);
 	else {
 		unsigned int dx = (x2 > x1 ? x2 - x1 : x1 - x2);
 		short xstep = x2 > x1 ? 1 : -1;
@@ -493,8 +493,8 @@ void SPFD5408drawLine(int x1, int y1, int x2, int y2, uint16_t color) {
 		if (dx < dy) {
 			int t = -(dy >> 1);
 			while (true) {
-				SPFD5408setXY(col, row, col, row);
-				SPFD5408lcdWriteDATA(color);
+				ILI9320setXY(col, row, col, row);
+				ILI9320lcdWriteDATA(color);
 				if (row == y2)
 					return;
 				row += ystep;
@@ -507,8 +507,8 @@ void SPFD5408drawLine(int x1, int y1, int x2, int y2, uint16_t color) {
 		} else {
 			int t = -(dx >> 1);
 			while (true) {
-				SPFD5408setXY(col, row, col, row);
-				SPFD5408lcdWriteDATA(color);
+				ILI9320setXY(col, row, col, row);
+				ILI9320lcdWriteDATA(color);
 				if (col == x2)
 					return;
 				col += xstep;
@@ -521,22 +521,22 @@ void SPFD5408drawLine(int x1, int y1, int x2, int y2, uint16_t color) {
 		}
 		CS_HIGH();
 	}
-	SPFD5408clrXY();
+	ILI9320clrXY();
 }
 
-void SPFD5408setPixel(uint16_t color) {
-	SPFD5408lcdWriteDATA(color);	// rrrrrggggggbbbbb
+void ILI9320setPixel(uint16_t color) {
+	ILI9320lcdWriteDATA(color);	// rrrrrggggggbbbbb
 }
 
-void SPFD5408drawPixel(int x, int y, uint16_t color) {
+void ILI9320drawPixel(int x, int y, uint16_t color) {
 	CS_LOW();
-	SPFD5408setXY(x, y, x, y);
-	SPFD5408setPixel(color);
+	ILI9320setXY(x, y, x, y);
+	ILI9320setPixel(color);
 	CS_HIGH();
-	SPFD5408clrXY();
+	ILI9320clrXY();
 }
 
-void SPFD5408drawRect(int x1, int y1, int x2, int y2, uint16_t color) {
+void ILI9320drawRect(int x1, int y1, int x2, int y2, uint16_t color) {
 	if (x1 > x2) {
 		int temp = x1;
 		x1 = x2;
@@ -548,13 +548,13 @@ void SPFD5408drawRect(int x1, int y1, int x2, int y2, uint16_t color) {
 		y2 = temp;
 	}
 
-	SPFD5408drawHLine(x1, y1, x2 - x1, color);
-	SPFD5408drawHLine(x1, y2, x2 - x1, color);
-	SPFD5408drawVLine(x1, y1, y2 - y1, color);
-	SPFD5408drawVLine(x2, y1, y2 - y1, color);
+	ILI9320drawHLine(x1, y1, x2 - x1, color);
+	ILI9320drawHLine(x1, y2, x2 - x1, color);
+	ILI9320drawVLine(x1, y1, y2 - y1, color);
+	ILI9320drawVLine(x2, y1, y2 - y1, color);
 }
 
-void SPFD5408drawRoundRect(int x1, int y1, int x2, int y2, uint16_t color) {
+void ILI9320drawRoundRect(int x1, int y1, int x2, int y2, uint16_t color) {
 	if (x1 > x2) {
 		int temp = x1;
 		x1 = x2;
@@ -566,18 +566,18 @@ void SPFD5408drawRoundRect(int x1, int y1, int x2, int y2, uint16_t color) {
 		y2 = temp;
 	}
 	if ((x2 - x1) > 4 && (y2 - y1) > 4) {
-		SPFD5408drawPixel(x1 + 1, y1 + 1, color);
-		SPFD5408drawPixel(x2 - 1, y1 + 1, color);
-		SPFD5408drawPixel(x1 + 1, y2 - 1, color);
-		SPFD5408drawPixel(x2 - 1, y2 - 1, color);
-		SPFD5408drawHLine(x1 + 2, y1, x2 - x1 - 4, color);
-		SPFD5408drawHLine(x1 + 2, y2, x2 - x1 - 4, color);
-		SPFD5408drawVLine(x1, y1 + 2, y2 - y1 - 4, color);
-		SPFD5408drawVLine(x2, y1 + 2, y2 - y1 - 4, color);
+		ILI9320drawPixel(x1 + 1, y1 + 1, color);
+		ILI9320drawPixel(x2 - 1, y1 + 1, color);
+		ILI9320drawPixel(x1 + 1, y2 - 1, color);
+		ILI9320drawPixel(x2 - 1, y2 - 1, color);
+		ILI9320drawHLine(x1 + 2, y1, x2 - x1 - 4, color);
+		ILI9320drawHLine(x1 + 2, y2, x2 - x1 - 4, color);
+		ILI9320drawVLine(x1, y1 + 2, y2 - y1 - 4, color);
+		ILI9320drawVLine(x2, y1 + 2, y2 - y1 - 4, color);
 	}
 }
 
-void SPFD5408fillRect(int x1, int y1, int x2, int y2, uint16_t color) {
+void ILI9320fillRect(int x1, int y1, int x2, int y2, uint16_t color) {
 	if (x1 > x2) {
 		int temp = x1;
 		x1 = x2;
@@ -592,18 +592,18 @@ void SPFD5408fillRect(int x1, int y1, int x2, int y2, uint16_t color) {
 	}
 	if (orientation == PORTRAIT) {
 		for (int i = 0; i < ((y2 - y1) / 2) + 1; i++) {
-			SPFD5408drawHLine(x1, y1 + i, x2 - x1, color);
-			SPFD5408drawHLine(x1, y2 - i, x2 - x1, color);
+			ILI9320drawHLine(x1, y1 + i, x2 - x1, color);
+			ILI9320drawHLine(x1, y2 - i, x2 - x1, color);
 		}
 	} else {
 		for (int i = 0; i < ((x2 - x1) / 2) + 1; i++) {
-			SPFD5408drawVLine(x1 + i, y1, y2 - y1, color);
-			SPFD5408drawVLine(x2 - i, y1, y2 - y1, color);
+			ILI9320drawVLine(x1 + i, y1, y2 - y1, color);
+			ILI9320drawVLine(x2 - i, y1, y2 - y1, color);
 		}
 	}
 }
 
-void SPFD5408fillRoundRect(int x1, int y1, int x2, int y2, uint16_t color) {
+void ILI9320fillRoundRect(int x1, int y1, int x2, int y2, uint16_t color) {
 	if (x1 > x2) {
 		int temp = x1;
 		x1 = x2;
@@ -621,22 +621,22 @@ void SPFD5408fillRoundRect(int x1, int y1, int x2, int y2, uint16_t color) {
 		for (int i = 0; i < ((y2 - y1) / 2) + 1; i++) {
 			switch (i) {
 			case 0:
-				SPFD5408drawHLine(x1 + 2, y1 + i, x2 - x1 - 4, color);
-				SPFD5408drawHLine(x1 + 2, y2 - i, x2 - x1 - 4, color);
+				ILI9320drawHLine(x1 + 2, y1 + i, x2 - x1 - 4, color);
+				ILI9320drawHLine(x1 + 2, y2 - i, x2 - x1 - 4, color);
 				break;
 			case 1:
-				SPFD5408drawHLine(x1 + 1, y1 + i, x2 - x1 - 2, color);
-				SPFD5408drawHLine(x1 + 1, y2 - i, x2 - x1 - 2, color);
+				ILI9320drawHLine(x1 + 1, y1 + i, x2 - x1 - 2, color);
+				ILI9320drawHLine(x1 + 1, y2 - i, x2 - x1 - 2, color);
 				break;
 			default:
-				SPFD5408drawHLine(x1, y1 + i, x2 - x1, color);
-				SPFD5408drawHLine(x1, y2 - i, x2 - x1, color);
+				ILI9320drawHLine(x1, y1 + i, x2 - x1, color);
+				ILI9320drawHLine(x1, y2 - i, x2 - x1, color);
 			}
 		}
 	}
 }
 
-void SPFD5408drawCircle(int x, int y, int radius, uint16_t color) {
+void ILI9320drawCircle(int x, int y, int radius, uint16_t color) {
 	int f = 1 - radius;
 	int ddF_x = 1;
 	int ddF_y = -2 * radius;
@@ -644,14 +644,14 @@ void SPFD5408drawCircle(int x, int y, int radius, uint16_t color) {
 	int y1 = radius;
 
 	CS_LOW();
-	SPFD5408setXY(x, y + radius, x, y + radius);
-	SPFD5408lcdWriteDATA(color);
-	SPFD5408setXY(x, y - radius, x, y - radius);
-	SPFD5408lcdWriteDATA(color);
-	SPFD5408setXY(x + radius, y, x + radius, y);
-	SPFD5408lcdWriteDATA(color);
-	SPFD5408setXY(x - radius, y, x - radius, y);
-	SPFD5408lcdWriteDATA(color);
+	ILI9320setXY(x, y + radius, x, y + radius);
+	ILI9320lcdWriteDATA(color);
+	ILI9320setXY(x, y - radius, x, y - radius);
+	ILI9320lcdWriteDATA(color);
+	ILI9320setXY(x + radius, y, x + radius, y);
+	ILI9320lcdWriteDATA(color);
+	ILI9320setXY(x - radius, y, x - radius, y);
+	ILI9320lcdWriteDATA(color);
 
 	while (x1 < y1) {
 		if (f >= 0) {
@@ -662,49 +662,49 @@ void SPFD5408drawCircle(int x, int y, int radius, uint16_t color) {
 		x1++;
 		ddF_x += 2;
 		f += ddF_x;
-		SPFD5408setXY(x + x1, y + y1, x + x1, y + y1);
-		SPFD5408lcdWriteDATA(color);
-		SPFD5408setXY(x - x1, y + y1, x - x1, y + y1);
-		SPFD5408lcdWriteDATA(color);
-		SPFD5408setXY(x + x1, y - y1, x + x1, y - y1);
-		SPFD5408lcdWriteDATA(color);
-		SPFD5408setXY(x - x1, y - y1, x - x1, y - y1);
-		SPFD5408lcdWriteDATA(color);
-		SPFD5408setXY(x + y1, y + x1, x + y1, y + x1);
-		SPFD5408lcdWriteDATA(color);
-		SPFD5408setXY(x - y1, y + x1, x - y1, y + x1);
-		SPFD5408lcdWriteDATA(color);
-		SPFD5408setXY(x + y1, y - x1, x + y1, y - x1);
-		SPFD5408lcdWriteDATA(color);
-		SPFD5408setXY(x - y1, y - x1, x - y1, y - x1);
-		SPFD5408lcdWriteDATA(color);
+		ILI9320setXY(x + x1, y + y1, x + x1, y + y1);
+		ILI9320lcdWriteDATA(color);
+		ILI9320setXY(x - x1, y + y1, x - x1, y + y1);
+		ILI9320lcdWriteDATA(color);
+		ILI9320setXY(x + x1, y - y1, x + x1, y - y1);
+		ILI9320lcdWriteDATA(color);
+		ILI9320setXY(x - x1, y - y1, x - x1, y - y1);
+		ILI9320lcdWriteDATA(color);
+		ILI9320setXY(x + y1, y + x1, x + y1, y + x1);
+		ILI9320lcdWriteDATA(color);
+		ILI9320setXY(x - y1, y + x1, x - y1, y + x1);
+		ILI9320lcdWriteDATA(color);
+		ILI9320setXY(x + y1, y - x1, x + y1, y - x1);
+		ILI9320lcdWriteDATA(color);
+		ILI9320setXY(x - y1, y - x1, x - y1, y - x1);
+		ILI9320lcdWriteDATA(color);
 	}
 	CS_HIGH();
-	SPFD5408clrXY();
+	ILI9320clrXY();
 }
 
-void SPFD5408fillCircle(int x, int y, int radius, uint16_t color) {
+void ILI9320fillCircle(int x, int y, int radius, uint16_t color) {
 	for (int y1 = -radius; y1 <= 0; y1++)
 		for (int x1 = -radius; x1 <= 0; x1++)
 			if (x1 * x1 + y1 * y1 <= radius * radius) {
-				SPFD5408drawHLine(x + x1, y + y1, 2 * (-x1), color);
-				SPFD5408drawHLine(x + x1, y - y1, 2 * (-x1), color);
+				ILI9320drawHLine(x + x1, y + y1, 2 * (-x1), color);
+				ILI9320drawHLine(x + x1, y - y1, 2 * (-x1), color);
 				break;
 			}
 }
 
-void SPFD5408clrScr() {
+void ILI9320clrScr() {
 	long i;
 	CS_LOW();
-	SPFD5408clrXY();
+	ILI9320clrXY();
 	for (i = 0; i < ((MAX_X + 1) * (MAX_Y + 1)); i++) {
 
-		SPFD5408lcdWriteDATA(0);
+		ILI9320lcdWriteDATA(0);
 	}
 	CS_HIGH();
 }
 
-void SPFD5408printChar(uint8_t c, int x, int y, uint16_t color) {
+void ILI9320printChar(uint8_t c, int x, int y, uint16_t color) {
 	uint8_t i, ch;
 	uint8_t j;
 	uint16_t temp;
@@ -714,21 +714,21 @@ void SPFD5408printChar(uint8_t c, int x, int y, uint16_t color) {
 		for (int zz = 0; zz < (cfont.xSize / 8); zz++) {
 			ch = cfont.font[temp + zz];
 			for (i = 0; i < 8; i++) {
-				SPFD5408setXY(x + i + (zz * 8), y + j, x + i + (zz * 8) + 1,
+				ILI9320setXY(x + i + (zz * 8), y + j, x + i + (zz * 8) + 1,
 						y + j + 1);
 
 				if ((ch & (1 << (7 - i))) != 0) {
-					SPFD5408setPixel(color);
+					ILI9320setPixel(color);
 				}
 			}
 		}
 		temp += (cfont.xSize / 8);
 	}
 	CS_HIGH();
-	SPFD5408clrXY();
+	ILI9320clrXY();
 }
 
-void SPFD5408rotateChar(uint8_t c, int x, int y, int pos, int deg,
+void ILI9320rotateChar(uint8_t c, int x, int y, int pos, int deg,
 		uint16_t color) {
 	uint8_t i, j, ch;
 	uint16_t temp;
@@ -749,22 +749,22 @@ void SPFD5408rotateChar(uint8_t c, int x, int y, int pos, int deg,
 								+ ((i + (zz * 8) + (pos * cfont.xSize))
 										* sin(radian)));
 
-				SPFD5408setXY(newx, newy, newx + 1, newy + 1);
+				ILI9320setXY(newx, newy, newx + 1, newy + 1);
 
 				if ((ch & (1 << (7 - i))) != 0) {
-					SPFD5408setPixel(color);
+					ILI9320setPixel(color);
 				} else {
-					SPFD5408setPixel(color);
+					ILI9320setPixel(color);
 				}
 			}
 		}
 		temp += (cfont.xSize / 8);
 	}
 	CS_HIGH();
-	SPFD5408clrXY();
+	ILI9320clrXY();
 }
 
-void SPFD5408print(char *st, int x, int y, int deg, uint16_t color) {
+void ILI9320print(char *st, int x, int y, int deg, uint16_t color) {
 	int stl, i;
 
 	stl = strlen(st);
@@ -782,13 +782,13 @@ void SPFD5408print(char *st, int x, int y, int deg, uint16_t color) {
 	}
 	for (i = 0; i < stl; i++) {
 		if (deg == 0)
-			SPFD5408printChar(*st++, x + (i * (cfont.xSize)), y, color);
+			ILI9320printChar(*st++, x + (i * (cfont.xSize)), y, color);
 		else
-			SPFD5408rotateChar(*st++, x, y, i, deg, color);
+			ILI9320rotateChar(*st++, x, y, i, deg, color);
 	}
 }
 
-void SPFD5408printNumI(long num, int x, int y, int length, char filler,
+void ILI9320printNumI(long num, int x, int y, int length, char filler,
 		uint16_t color) {
 	char buf[25];
 	char st[27];
@@ -835,17 +835,17 @@ void SPFD5408printNumI(long num, int x, int y, int length, char filler,
 
 	}
 
-	SPFD5408print(st, x, y, 0, color);
+	ILI9320print(st, x, y, 0, color);
 }
 
-void SPFD5408convertFloat(char *buf, double num, int width, uint8_t prec) {
+void ILI9320convertFloat(char *buf, double num, int width, uint8_t prec) {
 	char format[10];
 
 	sprintf(format, "%%%i.%if", width, prec);
 	sprintf(buf, format, num);
 }
 
-void SPFD5408printNumF(double num, uint8_t dec, int x, int y, char divider,
+void ILI9320printNumF(double num, uint8_t dec, int x, int y, char divider,
 		int length, char filler, uint16_t color) {
 	char st[27];
 	bool neg = false;
@@ -856,7 +856,7 @@ void SPFD5408printNumF(double num, uint8_t dec, int x, int y, char divider,
 
 	if (num < 0)
 		neg = true;
-	SPFD5408convertFloat(st, num, length, dec);
+	ILI9320convertFloat(st, num, length, dec);
 	if (divider != '.') {
 		for (int i = 0; i < sizeof(st); i++)
 			if (st[i] == '.')
@@ -876,10 +876,10 @@ void SPFD5408printNumF(double num, uint8_t dec, int x, int y, char divider,
 		}
 	}
 
-	SPFD5408print(st, x, y, 0, color);
+	ILI9320print(st, x, y, 0, color);
 }
 
-void SPFD5408drawBitmap(int x, int y, int sx, int sy, const uint16_t* data,
+void ILI9320drawBitmap(int x, int y, int sx, int sy, const uint16_t* data,
 		int scale) {
 	uint16_t col;
 	int tx, ty, tc, tsx, tsy;
@@ -887,19 +887,19 @@ void SPFD5408drawBitmap(int x, int y, int sx, int sy, const uint16_t* data,
 	if (scale == 1) {
 		if (orientation == PORTRAIT) {
 			CS_LOW();
-			SPFD5408setXY(x, y, x + sx - 1, y + sy - 1);
+			ILI9320setXY(x, y, x + sx - 1, y + sy - 1);
 			for (tc = 0; tc < (sx * sy); tc++) {
 				col = data[tc];
-				SPFD5408lcdWriteDATA(col);
+				ILI9320lcdWriteDATA(col);
 			}
 			CS_HIGH();
 		} else {
 			CS_LOW();
 			for (ty = 0; ty < sy; ty++) {
-				SPFD5408setXY(x, y + ty, x + sx - 1, y + ty);
+				ILI9320setXY(x, y + ty, x + sx - 1, y + ty);
 				for (tx = sx - 1; tx >= 0; tx--) {
 					col = data[(ty * sx) + tx];
-					SPFD5408lcdWriteDATA(col);
+					ILI9320lcdWriteDATA(col);
 					//for (volatile int i = 0; i < 10000; i++); //kludge in case of too high clocking
 				}
 			}
@@ -909,13 +909,13 @@ void SPFD5408drawBitmap(int x, int y, int sx, int sy, const uint16_t* data,
 		if (orientation == PORTRAIT) {
 			CS_LOW();
 			for (ty = 0; ty < sy; ty++) {
-				SPFD5408setXY(x, y + (ty * scale), x + ((sx * scale) - 1),
+				ILI9320setXY(x, y + (ty * scale), x + ((sx * scale) - 1),
 						y + (ty * scale) + scale);
 				for (tsy = 0; tsy < scale; tsy++)
 					for (tx = 0; tx < sx; tx++) {
 						col = data[(ty * sx) + tx];
 						for (tsx = 0; tsx < scale; tsx++)
-							SPFD5408lcdWriteDATA(col);
+							ILI9320lcdWriteDATA(col);
 					}
 			}
 			CS_HIGH();
@@ -923,34 +923,34 @@ void SPFD5408drawBitmap(int x, int y, int sx, int sy, const uint16_t* data,
 			CS_LOW();
 			for (ty = 0; ty < sy; ty++) {
 				for (tsy = 0; tsy < scale; tsy++) {
-					SPFD5408setXY(x, y + (ty * scale) + tsy,
+					ILI9320setXY(x, y + (ty * scale) + tsy,
 							x + ((sx * scale) - 1), y + (ty * scale) + tsy);
 					for (tx = sx - 1; tx >= 0; tx--) {
 						col = data[(ty * sx) + tx];
 						for (tsx = 0; tsx < scale; tsx++)
-							SPFD5408lcdWriteDATA(col);
+							ILI9320lcdWriteDATA(col);
 					}
 				}
 			}
 			CS_HIGH();
 		}
 	}
-	SPFD5408clrXY();
+	ILI9320clrXY();
 }
 
 
-void SPFD5408fillScreenBackground(uint16_t color) {
+void ILI9320fillScreenBackground(uint16_t color) {
 	uint16_t i, f;
 	CS_LOW();
 	for (i = 0; i < 320; i++) {
 		for (f = 0; f < 240; f++) {
-			SPFD5408lcdWriteDATA(color);
+			ILI9320lcdWriteDATA(color);
 		}
 	}
 	CS_HIGH();
 }
 
-void SPFD5408setFont(const uint8_t* font) {
+void ILI9320setFont(const uint8_t* font) {
 	cfont.font = font;
 	cfont.xSize = fontbyte(0);
 	cfont.ySize = fontbyte(1);
@@ -958,15 +958,15 @@ void SPFD5408setFont(const uint8_t* font) {
 	cfont.numchars = fontbyte(3);
 }
 
-uint8_t* SPFD5408getFont() {
+uint8_t* ILI9320getFont() {
 	return cfont.font;
 }
 
-uint8_t SPFD5408getFontXsize() {
+uint8_t ILI9320getFontXsize() {
 	return cfont.xSize;
 }
 
-uint8_t SPFD5408getFontYsize() {
+uint8_t ILI9320getFontYsize() {
 	return cfont.ySize;
 }
 

@@ -35,7 +35,7 @@ void ADS7843Init(void) {
 	{                                                                         \
 	  USART1,                       /* USART port                       */    \
 	  _USART_ROUTE_LOCATION_LOC1,   /* USART pins location number       */    \
-	  50000,                      /* Bitrate                          */    \
+	  1000000,                      /* Bitrate                          */    \
 	  8,                            /* Frame length                     */    \
 	  0,                            /* Dummy tx value for rx only funcs */    \
 	  spidrvMaster,                 /* SPI mode                         */    \
@@ -214,6 +214,8 @@ uint8_t ADS7843ReadPointXY(uint16_t *x, uint16_t *y) {
 		}
 		//  calculate the x coordinate
 		*x = (adX * TOUCH_SCREEN_WIDTH) / diff;
+		if(*x > TOUCH_SCREEN_WIDTH)
+			*x = TOUCH_SCREEN_WIDTH-1;
 		touchInfoData.lastX = touchInfoData.curX;
 		touchInfoData.curX = *x;
 
@@ -226,6 +228,8 @@ uint8_t ADS7843ReadPointXY(uint16_t *x, uint16_t *y) {
 		}
 		//  calculate the y coordinate
 		*y = (adY * TOUCH_SCREEN_HEIGHT) / diff;
+		if(*y > TOUCH_SCREEN_HEIGHT)
+			*y = TOUCH_SCREEN_HEIGHT-1;
 		touchInfoData.lastY = touchInfoData.curY;
 		touchInfoData.curY = *y;
 		return 0;
@@ -250,99 +254,3 @@ void getCoordinates(uint16_t* x, uint16_t* y) {
 	*y=touchInfoData.curY;
 }
 
-//*****************************************************************************
-// \brief Touch screen calibration.
-// \param None.
-// This function is to calibrate the touch screen. If the read out coordinate
-// is not accurate, you can use this function to calibrate it. After this
-// function is called, you must touch the screen in about 10 seconds or the
-// function will return with no effect. After you touch the screen, the counter
-// will be zeroed and restart counting. If the calibration is not over and the
-// touch is always applied on the screen, the counter will not increase, so you
-// don't have to worry about the calibrate time.
-//     All you need to do with the calibration is to use a touch pen or other
-// object which is a little sharp but will not damage the touch screen to touch
-// the screen and slide the pen from top edge of the screen to the bottom edge.
-// Then slide the pen from left edge to right edge. Make sure that the pen should
-// not leave the screen until it slides to the edge or the calibrate may be
-// inaccurate. The direction or sequence is optional. If __DEBUG_PRINT__ is defined
-// you can see the calibration result. The calibration will calibrate both x axis
-// and y axis. Also you can calibration only one axis. the axis which is not
-// calibrated will retain its original value.
-// \return None.
-//
-//*****************************************************************************
-uint8_t ADS7843Calibration(void) {
-	uint16_t adx, ady;
-	uint16_t adxmin = TOUCH_AD_X_MAX;
-	uint16_t adxmax = TOUCH_AD_X_MIN;
-	uint16_t adymin = TOUCH_AD_X_MAX;
-	uint16_t adymax = TOUCH_AD_X_MIN;
-	uint16_t calibrationFlag = 0;
-	uint32_t timeout = 0;
-
-#ifdef ADS7843_ENABLE_TOUCH_INT
-//  disable touch interrupt
-	ADS7843_INT_IRQ_CONFIG_PIN_DISABLE();
-#endif
-	while (1) {
-		if (!ADS7843_GET_INT_PIN()) {
-			//
-			// If pen down continuously read the x,y value and record the
-			// maximum and minimum value
-			//
-			while (!ADS7843_GET_INT_PIN()) {
-				ADS7843ReadXY(&adx, &ady);
-				if (adx < adxmin) {
-					adxmin = adx;
-				} else if (adx > adxmax) {
-					adxmax = adx;
-				}
-
-				if (ady < adymin) {
-					adymin = ady;
-				} else if (ady > adymax) {
-					adymax = ady;
-				}
-			}
-			// Counter clear.
-			timeout = 0;
-		}
-
-		// If x axis calibration is not complete
-		if (!(calibrationFlag & 1)) {
-			//  If x axis calibrate over
-			if ((adxmax > (TOUCH_AD_X_MAX - TOUCH_AD_CALIB_ERROR))
-					&& (adxmax < (TOUCH_AD_X_MAX + TOUCH_AD_CALIB_ERROR))
-					&& (adxmin > (TOUCH_AD_X_MIN - TOUCH_AD_CALIB_ERROR))
-					&& (adxmin < (TOUCH_AD_X_MIN + TOUCH_AD_CALIB_ERROR))) {
-
-				touchInfoData.thAdLeft = adxmin;
-				touchInfoData.thAdRight = adxmax;
-				calibrationFlag |= 1;
-			}
-		}
-
-		// If y axis calibration is not complete
-		if (!(calibrationFlag & 2)) {
-			//  If y axis calibrate over
-			if ((adymax > (TOUCH_AD_Y_MAX - TOUCH_AD_CALIB_ERROR))
-					&& (adymax < (TOUCH_AD_Y_MAX + TOUCH_AD_CALIB_ERROR))
-					&& (adymin > (TOUCH_AD_Y_MIN - TOUCH_AD_CALIB_ERROR))
-					&& (adymin < (TOUCH_AD_Y_MIN + TOUCH_AD_CALIB_ERROR))) {
-				touchInfoData.thAdUp = adymax;
-				touchInfoData.thAdDown = adymin;
-				calibrationFlag |= 2;
-			}
-		}
-
-		// If two coordinates calibrate over or timer out
-		if ((calibrationFlag == 3) || (timeout++ > 100000)) {
-#ifdef ADS7843_ENABLE_TOUCH_INT
-			ADS7843_INT_IRQ_CONFIG_FALLING(true);
-#endif
-			return calibrationFlag;
-		}
-		Delay(1000);
-	}
-}

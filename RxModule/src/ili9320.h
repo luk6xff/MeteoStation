@@ -48,8 +48,8 @@ static const uint16_t colors[] = { 0xf800, 0x07e0, 0x001f, 0x0000, 0xffe0, 0xfff
 #define MAX_Y	    319
 
 
-#define PORTRAIT 0
-#define LANDSCAPE 1
+#define PORTRAIT 1
+#define LANDSCAPE 0
 #define LEFT 0
 #define RIGHT 9999
 #define CENTER 9998

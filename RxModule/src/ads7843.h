@@ -100,7 +100,7 @@ extern "C"
 #define TOUCH_AD_X_MIN             150
 #define TOUCH_AD_Y_MAX             2020
 #define TOUCH_AD_Y_MIN             170
-#define TOUCH_AD_CALIB_ERROR       50
+#define TOUCH_AD_CALIB_ERROR       30
 
 //*****************************************************************************
 //

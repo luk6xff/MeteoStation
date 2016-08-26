@@ -48,8 +48,8 @@ static const uint16_t colors[] = { 0xf800, 0x07e0, 0x001f, 0x0000, 0xffe0, 0xfff
 #define MAX_Y	    319
 
 
-#define PORTRAIT 1
-#define LANDSCAPE 0
+#define PORTRAIT 0
+#define LANDSCAPE 1
 #define LEFT 0
 #define RIGHT 9999
 #define CENTER 9998
@@ -64,134 +64,7 @@ struct CurrentFont {
 	uint8_t numchars;
 };
 
-/*********************************Hardware dependent part*****************************************/
-/*********************************Hardware dependent part*****************************************/
 
-#define CLOCKS_ENABLE() CMU_ClockEnable(cmuClock_GPIO, true)  //add more if needed
-//==================/CS=====================
-#define CS_PIN      9
-#define CS_PORT     gpioPortB
-#define CS_OUTPUT() GPIO_PinModeSet(CS_PORT, CS_PIN, gpioModePushPull, 1)
-#define CS_HIGH()   GPIO_PinOutSet(CS_PORT , CS_PIN )
-#define CS_LOW()    GPIO_PinOutClear(CS_PORT , CS_PIN )
-//------------------RS----------------------
-
-#define RS_PIN      10
-#define RS_PORT     gpioPortB
-#define RS_OUTPUT() GPIO_PinModeSet(RS_PORT, RS_PIN, gpioModePushPull, 1)
-#define RS_HIGH()   GPIO_PinOutSet(RS_PORT , RS_PIN )
-#define RS_LOW()    GPIO_PinOutClear(RS_PORT , RS_PIN )
-
-//------------------WR----------------------
-
-#define WR_PIN      11
-#define WR_PORT     gpioPortB
-#define WR_OUTPUT() GPIO_PinModeSet(WR_PORT, WR_PIN, gpioModePushPull, 1)
-#define WR_HIGH()   GPIO_PinOutSet(WR_PORT , WR_PIN )
-#define WR_LOW()    GPIO_PinOutClear(WR_PORT , WR_PIN )
-#define WR_RISING() {WR_HIGH(); WR_LOW(); }
-//------------------RD---------------------
-
-#define RD_PIN      12
-#define RD_PORT     gpioPortB
-#define RD_OUTPUT() GPIO_PinModeSet(RD_PORT, RD_PIN, gpioModePushPull, 1)
-#define RD_HIGH()   GPIO_PinOutSet(RD_PORT , RD_PIN )
-#define RD_LOW()    GPIO_PinOutClear(RD_PORT , RD_PIN )
-#define RD_RISING() {RD_HIGH(); RD_LOW(); }
-
-//------------------TRANSISTOR---------------------
-#define LCD_TRANS_ENABLE_PORT gpioPortA
-#define LCD_TRANS_ENABLE_PIN 0//0
-#define LCD_TRANS_ENABLE_OUTPUT() GPIO_PinModeSet(LCD_TRANS_ENABLE_PORT,LCD_TRANS_ENABLE_PIN, gpioModePushPull, 0)
-#define LCD_TRANS_ENABLE_INPUT()  GPIO_PinModeSet(LCD_TRANS_ENABLE_PORT,LCD_TRANS_ENABLE_PIN, gpioModeInput, 0)
-
-//------------------DATA-------------------
-#define TFT_PORT_D15 gpioPortD
-#define TFT_PIN_D15 7
-#define TFT_PIN_D15_OUTPUT() GPIO_PinModeSet(TFT_PORT_D15,TFT_PIN_D15, gpioModePushPull, 1)
-#define TFT_PIN_D15_INPUT()  GPIO_PinModeSet(TFT_PORT_D15,TFT_PIN_D15, gpioModeInput, 0)
-
-#define TFT_PORT_D14 gpioPortD
-#define TFT_PIN_D14 6
-#define TFT_PIN_D14_OUTPUT() GPIO_PinModeSet(TFT_PORT_D14,TFT_PIN_D14, gpioModePushPull, 1)
-#define TFT_PIN_D14_INPUT()  GPIO_PinModeSet(TFT_PORT_D14,TFT_PIN_D14, gpioModeInput, 0)
-
-#define TFT_PORT_D13 gpioPortD
-#define TFT_PIN_D13 5
-#define TFT_PIN_D13_OUTPUT() GPIO_PinModeSet(TFT_PORT_D13,TFT_PIN_D13, gpioModePushPull, 1)
-#define TFT_PIN_D13_INPUT()  GPIO_PinModeSet(TFT_PORT_D13,TFT_PIN_D13, gpioModeInput, 0)
-
-#define TFT_PORT_D12 gpioPortD
-#define TFT_PIN_D12 4
-#define TFT_PIN_D12_OUTPUT() GPIO_PinModeSet(TFT_PORT_D12,TFT_PIN_D12, gpioModePushPull, 1)
-#define TFT_PIN_D12_INPUT()  GPIO_PinModeSet(TFT_PORT_D12,TFT_PIN_D12, gpioModeInput, 0)
-
-#define TFT_PORT_D11 gpioPortD
-#define TFT_PIN_D11 14
-#define TFT_PIN_D11_OUTPUT() GPIO_PinModeSet(TFT_PORT_D11,TFT_PIN_D11, gpioModePushPull, 1)
-#define TFT_PIN_D11_INPUT()  GPIO_PinModeSet(TFT_PORT_D11,TFT_PIN_D11, gpioModeInput, 0)
-
-#define TFT_PORT_D10 gpioPortD
-#define TFT_PIN_D10 13
-#define TFT_PIN_D10_OUTPUT() GPIO_PinModeSet(TFT_PORT_D10,TFT_PIN_D10, gpioModePushPull, 1)
-#define TFT_PIN_D10_INPUT()  GPIO_PinModeSet(TFT_PORT_D10,TFT_PIN_D10, gpioModeInput, 0)
-
-#define TFT_PORT_D9 gpioPortD
-#define TFT_PIN_D9  8
-#define TFT_PIN_D9_OUTPUT() GPIO_PinModeSet(TFT_PORT_D9,TFT_PIN_D9, gpioModePushPull, 1)
-#define TFT_PIN_D9_INPUT()  GPIO_PinModeSet(TFT_PORT_D9,TFT_PIN_D9, gpioModeInput, 0)
-
-#define TFT_PORT_D8 gpioPortD
-#define TFT_PIN_D8  15
-#define TFT_PIN_D8_OUTPUT() GPIO_PinModeSet(TFT_PORT_D8,TFT_PIN_D8, gpioModePushPull, 1)
-#define TFT_PIN_D8_INPUT()  GPIO_PinModeSet(TFT_PORT_D8,TFT_PIN_D8, gpioModeInput, 0)
-
-#ifdef _16_BIT_MODE
-
-#define TFT_PORT_D7 gpioPortC
-#define TFT_PIN_D7 7
-#define TFT_PIN_D7_OUTPUT() GPIO_PinModeSet(TFT_PORT_D7,TFT_PIN_D7, gpioModePushPull, 1)
-#define TFT_PIN_D7_INPUT()  GPIO_PinModeSet(TFT_PORT_D7,TFT_PIN_D7, gpioModeInput, 0)
-
-#define TFT_PORT_D6 gpioPortC
-#define TFT_PIN_D6 6
-#define TFT_PIN_D6_OUTPUT() GPIO_PinModeSet(TFT_PORT_D6,TFT_PIN_D6, gpioModePushPull, 1)
-#define TFT_PIN_D6_INPUT()  GPIO_PinModeSet(TFT_PORT_D6,TFT_PIN_D6, gpioModeInput, 0)
-
-#define TFT_PORT_D5 gpioPortA
-#define TFT_PIN_D5 12
-#define TFT_PIN_D5_OUTPUT() GPIO_PinModeSet(TFT_PORT_D5,TFT_PIN_D5, gpioModePushPull, 1)
-#define TFT_PIN_D5_INPUT()  GPIO_PinModeSet(TFT_PORT_D5,TFT_PIN_D5, gpioModeInput, 0)
-
-#define TFT_PORT_D4 gpioPortA
-#define TFT_PIN_D4 13
-#define TFT_PIN_D4_OUTPUT() GPIO_PinModeSet(TFT_PORT_D4,TFT_PIN_D4, gpioModePushPull, 1)
-#define TFT_PIN_D4_INPUT()  GPIO_PinModeSet(TFT_PORT_D4,TFT_PIN_D4, gpioModeInput, 0)
-
-#define TFT_PORT_D3 gpioPortF
-#define TFT_PIN_D3 8
-#define TFT_PIN_D3_OUTPUT() GPIO_PinModeSet(TFT_PORT_D3,TFT_PIN_D3, gpioModePushPull, 1)
-#define TFT_PIN_D3_INPUT()  GPIO_PinModeSet(TFT_PORT_D3,TFT_PIN_D3, gpioModeInput, 0)
-
-#define TFT_PORT_D2 gpioPortF
-#define TFT_PIN_D2 9
-#define TFT_PIN_D2_OUTPUT() GPIO_PinModeSet(TFT_PORT_D2,TFT_PIN_D2, gpioModePushPull, 1)
-#define TFT_PIN_D2_INPUT()  GPIO_PinModeSet(TFT_PORT_D2,TFT_PIN_D2, gpioModeInput, 0)
-
-#define TFT_PORT_D1 gpioPortC
-#define TFT_PIN_D1  1
-#define TFT_PIN_D1_OUTPUT() GPIO_PinModeSet(TFT_PORT_D1,TFT_PIN_D1, gpioModePushPull, 1)
-#define TFT_PIN_D1_INPUT()  GPIO_PinModeSet(TFT_PORT_D1,TFT_PIN_D1, gpioModeInput, 0)
-
-#define TFT_PORT_D0 gpioPortC
-#define TFT_PIN_D0 0
-#define TFT_PIN_D0_OUTPUT() GPIO_PinModeSet(TFT_PORT_D0,TFT_PIN_D0, gpioModePushPull, 1)
-#define TFT_PIN_D0_INPUT()  GPIO_PinModeSet(TFT_PORT_D0,TFT_PIN_D0, gpioModeInput, 0)
-
-
-
-#endif
-/*********************************Hardware dependent part - END*****************************************/
 
 void ILI9320init(void);
 void ILI9320clrScr();

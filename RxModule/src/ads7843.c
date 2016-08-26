@@ -74,8 +74,8 @@ void ADS7843Init(void) {
 #endif
 
 	// assign default values
-	touchInfoData.thAdLeft = TOUCH_AD_X_MIN;
 	touchInfoData.thAdRight = TOUCH_AD_X_MAX;
+	touchInfoData.thAdLeft = TOUCH_AD_X_MIN;
 	touchInfoData.thAdUp = TOUCH_AD_Y_MAX;
 	touchInfoData.thAdDown = TOUCH_AD_Y_MIN;
 	touchInfoData.touchStatus = 0;
@@ -141,14 +141,6 @@ void ADS7843ReadRawXY(uint16_t *x, uint16_t *y) {
 
 //*****************************************************************************
 //brief read the x, y axis ADC convert value from ADS7843(with software filter)
-// \param x To save the x axis ADC convert value.
-// \param y To save the y axis ADC convert value.
-// This function Reads the x,y axis's ADC value from ADS7843 with software
-// filter. The function first read out TOUCH_SMAPLE_LEN samples. Then discard
-// the first data and the last data and sort the remained data. Then discard
-// the first and the last one of the remained data and compute the average
-// value of the final remained data.
-// \return None.
 //*****************************************************************************
 void ADS7843ReadXY(uint16_t *x, uint16_t *y) {
 	uint16_t xyDataBuf[2][TOUCH_MAX_NUM_OF_SAMPLES];
@@ -189,13 +181,6 @@ void ADS7843ReadXY(uint16_t *x, uint16_t *y) {
 
 //*****************************************************************************
 // \brief Read the XY coordinate of touch point.
-// \param x To save the x coordinate
-// \param y To save the y coordinate
-// This function is to read current touch point. The x,y coordinates will be
-// read out from the input parameters. If the screen is not touched, it will
-// return last value, after the last value is read out, additional read will
-// return fail information and nothing will be read out.
-// \return None.
 //*****************************************************************************
 uint8_t ADS7843ReadPointXY(uint16_t *x, uint16_t *y) {
 	uint16_t adX;
@@ -230,6 +215,7 @@ uint8_t ADS7843ReadPointXY(uint16_t *x, uint16_t *y) {
 		*y = (adY * TOUCH_SCREEN_HEIGHT) / diff;
 		if(*y > TOUCH_SCREEN_HEIGHT)
 			*y = TOUCH_SCREEN_HEIGHT-1;
+		*y=TOUCH_SCREEN_HEIGHT -*y; //for portrait
 		touchInfoData.lastY = touchInfoData.curY;
 		touchInfoData.curY = *y;
 		return 0;

@@ -57,8 +57,10 @@ TouchInfo touchInfoData;
 int main(void) {
 	/* Chip errata */
 	CHIP_Init();
-	CMU_OscillatorEnable(cmuOsc_HFRCO, true, true);
-	CMU_ClockSelectSet(cmuClock_HF, cmuSelect_HFRCO); //32MHZ
+	CMU_OscillatorEnable(cmuOsc_HFXO, true, false);
+	CMU_ClockSelectSet(cmuClock_HF, cmuSelect_HFXO); //32MHZ
+	CMU_ClockDivSet(cmuClock_HF, cmuClkDiv_1);
+	 CMU_ClockDivSet(cmuClock_HFPER, cmuClkDiv_1);
 	CMU_ClockEnable(cmuClock_HFPER, true);
 	//----------------------- ILI9320 first working tests -----------------------
 	//BSP_TraceProfilerSetup();
@@ -94,7 +96,6 @@ int main(void) {
 		{
 			uint16_t x, y;
 			ADS7843ReadPointXY(&x, &y);
-			mADS7843ScreenTouched = false;
 
 			getCoordinates(&x, &y);
 			ILI9320drawPixel(x, y, BLACK);
@@ -104,6 +105,8 @@ int main(void) {
 			ILI9320drawPixel(x, y-1, BLACK);
 			ILI9320drawPixel(x+1, y, BLACK);
 			ILI9320drawPixel(x-1, y, BLACK);
+
+			mADS7843ScreenTouched = false;
 			ADS7843_INT_IRQ_CONFIG_FALLING(true);
 		}
 	}

@@ -1,2 +1,2 @@
 # MeteoStation
-Meteo Station for my best friends : ) 
+Simple Meteo Station for my Father : ) 

@@ -121,8 +121,12 @@ extern "C"
 #define ADS7843_READ_IN4           0xE0
 
 
-#define TOUCH_STATUS_PENDOWN       0x01
-#define TOUCH_STATUS_PENUP         0x02
+typedef enum
+{
+	TOUCH_STATUS_PENUP,
+	TOUCH_STATUS_PENDOWN,
+	TOUCH_STATUS_TOUCHING
+}TouchStatus;
 
 typedef struct {
 	uint16_t x;
@@ -138,14 +142,14 @@ typedef struct {
 	uint16_t lastY;
 	uint16_t curX;
 	uint16_t curY;
-	uint8_t touchStatus;
+	TouchStatus touchStatus;
 } TouchInfo;
 
 void ADS7843Init(void);
 
 // Enables IqrPin on startup and enables powerdown between conversions
 void ADS7843SetIrqAndPowerDown(void);
-//! Get pen status (pen down or pen up).
+// Get pen status (pen down or pen up).
 uint16_t ADS7843PenInq(void);
 
 // Read raw value of x,y axis's AD conversion value.
@@ -163,7 +167,9 @@ uint8_t ADS7843ReadPointXY(uint16_t *x, uint16_t *y);
 uint8_t ADS7843Calibration(void);
 
 
-void getCoordinates(uint16_t* x, uint16_t* y);
+void getTouchPointCoordinates(uint16_t* x, uint16_t* y);
+
+TouchStatus getTouchStatus();
 
 
 

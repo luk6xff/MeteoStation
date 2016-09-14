@@ -18,7 +18,6 @@
 #include "../emdrv/ustimer/ustimer.h"
 #include "../emdrv/uartdrv/uartdrv.h"
 
-volatile bool mADS7843ScreenTouched = false;
 
 /**************************************************************************//**
  * @brief  Main function
@@ -48,12 +47,11 @@ int main(void) {
 	//UARTDRV_Transmit(handle, buffer, 10, NULL);
 	ili9320.ILI9320print("*TFTLibrary- TEST*", 10, 50, 0, ILI9320::Colors::RED);
 	while (1) {
-		if (mADS7843ScreenTouched)
+		if (getTouchStatus()==TOUCH_STATUS_TOUCHING)
 		{
 			uint16_t x, y;
 			ADS7843ReadPointXY(&x, &y);
-
-			getCoordinates(&x, &y);
+			getTouchPointCoordinates(&x, &y);
 			ili9320.ILI9320drawPixel(x, y, ILI9320::Colors::BLACK);
 			ili9320.ILI9320drawPixel(x+1, y+1, ILI9320::Colors::BLACK);
 			ili9320.ILI9320drawPixel(x-1, y-1, ILI9320::Colors::BLACK);
@@ -62,8 +60,8 @@ int main(void) {
 			ili9320.ILI9320drawPixel(x+1, y, ILI9320::Colors::BLACK);
 			ili9320.ILI9320drawPixel(x-1, y, ILI9320::Colors::BLACK);
 
-			mADS7843ScreenTouched = false;
-			ADS7843_INT_IRQ_CONFIG_FALLING(true);
+			//mADS7843ScreenTouched = false;
+			//ADS7843_INT_IRQ_CONFIG_FALLING(true);
 		}
 	}
 }

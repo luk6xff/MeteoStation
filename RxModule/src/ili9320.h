@@ -116,8 +116,7 @@ public:
 	void ILI9320rotateChar(uint8_t c, int x, int y, int pos, int deg,uint16_t color);
 	void ILI9320print(char *st, int x, int y, int deg, uint16_t color);
 	void ILI9320printNumI(long num, int x, int y, int length, char filler, uint16_t color);
-	void ILI9320printNumF(double num, uint8_t dec, int x, int y, char divider, int length,
-			char filler, uint16_t color);
+	void ILI9320printNumF(double num, uint8_t dec, int x, int y, char divider, int length, char filler, uint16_t color);
 	void ILI9320setXY(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2);
 	void ILI9320clrXY(void);
 

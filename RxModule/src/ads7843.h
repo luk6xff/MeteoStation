@@ -168,7 +168,7 @@ public:
 	//@brief read the x, y axis ADC convert value from ADS7843(with software filter)
 	//*****************************************************************************
 	void readXY(uint16_t *x, uint16_t *y);
-	void readXYMedian(TouchPoint& touchPoint);
+	void readXYMedian(TouchPoint& touchPoint ,bool cal);
 
 	//*****************************************************************************
 	// @brief Read the XY coordinate of touch point.

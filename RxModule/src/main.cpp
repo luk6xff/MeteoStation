@@ -47,13 +47,13 @@ int main(void) {
 		{
 			//my method
 			uint16_t x, y;
-#if 1
+#if 0
 			ads7843.readPointXY(&x, &y);
 			ads7843.getTouchPointCoordinates(&x, &y);
 			ili9320.ILI9320fillCircle(x,y,3, ILI9320::Colors::BLUE);
 #else
 			ADS7843::TouchPoint p;
-			ads7843.readXYMedian(p);
+			ads7843.readXYMedian(p,false);
 			ili9320.ILI9320fillCircle(p.x,p.y,3, ILI9320::Colors::BLUE);
 #endif
 		}

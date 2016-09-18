@@ -16,7 +16,6 @@
 #include "ads7843.h"
 #include "bitmaps.h"
 #include "../emdrv/ustimer/ustimer.h"
-#include "../emdrv/uartdrv/uartdrv.h"
 
 
 /**************************************************************************//**
@@ -40,28 +39,23 @@ int main(void) {
 	USTIMER_Init();
 	ILI9320 ili9320;
 	ili9320.ILI9320init();
-	ADS7843Init();
-	//UARTDRV_InitUart(handle, &initData);
-
-	// Transmit data using a non-blocking transmit function
-	//UARTDRV_Transmit(handle, buffer, 10, NULL);
-	ili9320.ILI9320print("*TFTLibrary- TEST*", 10, 50, 0, ILI9320::Colors::RED);
+	ADS7843 ads7843;
+	//ili9320.ILI9320print("*TFTLibrary- TEST*", 10, 50, 0, ILI9320::Colors::RED);
+	ads7843.calibration(ili9320);
 	while (1) {
-		if (getTouchStatus()==TOUCH_STATUS_TOUCHING)
+		if (ads7843.getTouchStatus()==ADS7843::TOUCH_STATUS_TOUCHING)
 		{
+			//my method
 			uint16_t x, y;
-			ADS7843ReadPointXY(&x, &y);
-			getTouchPointCoordinates(&x, &y);
-			ili9320.ILI9320drawPixel(x, y, ILI9320::Colors::BLACK);
-			ili9320.ILI9320drawPixel(x+1, y+1, ILI9320::Colors::BLACK);
-			ili9320.ILI9320drawPixel(x-1, y-1, ILI9320::Colors::BLACK);
-			ili9320.ILI9320drawPixel(x, y+1, ILI9320::Colors::BLACK);
-			ili9320.ILI9320drawPixel(x, y-1, ILI9320::Colors::BLACK);
-			ili9320.ILI9320drawPixel(x+1, y, ILI9320::Colors::BLACK);
-			ili9320.ILI9320drawPixel(x-1, y, ILI9320::Colors::BLACK);
-
-			//mADS7843ScreenTouched = false;
-			//ADS7843_INT_IRQ_CONFIG_FALLING(true);
+#if 1
+			ads7843.readPointXY(&x, &y);
+			ads7843.getTouchPointCoordinates(&x, &y);
+			ili9320.ILI9320fillCircle(x,y,3, ILI9320::Colors::BLUE);
+#else
+			ADS7843::TouchPoint p;
+			ads7843.readXYMedian(p);
+			ili9320.ILI9320fillCircle(p.x,p.y,3, ILI9320::Colors::BLUE);
+#endif
 		}
 	}
 }

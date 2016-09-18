@@ -29,23 +29,23 @@ struct Font
 	uint8_t numchars;
 };
 
-struct Resolution
-{
-	uint16_t x;
-	uint16_t y;
-	uint16_t maxX;
-	uint16_t maxY;
-
-	Resolution(uint16_t _x,uint16_t _y):x(_x),y(_y)
-	{
-		maxX = x-1;
-		maxY = y-1;
-	}
-};
-
 class ILI9320 {
 
 public:
+
+	struct Resolution
+	{
+		uint16_t x;
+		uint16_t y;
+		uint16_t maxX;
+		uint16_t maxY;
+
+		Resolution(uint16_t _x,uint16_t _y):x(_x),y(_y)
+		{
+			maxX = x-1;
+			maxY = y-1;
+		}
+	};
 
 	enum Colors
 	{
@@ -119,9 +119,14 @@ public:
 	void ILI9320printNumF(double num, uint8_t dec, int x, int y, char divider, int length, char filler, uint16_t color);
 	void ILI9320setXY(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2);
 	void ILI9320clrXY(void);
-
 	void ILI9320convertFloat(char *buf, double num, int width, uint8_t prec);
+	//calibration helpers
+	void showThreePointCalibrationHitPoint(uint16_t x1, uint16_t y1);
 
+	inline Resolution getResolution() const
+	{
+		return mResolution;
+	}
 private:
 	TransferMode mTransferMode;
 	Orientation mOrientation;

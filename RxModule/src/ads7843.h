@@ -12,14 +12,8 @@
 #include "em_device.h"
 #include "em_bitband.h"
 #include "em_gpio.h"
-
-
-#ifdef __cplusplus
-extern "C"
-{
-#endif
-
-
+#include "Callback.h"
+#include "ILI9320.h"
 
 /*********************************Hardware dependent part*****************************************/
 /*********************************Hardware dependent part*****************************************/
@@ -94,7 +88,6 @@ extern "C"
 #define TOUCH_SCREEN_HEIGHT        320
 
 #define TOUCH_MAX_NUM_OF_SAMPLES    20  //Note! must be >= 7
-
 //Configure it correctly to your display
 #define TOUCH_AD_X_MAX             1880
 #define TOUCH_AD_X_MIN             150
@@ -120,62 +113,95 @@ extern "C"
 #define ADS7843_READ_IN3           0xA0
 #define ADS7843_READ_IN4           0xE0
 
+class ADS7843 {
 
-typedef enum
-{
-	TOUCH_STATUS_PENUP,
-	TOUCH_STATUS_PENDOWN,
-	TOUCH_STATUS_TOUCHING
-}TouchStatus;
+public:
 
-typedef struct {
-	uint16_t x;
-	uint16_t y;
-} TouchPoint;
+	typedef enum {
+		TOUCH_STATUS_PENUP, TOUCH_STATUS_PENDOWN, TOUCH_STATUS_TOUCHING
+	} TouchStatus;
 
-typedef struct {
-	uint16_t thAdLeft;
-	uint16_t thAdRight;
-	uint16_t thAdUp;
-	uint16_t thAdDown;
-	uint16_t lastX;
-	uint16_t lastY;
-	uint16_t curX;
-	uint16_t curY;
-	TouchStatus touchStatus;
-} TouchInfo;
+	typedef struct {
+		uint16_t x;
+		uint16_t y;
+	} TouchPoint;
 
-void ADS7843Init(void);
+	typedef struct {
+		uint16_t thAdLeft;
+		uint16_t thAdRight;
+		uint16_t thAdUp;
+		uint16_t thAdDown;
+		uint16_t lastX;
+		uint16_t lastY;
+		uint16_t curX;
+		uint16_t curY;
+		volatile TouchStatus touchStatus;
+	} TouchInfo;
 
-// Enables IqrPin on startup and enables powerdown between conversions
-void ADS7843SetIrqAndPowerDown(void);
-// Get pen status (pen down or pen up).
-uint16_t ADS7843PenInq(void);
+	ADS7843();
 
-// Read raw value of x,y axis's AD conversion value.
-void ADS7843ReadRawXY(uint16_t *x, uint16_t *y);
+	~ADS7843();
+	//*****************************************************************************
+	// @brief Initialize ADS7843
+	// @param None.
+	// This function initialize ADS7843's SPI interface and .
+	// @return None.
+	//*****************************************************************************
+	void init(void);
 
-// Read x,y axis's AD conversion value with software filter.
-void ADS7843ReadXY(uint16_t *x, uint16_t *y);
+	//*****************************************************************************
+	// @brief Enables IqrPin on startup and enables powerdown between conversions
+	//*****************************************************************************
+	void setIrqAndPowerDown(void);
 
-// Read x,y coordinate.
-uint8_t ADS7843ReadPointXY(uint16_t *x, uint16_t *y);
+	void penIRQCallback(uint8_t pin);
 
+	//****************************************************************************
+	// @brief Read the x, y axis ADC convert value once from ADS7843
+	// @param x To save the x axis ADC convert value.
+	// @param y To save the y axis ADC convert value.
+	// @return None.
+	//*****************************************************************************
+	void readRawXY(uint16_t *x, uint16_t *y);
 
+	//*****************************************************************************
+	//@brief read the x, y axis ADC convert value from ADS7843(with software filter)
+	//*****************************************************************************
+	void readXY(uint16_t *x, uint16_t *y);
+	void readXYMedian(TouchPoint& touchPoint);
 
-//! Touch screen calibration.
-uint8_t ADS7843Calibration(void);
+	//*****************************************************************************
+	// @brief Read the XY coordinate of touch point.
+	// @retun true - if read while pendown is touching , false - otherwise
+	//*****************************************************************************
+	bool readPointXY(uint16_t *x, uint16_t *y);
 
+	//*****************************************************************************
+	//@brief  Touch screen calibration.
+	//*****************************************************************************
+	uint8_t calibration(ILI9320& lcd);
 
-void getTouchPointCoordinates(uint16_t* x, uint16_t* y);
+	uint16_t fastMedian(uint16_t *samples) const;
 
-TouchStatus getTouchStatus();
+	void getTouchPointCoordinates(uint16_t* x, uint16_t* y);
 
+    TouchPoint translateCoordinates(const TouchPoint& rawPoint);
 
+	TouchStatus getTouchStatus();
 
+private:
 
-#ifdef __cplusplus
-}
-#endif
+	//*****************************************************************************
+	// @brief Get IRQ pin status: false - pen down, true - pen up
+	// @retun false - while pen down (LCD is being touched) , true - pen up
+	//*****************************************************************************
+	bool getIrqPinState(void);
+
+private:
+	TouchInfo m_touchInfoData;
+	Callback<void(uint8_t)> *m_pinIrqCb;
+	//corection coefficients
+	float m_ax,m_bx,m_dx,m_ay,m_by,m_dy;
+};
 
 #endif /* ADS7843_H_ */

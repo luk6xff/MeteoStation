@@ -54,7 +54,7 @@ int main(void) {
 #else
 			ADS7843::TouchPoint p;
 			ads7843.readXYMedian(p,false);
-			ili9320.ILI9320fillCircle(p.x,p.y,3, ILI9320::Colors::BLUE);
+			ili9320.ILI9320fillCircle(p.x, p.y,3, ILI9320::Colors::BLUE);
 #endif
 		}
 	}

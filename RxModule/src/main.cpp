@@ -27,7 +27,7 @@ int main(void) {
 	CMU_OscillatorEnable(cmuOsc_HFXO, true, false);
 	CMU_ClockSelectSet(cmuClock_HF, cmuSelect_HFXO); //32MHZ
 	CMU_ClockDivSet(cmuClock_HF, cmuClkDiv_1);
-	 CMU_ClockDivSet(cmuClock_HFPER, cmuClkDiv_1);
+	CMU_ClockDivSet(cmuClock_HFPER, cmuClkDiv_1);
 	CMU_ClockEnable(cmuClock_HFPER, true);
 	//----------------------- ILI9320 first working tests -----------------------
 	//BSP_TraceProfilerSetup();
@@ -38,24 +38,15 @@ int main(void) {
 
 	USTIMER_Init();
 	ILI9320 ili9320;
-	ili9320.ILI9320init();
+	ili9320.init();
 	ADS7843 ads7843;
-	//ili9320.ILI9320print("*TFTLibrary- TEST*", 10, 50, 0, ILI9320::Colors::RED);
-	ads7843.calibration(ili9320);
+	ads7843.performThreePointCalibration(ili9320);
 	while (1) {
 		if (ads7843.getTouchStatus()==ADS7843::TOUCH_STATUS_TOUCHING)
 		{
-			//my method
-			uint16_t x, y;
-#if 0
-			ads7843.readPointXY(&x, &y);
-			ads7843.getTouchPointCoordinates(&x, &y);
-			ili9320.ILI9320fillCircle(x,y,3, ILI9320::Colors::BLUE);
-#else
 			ADS7843::TouchPoint p;
-			ads7843.readXYMedian(p,false);
-			ili9320.ILI9320fillCircle(p.x, p.y,3, ILI9320::Colors::BLUE);
-#endif
+			ads7843.readPointXY(p,false);
+			ili9320.fillCircle(p.x, p.y,3, ILI9320::Colors::BLUE);
 		}
 	}
 }

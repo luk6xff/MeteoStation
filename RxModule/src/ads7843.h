@@ -97,9 +97,8 @@
 
 //*****************************************************************************
 //
-//! \addtogroup ADS7843_Config ADS7843 Driver Predefines
-//! \brief This part defines the slave address and register address of ADS7843.
-//! @{
+// @addtogroup ADS7843_Config ADS7843 Driver Predefines
+// @brief This part defines the slave address and register address of ADS7843.
 //
 //*****************************************************************************
 #define ADS7843_READ_X             0xD0
@@ -113,7 +112,8 @@
 #define ADS7843_READ_IN3           0xA0
 #define ADS7843_READ_IN4           0xE0
 
-class ADS7843 {
+class ADS7843
+{
 
 public:
 
@@ -127,10 +127,6 @@ public:
 	} TouchPoint;
 
 	typedef struct {
-		uint16_t thAdLeft;
-		uint16_t thAdRight;
-		uint16_t thAdUp;
-		uint16_t thAdDown;
 		uint16_t lastX;
 		uint16_t lastY;
 		uint16_t curX;
@@ -168,22 +164,19 @@ public:
 	//@brief read the x, y axis ADC convert value from ADS7843(with software filter)
 	//*****************************************************************************
 	void readXY(uint16_t *x, uint16_t *y);
-	void readXYMedian(TouchPoint& touchPoint ,bool cal);
 
 	//*****************************************************************************
 	// @brief Read the XY coordinate of touch point.
 	// @retun true - if read while pendown is touching , false - otherwise
 	//*****************************************************************************
-	bool readPointXY(uint16_t *x, uint16_t *y);
+	bool readPointXY(TouchPoint& touchPoint, bool calibrationEnabled);
 
 	//*****************************************************************************
 	//@brief  Touch screen calibration.
 	//*****************************************************************************
-	uint8_t calibration(ILI9320& lcd);
+	uint8_t performThreePointCalibration(ILI9320& lcd);
 
 	uint16_t fastMedian(uint16_t *samples) const;
-
-	void getTouchPointCoordinates(uint16_t* x, uint16_t* y);
 
     TouchPoint translateCoordinates(const TouchPoint& rawPoint);
 
@@ -197,6 +190,7 @@ private:
 	//*****************************************************************************
 	bool getIrqPinState(void);
 
+	bool readOnePointRawCoordinates(TouchPoint& point);
 private:
 	TouchInfo m_touchInfoData;
 	Callback<void(uint8_t)> *m_pinIrqCb;

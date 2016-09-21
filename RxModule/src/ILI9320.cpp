@@ -1,5 +1,5 @@
 /*
- * ILI9320.cpp
+ * .cpp
  *
  *  Created on: 30-08-2016
  *      Author: igbt6
@@ -14,27 +14,36 @@
 #include "em_gpio.h"
 #include "em_cmu.h"
 
-ILI9320::ILI9320(TransferMode tMode,Orientation o):mTransferMode(tMode),mOrientation(o),mResolution(240,320),mCurrentFont()
+ILI9320::ILI9320(TransferMode tMode, Orientation o) :
+		m_transferMode(tMode),
+		m_orientation(o),
+		m_resolution(DISPLAY_WIDTH_X,DISPLAY_HEIGHT_Y),
+		m_currentFont()
 {
-
+	if (m_orientation == LANDSCAPE) {
+		m_dispSize.x = m_resolution.y;
+		m_dispSize.y = m_resolution.x;
+	}
+	else
+	{
+		m_dispSize.x = m_resolution.x;
+		m_dispSize.y = m_resolution.y;
+	}
 }
 
 ILI9320::~ILI9320() {
 	// TODO Auto-generated destructor stub
 }
 
-
 /*********************************Hardware dependent part*****************************************/
 /*********************************Hardware dependent part*****************************************/
 
-static inline void setPin(GPIO_Port_TypeDef port, uint8_t pin, uint8_t mask)
-{
-	BUS_RegBitWrite(&GPIO->P[port].DOUT, pin, mask);
+static inline void setPin(GPIO_Port_TypeDef port, uint8_t pin, uint8_t mask) {
+	BUS_RegBitWrite(&GPIO ->P[port].DOUT, pin, mask);
 }
 
-static inline uint16_t getPin(GPIO_Port_TypeDef port, uint8_t pin)
-{
-	return BUS_RegBitRead(&GPIO->P[port].DOUT, pin);
+static inline uint16_t getPin(GPIO_Port_TypeDef port, uint8_t pin) {
+	return BUS_RegBitRead(&GPIO ->P[port].DOUT, pin);
 }
 
 #define CLOCKS_ENABLE() CMU_ClockEnable(cmuClock_GPIO, true)
@@ -158,10 +167,7 @@ static inline uint16_t getPin(GPIO_Port_TypeDef port, uint8_t pin)
 
 /*********************************Hardware dependent part - END*****************************************/
 
-
 static void swapInt(int *a, int*b);
-
-
 
 static void allDataPinsInput(void) {
 	TFT_PIN_D15_INPUT();
@@ -225,8 +231,6 @@ static void allDataPinsLow(void) {
 	setPin(TFT_PORT_D0, TFT_PIN_D0, 0);
 //#endif
 }
-
-
 
 static void pushData(uint16_t data) {
 #ifdef _8_BIT_MODE
@@ -297,7 +301,7 @@ static uint16_t getData(void) {
 
 }
 
-static void ILI9320SendCommand(uint16_t index) {
+static void SendCommand(uint16_t index) {
 	RS_LOW();
 	RD_HIGH();
 	WR_HIGH();
@@ -317,7 +321,7 @@ static void ILI9320SendCommand(uint16_t index) {
 
 }
 
-static void ILI9320SendData(uint16_t data) {
+static void SendData(uint16_t data) {
 	RS_HIGH();
 	RD_HIGH();
 	WR_LOW();
@@ -335,20 +339,20 @@ static void ILI9320SendData(uint16_t data) {
 	WR_HIGH();
 }
 
-static void ILI9320WriteData(uint16_t data) {
+static void WriteData(uint16_t data) {
 	CS_LOW();
-	ILI9320SendData(data);
+	SendData(data);
 	CS_HIGH();
 }
 
-static void ILI9320WriteCommand(uint16_t data) {
+static void WriteCommand(uint16_t data) {
 	CS_LOW();
-	ILI9320SendCommand(data);
+	SendCommand(data);
 	CS_HIGH();
 }
 
 /************************************************************************
- * void ILI9320WriteRegister(uint16_t index, uint16_t data)
+ * void WriteRegister(uint16_t index, uint16_t data)
  **                                                                    **
  ** CS       ----\__________________________________________/-------  **
  ** RS       ------\____________/-----------------------------------  **
@@ -357,15 +361,15 @@ static void ILI9320WriteCommand(uint16_t data) {
  ** DB[15:0] ---------[index]----------[data]-----------------------  **
  **                                                                    **
  ************************************************************************/
-static void ILI9320WriteRegister(uint16_t index, uint16_t data) {
+static void WriteRegister(uint16_t index, uint16_t data) {
 	CS_LOW();
-	ILI9320SendCommand(index);
-	ILI9320SendData(data);
+	SendCommand(index);
+	SendData(data);
 	CS_HIGH();
 
 }
 /***********************************************************************
- * uint16_t ILI9320ReadRegister(uint16_t index)      (16BIT)          **
+ * uint16_t ReadRegister(uint16_t index)      (16BIT)          **
  **                                                                    **
  ** nCS       ----\__________________________________________/-------  **
  ** RS        ------\____________/-----------------------------------  **
@@ -375,7 +379,7 @@ static void ILI9320WriteRegister(uint16_t index, uint16_t data) {
  **                                                                    **
  ************************************************************************/
 /*
- static uint16_t ILI9320ReadRegister(uint16_t index) {   //NOT USED
+ static uint16_t ReadRegister(uint16_t index) {   //NOT USED
  uint16_t data = 0;
 
  CS_LOW();
@@ -419,16 +423,16 @@ static void ILI9320WriteRegister(uint16_t index, uint16_t data) {
  }
  */
 
-void ILI9320:: ILI9320lcdWriteCOMMAND(uint16_t data) {
-	ILI9320SendCommand(data);
+void ILI9320::lcdWriteCOMMAND(uint16_t data) {
+	SendCommand(data);
 }
 
-void ILI9320:: ILI9320lcdWriteDATA(uint16_t data) {
-	ILI9320SendData(data);
+void ILI9320::lcdWriteDATA(uint16_t data) {
+	SendData(data);
 }
 
 /************************************************************************
- * void ILI9320lcdWriteCOMMAND_DATA(uint16_t command, uint16_t data)
+ * void lcdWriteCOMMAND_DATA(uint16_t command, uint16_t data)
  **                                                                    **
  ** CS       ----\__________________________________________/-------  **
  ** RS       ------\____________/-----------------------------------  **
@@ -437,12 +441,12 @@ void ILI9320:: ILI9320lcdWriteDATA(uint16_t data) {
  ** DB[15:0] ---------[command]----------[data]-----------------------  **
  **                                                                    **
  ************************************************************************/
-void ILI9320::ILI9320lcdWriteCOMMAND_DATA(uint16_t command, uint16_t data) {
-	ILI9320SendCommand(command);
-	ILI9320SendData(data);
+void ILI9320::lcdWriteCOMMAND_DATA(uint16_t command, uint16_t data) {
+	SendCommand(command);
+	SendData(data);
 }
 
-void ILI9320::ILI9320init(void) {
+void ILI9320::init(void) {
 	CLOCKS_ENABLE();
 
 	LCD_TRANS_ENABLE_OUTPUT(); //LCD ENABLE
@@ -459,152 +463,152 @@ void ILI9320::ILI9320init(void) {
 	allDataPinsLow();
 	Delay(1);
 	// NEW SETUP
-	ILI9320WriteRegister(0xe5, 0x8000);
+	WriteRegister(0xe5, 0x8000);
 	Delay(500);
-	ILI9320WriteRegister(0x00, 0x0001);
-	ILI9320WriteRegister(0x01, 0x0100);	//Driver Output Contral.
-	ILI9320WriteRegister(0x02, 0x0700);	//LCD Driver Waveform Contral.
-	ILI9320WriteRegister(0x03, 0x1030);	//Entry Mode Set.
+	WriteRegister(0x00, 0x0001);
+	WriteRegister(0x01, 0x0100);	//Driver Output Contral.
+	WriteRegister(0x02, 0x0700);	//LCD Driver Waveform Contral.
+	WriteRegister(0x03, 0x1030);	//Entry Mode Set.
 
-	ILI9320WriteRegister(0x04, 0x0000);	//Scalling Control.
-	ILI9320WriteRegister(0x08, 0x0202);	//Display Control 2.(0x0207)
-	ILI9320WriteRegister(0x09, 0x0000);	//Display Control 3.(0x0000)
-	ILI9320WriteRegister(0x0a, 0x0000);	//Frame Cycle Contal.(0x0000)
-	ILI9320WriteRegister(0x0c, 0x0000); //Extern Display Interface Control 1.(0x0000)
-	ILI9320WriteRegister(0x0d, 0x0000);	//Frame Maker Position.
-	ILI9320WriteRegister(0x0f, 0x0000);   //Extern Display Interface Control 2.
+	WriteRegister(0x04, 0x0000);	//Scalling Control.
+	WriteRegister(0x08, 0x0202);	//Display Control 2.(0x0207)
+	WriteRegister(0x09, 0x0000);	//Display Control 3.(0x0000)
+	WriteRegister(0x0a, 0x0000);	//Frame Cycle Contal.(0x0000)
+	WriteRegister(0x0c, 0x0000); //Extern Display Interface Control 1.(0x0000)
+	WriteRegister(0x0d, 0x0000);	//Frame Maker Position.
+	WriteRegister(0x0f, 0x0000);   //Extern Display Interface Control 2.
 	Delay(200);
 	//********Power On sequence*******************
-	ILI9320WriteRegister(0x10, 0x0000);   //Power Control 1
-	ILI9320WriteRegister(0x11, 0x0007);   //Power Control 2
-	ILI9320WriteRegister(0x12, 0x0000);   //Power Control 3
-	ILI9320WriteRegister(0x13, 0x0000);   //Power Control 4
+	WriteRegister(0x10, 0x0000);   //Power Control 1
+	WriteRegister(0x11, 0x0007);   //Power Control 2
+	WriteRegister(0x12, 0x0000);   //Power Control 3
+	WriteRegister(0x13, 0x0000);   //Power Control 4
 	Delay(50);
-	ILI9320WriteRegister(0x10, 0x17B0);
-	ILI9320WriteRegister(0x11, 0x0007);
+	WriteRegister(0x10, 0x17B0);
+	WriteRegister(0x11, 0x0007);
 	Delay(10);
-	ILI9320WriteRegister(0x12, 0x013A);
+	WriteRegister(0x12, 0x013A);
 	Delay(10);
-	ILI9320WriteRegister(0x13, 0x1A00);
-	ILI9320WriteRegister(0x29, 0x000c);   //Power Control 7
+	WriteRegister(0x13, 0x1A00);
+	WriteRegister(0x29, 0x000c);   //Power Control 7
 	Delay(10);
 
 	//********Gamma control***********************
-	ILI9320WriteRegister(0x30, 0x0000);
-	ILI9320WriteRegister(0x31, 0x0505);
-	ILI9320WriteRegister(0x32, 0x0004);
-	ILI9320WriteRegister(0x35, 0x0006);
-	ILI9320WriteRegister(0x36, 0x0707);
-	ILI9320WriteRegister(0x37, 0x0105);
-	ILI9320WriteRegister(0x38, 0x0002);
-	ILI9320WriteRegister(0x39, 0x0707);
-	ILI9320WriteRegister(0x3C, 0x0704);
-	ILI9320WriteRegister(0x3D, 0x0807);
+	WriteRegister(0x30, 0x0000);
+	WriteRegister(0x31, 0x0505);
+	WriteRegister(0x32, 0x0004);
+	WriteRegister(0x35, 0x0006);
+	WriteRegister(0x36, 0x0707);
+	WriteRegister(0x37, 0x0105);
+	WriteRegister(0x38, 0x0002);
+	WriteRegister(0x39, 0x0707);
+	WriteRegister(0x3C, 0x0704);
+	WriteRegister(0x3D, 0x0807);
 
 	//********Set RAM area************************
-	ILI9320WriteRegister(0x50, 0x0000);   //Set X Start.
-	ILI9320WriteRegister(0x51, mResolution.maxX);   //Set X End. (239)
-	ILI9320WriteRegister(0x52, 0x0000);   //Set Y Start.
-	ILI9320WriteRegister(0x53, mResolution.maxY);   //Set Y End. (319)
-	ILI9320WriteRegister(0x60, 0x2700);   //Driver Output Control.
-	ILI9320WriteRegister(0x61, 0x0001);   //Driver Output Control.
-	ILI9320WriteRegister(0x6A, 0x0000);   //Vertical Srcoll Control.
-	ILI9320WriteRegister(0x21, 0x0000);
-	ILI9320WriteRegister(0x20, 0x0000);
+	WriteRegister(0x50, 0x0000);   //Set X Start.
+	WriteRegister(0x51, m_resolution.maxX);   //Set X End. (239)
+	WriteRegister(0x52, 0x0000);   //Set Y Start.
+	WriteRegister(0x53, m_resolution.maxY);   //Set Y End. (319)
+	WriteRegister(0x60, 0x2700);   //Driver Output Control.
+	WriteRegister(0x61, 0x0001);   //Driver Output Control.
+	WriteRegister(0x6A, 0x0000);   //Vertical Srcoll Control.
+	WriteRegister(0x21, 0x0000);
+	WriteRegister(0x20, 0x0000);
 	//********Partial Display Control*********
-	ILI9320WriteRegister(0x80, 0x0000);  //Display Position? Partial Display 1.
-	ILI9320WriteRegister(0x81, 0x0000); //RAM Address Start? Partial Display 1.
-	ILI9320WriteRegister(0x82, 0x0000);	//RAM Address End-Partial Display 1.
-	ILI9320WriteRegister(0x83, 0x0000);//Displsy Position? Partial Display 2.
-	ILI9320WriteRegister(0x84, 0x0000);//RAM Address Start? Partial Display 2.
-	ILI9320WriteRegister(0x85, 0x0000);//RAM Address End? Partial Display 2.
+	WriteRegister(0x80, 0x0000);  //Display Position? Partial Display 1.
+	WriteRegister(0x81, 0x0000); //RAM Address Start? Partial Display 1.
+	WriteRegister(0x82, 0x0000);	//RAM Address End-Partial Display 1.
+	WriteRegister(0x83, 0x0000);	//Displsy Position? Partial Display 2.
+	WriteRegister(0x84, 0x0000);	//RAM Address Start? Partial Display 2.
+	WriteRegister(0x85, 0x0000);	//RAM Address End? Partial Display 2.
 	//********Panel Control******************
-	ILI9320WriteRegister(0x90, 0x0010);	//Frame Cycle Contral.(0x0013)
-	ILI9320WriteRegister(0x92, 0x0000);	//Panel Interface Contral 2.(0x0000)
-	ILI9320WriteRegister(0x93, 0x0003);	//Panel Interface Contral 3.
-	ILI9320WriteRegister(0x95, 0x0110);	//Frame Cycle Contral.(0x0110)
-	ILI9320WriteRegister(0x97, 0x0000);	//
-	ILI9320WriteRegister(0x98, 0x0000);	//Frame Cycle Contral.
+	WriteRegister(0x90, 0x0010);	//Frame Cycle Contral.(0x0013)
+	WriteRegister(0x92, 0x0000);	//Panel Interface Contral 2.(0x0000)
+	WriteRegister(0x93, 0x0003);	//Panel Interface Contral 3.
+	WriteRegister(0x95, 0x0110);	//Frame Cycle Contral.(0x0110)
+	WriteRegister(0x97, 0x0000);	//
+	WriteRegister(0x98, 0x0000);	//Frame Cycle Contral.
 	//********Display On******************
-	ILI9320WriteRegister(0x07, 0x0173);
+	WriteRegister(0x07, 0x0173);
 	Delay(50);
 	//
-	ILI9320WriteCommand(0x22);
-	ILI9320fillScreenBackground(Colors::LIGHT_GREEN);
+	WriteCommand(0x22);
+	fillScreenBackground(Colors::LIGHT_GREEN);
 
-	ILI9320setFont(BigFont);
+	setFont(BigFont);
 
 }
 
-void ILI9320::ILI9320setXY(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2) {
-	if (mOrientation == LANDSCAPE) {
+void ILI9320::setXY(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2) {
+	if (m_orientation == LANDSCAPE) {
 		uint16_t temp = y1;
 		y1 = x1;
 		x1 = temp;
 		temp = y2;
 		y2 = x2;
 		x2 = temp;
-		y1 = mResolution.maxY - y1;
-		y2 = mResolution.maxY - y2;
+		y1 = m_resolution.maxY - y1;
+		y2 = m_resolution.maxY - y2;
 
 		temp = y2;
 		y2 = y1;
 		y1 = temp;
 
 	}
-	ILI9320lcdWriteCOMMAND_DATA(0x20, x1);
-	ILI9320lcdWriteCOMMAND_DATA(0x21, y1);
-	ILI9320lcdWriteCOMMAND_DATA(0x50, x1);
-	ILI9320lcdWriteCOMMAND_DATA(0x52, y1);
-	ILI9320lcdWriteCOMMAND_DATA(0x51, x2);
-	ILI9320lcdWriteCOMMAND_DATA(0x53, y2);
-	ILI9320lcdWriteCOMMAND(0x22);
+	lcdWriteCOMMAND_DATA(0x20, x1);
+	lcdWriteCOMMAND_DATA(0x21, y1);
+	lcdWriteCOMMAND_DATA(0x50, x1);
+	lcdWriteCOMMAND_DATA(0x52, y1);
+	lcdWriteCOMMAND_DATA(0x51, x2);
+	lcdWriteCOMMAND_DATA(0x53, y2);
+	lcdWriteCOMMAND(0x22);
 }
 
-void ILI9320::ILI9320clrXY() {
+void ILI9320::clrXY() {
 	///CS_LOW();
-	if (mOrientation == PORTRAIT)
-		ILI9320setXY(0, 0, mResolution.maxX, mResolution.maxY);
+	if (m_orientation == PORTRAIT)
+		setXY(0, 0, m_resolution.maxX, m_resolution.maxY);
 	else
-		ILI9320setXY(0, 0, mResolution.maxY, mResolution.maxX);
+		setXY(0, 0, m_resolution.maxY, m_resolution.maxX);
 	//CS_HIGH();
 }
 
-void ILI9320::ILI9320drawHLine(int x, int y, int l, uint16_t color) {
+void ILI9320::drawHLine(int x, int y, int l, uint16_t color) {
 	if (l < 0) {
 		l = -l;
 		x -= l;
 	}
 	CS_LOW();
-	ILI9320setXY(x, y, x + l, y);
+	setXY(x, y, x + l, y);
 	for (int i = 0; i < l + 1; i++) {
-		ILI9320lcdWriteDATA(color);
+		lcdWriteDATA(color);
 	}
 	CS_HIGH();
-	ILI9320clrXY();
+	clrXY();
 }
 
-void ILI9320::ILI9320drawVLine(int x, int y, int l, uint16_t color) {
+void ILI9320::drawVLine(int x, int y, int l, uint16_t color) {
 	if (l < 0) {
 		l = -l;
 		y -= l;
 	}
 	CS_LOW();
-	ILI9320setXY(x, y, x, y + l);
+	setXY(x, y, x, y + l);
 
 	for (int i = 0; i < l + 1; i++) {
-		ILI9320lcdWriteDATA(color);
+		lcdWriteDATA(color);
 	}
 
 	CS_HIGH();
-	ILI9320clrXY();
+	clrXY();
 }
 
-void ILI9320::ILI9320drawLine(int x1, int y1, int x2, int y2, uint16_t color) {
+void ILI9320::drawLine(int x1, int y1, int x2, int y2, uint16_t color) {
 	if (y1 == y2)
-		ILI9320drawHLine(x1, y1, x2 - x1, color);
+		drawHLine(x1, y1, x2 - x1, color);
 	else if (x1 == x2)
-		ILI9320drawVLine(x1, y1, y2 - y1, color);
+		drawVLine(x1, y1, y2 - y1, color);
 	else {
 		unsigned int dx = (x2 > x1 ? x2 - x1 : x1 - x2);
 		short xstep = x2 > x1 ? 1 : -1;
@@ -616,8 +620,8 @@ void ILI9320::ILI9320drawLine(int x1, int y1, int x2, int y2, uint16_t color) {
 		if (dx < dy) {
 			int t = -(dy >> 1);
 			while (true) {
-				ILI9320setXY(col, row, col, row);
-				ILI9320lcdWriteDATA(color);
+				setXY(col, row, col, row);
+				lcdWriteDATA(color);
 				if (row == y2)
 					return;
 				row += ystep;
@@ -630,8 +634,8 @@ void ILI9320::ILI9320drawLine(int x1, int y1, int x2, int y2, uint16_t color) {
 		} else {
 			int t = -(dx >> 1);
 			while (true) {
-				ILI9320setXY(col, row, col, row);
-				ILI9320lcdWriteDATA(color);
+				setXY(col, row, col, row);
+				lcdWriteDATA(color);
 				if (col == x2)
 					return;
 				col += xstep;
@@ -644,22 +648,22 @@ void ILI9320::ILI9320drawLine(int x1, int y1, int x2, int y2, uint16_t color) {
 		}
 		CS_HIGH();
 	}
-	ILI9320clrXY();
+	clrXY();
 }
 
-void ILI9320::ILI9320setPixel(uint16_t color) {
-	ILI9320lcdWriteDATA(color);	// rrrrrggggggbbbbb
+void ILI9320::setPixel(uint16_t color) {
+	lcdWriteDATA(color);	// rrrrrggggggbbbbb
 }
 
-void ILI9320::ILI9320drawPixel(int x, int y, uint16_t color) {
+void ILI9320::drawPixel(int x, int y, uint16_t color) {
 	CS_LOW();
-	ILI9320setXY(x, y, x, y);
-	ILI9320setPixel(color);
+	setXY(x, y, x, y);
+	setPixel(color);
 	CS_HIGH();
-	ILI9320clrXY();
+	clrXY();
 }
 
-void ILI9320::ILI9320drawRect(int x1, int y1, int x2, int y2, uint16_t color) {
+void ILI9320::drawRect(int x1, int y1, int x2, int y2, uint16_t color) {
 	if (x1 > x2) {
 		int temp = x1;
 		x1 = x2;
@@ -671,13 +675,14 @@ void ILI9320::ILI9320drawRect(int x1, int y1, int x2, int y2, uint16_t color) {
 		y2 = temp;
 	}
 
-	ILI9320drawHLine(x1, y1, x2 - x1, color);
-	ILI9320drawHLine(x1, y2, x2 - x1, color);
-	ILI9320drawVLine(x1, y1, y2 - y1, color);
-	ILI9320drawVLine(x2, y1, y2 - y1, color);
+	drawHLine(x1, y1, x2 - x1, color);
+	drawHLine(x1, y2, x2 - x1, color);
+	drawVLine(x1, y1, y2 - y1, color);
+	drawVLine(x2, y1, y2 - y1, color);
 }
 
-void ILI9320::ILI9320drawRoundRect(int x1, int y1, int x2, int y2, uint16_t color) {
+void ILI9320::drawRoundRect(int x1, int y1, int x2, int y2,
+		uint16_t color) {
 	if (x1 > x2) {
 		int temp = x1;
 		x1 = x2;
@@ -689,18 +694,18 @@ void ILI9320::ILI9320drawRoundRect(int x1, int y1, int x2, int y2, uint16_t colo
 		y2 = temp;
 	}
 	if ((x2 - x1) > 4 && (y2 - y1) > 4) {
-		ILI9320drawPixel(x1 + 1, y1 + 1, color);
-		ILI9320drawPixel(x2 - 1, y1 + 1, color);
-		ILI9320drawPixel(x1 + 1, y2 - 1, color);
-		ILI9320drawPixel(x2 - 1, y2 - 1, color);
-		ILI9320drawHLine(x1 + 2, y1, x2 - x1 - 4, color);
-		ILI9320drawHLine(x1 + 2, y2, x2 - x1 - 4, color);
-		ILI9320drawVLine(x1, y1 + 2, y2 - y1 - 4, color);
-		ILI9320drawVLine(x2, y1 + 2, y2 - y1 - 4, color);
+		drawPixel(x1 + 1, y1 + 1, color);
+		drawPixel(x2 - 1, y1 + 1, color);
+		drawPixel(x1 + 1, y2 - 1, color);
+		drawPixel(x2 - 1, y2 - 1, color);
+		drawHLine(x1 + 2, y1, x2 - x1 - 4, color);
+		drawHLine(x1 + 2, y2, x2 - x1 - 4, color);
+		drawVLine(x1, y1 + 2, y2 - y1 - 4, color);
+		drawVLine(x2, y1 + 2, y2 - y1 - 4, color);
 	}
 }
 
-void ILI9320::ILI9320fillRect(int x1, int y1, int x2, int y2, uint16_t color) {
+void ILI9320::fillRect(int x1, int y1, int x2, int y2, uint16_t color) {
 	if (x1 > x2) {
 		int temp = x1;
 		x1 = x2;
@@ -713,20 +718,21 @@ void ILI9320::ILI9320fillRect(int x1, int y1, int x2, int y2, uint16_t color) {
 		y2 = temp;
 		//swap(int, y1, y2);
 	}
-	if (mOrientation == PORTRAIT) {
+	if (m_orientation == PORTRAIT) {
 		for (int i = 0; i < ((y2 - y1) / 2) + 1; i++) {
-			ILI9320drawHLine(x1, y1 + i, x2 - x1, color);
-			ILI9320drawHLine(x1, y2 - i, x2 - x1, color);
+			drawHLine(x1, y1 + i, x2 - x1, color);
+			drawHLine(x1, y2 - i, x2 - x1, color);
 		}
 	} else {
 		for (int i = 0; i < ((x2 - x1) / 2) + 1; i++) {
-			ILI9320drawVLine(x1 + i, y1, y2 - y1, color);
-			ILI9320drawVLine(x2 - i, y1, y2 - y1, color);
+			drawVLine(x1 + i, y1, y2 - y1, color);
+			drawVLine(x2 - i, y1, y2 - y1, color);
 		}
 	}
 }
 
-void ILI9320::ILI9320fillRoundRect(int x1, int y1, int x2, int y2, uint16_t color) {
+void ILI9320::fillRoundRect(int x1, int y1, int x2, int y2,
+		uint16_t color) {
 	if (x1 > x2) {
 		int temp = x1;
 		x1 = x2;
@@ -744,22 +750,22 @@ void ILI9320::ILI9320fillRoundRect(int x1, int y1, int x2, int y2, uint16_t colo
 		for (int i = 0; i < ((y2 - y1) / 2) + 1; i++) {
 			switch (i) {
 			case 0:
-				ILI9320drawHLine(x1 + 2, y1 + i, x2 - x1 - 4, color);
-				ILI9320drawHLine(x1 + 2, y2 - i, x2 - x1 - 4, color);
+				drawHLine(x1 + 2, y1 + i, x2 - x1 - 4, color);
+				drawHLine(x1 + 2, y2 - i, x2 - x1 - 4, color);
 				break;
 			case 1:
-				ILI9320drawHLine(x1 + 1, y1 + i, x2 - x1 - 2, color);
-				ILI9320drawHLine(x1 + 1, y2 - i, x2 - x1 - 2, color);
+				drawHLine(x1 + 1, y1 + i, x2 - x1 - 2, color);
+				drawHLine(x1 + 1, y2 - i, x2 - x1 - 2, color);
 				break;
 			default:
-				ILI9320drawHLine(x1, y1 + i, x2 - x1, color);
-				ILI9320drawHLine(x1, y2 - i, x2 - x1, color);
+				drawHLine(x1, y1 + i, x2 - x1, color);
+				drawHLine(x1, y2 - i, x2 - x1, color);
 			}
 		}
 	}
 }
 
-void ILI9320::ILI9320drawCircle(int x, int y, int radius, uint16_t color) {
+void ILI9320::drawCircle(int x, int y, int radius, uint16_t color) {
 	int f = 1 - radius;
 	int ddF_x = 1;
 	int ddF_y = -2 * radius;
@@ -767,14 +773,14 @@ void ILI9320::ILI9320drawCircle(int x, int y, int radius, uint16_t color) {
 	int y1 = radius;
 
 	CS_LOW();
-	ILI9320setXY(x, y + radius, x, y + radius);
-	ILI9320lcdWriteDATA(color);
-	ILI9320setXY(x, y - radius, x, y - radius);
-	ILI9320lcdWriteDATA(color);
-	ILI9320setXY(x + radius, y, x + radius, y);
-	ILI9320lcdWriteDATA(color);
-	ILI9320setXY(x - radius, y, x - radius, y);
-	ILI9320lcdWriteDATA(color);
+	setXY(x, y + radius, x, y + radius);
+	lcdWriteDATA(color);
+	setXY(x, y - radius, x, y - radius);
+	lcdWriteDATA(color);
+	setXY(x + radius, y, x + radius, y);
+	lcdWriteDATA(color);
+	setXY(x - radius, y, x - radius, y);
+	lcdWriteDATA(color);
 
 	while (x1 < y1) {
 		if (f >= 0) {
@@ -785,73 +791,73 @@ void ILI9320::ILI9320drawCircle(int x, int y, int radius, uint16_t color) {
 		x1++;
 		ddF_x += 2;
 		f += ddF_x;
-		ILI9320setXY(x + x1, y + y1, x + x1, y + y1);
-		ILI9320lcdWriteDATA(color);
-		ILI9320setXY(x - x1, y + y1, x - x1, y + y1);
-		ILI9320lcdWriteDATA(color);
-		ILI9320setXY(x + x1, y - y1, x + x1, y - y1);
-		ILI9320lcdWriteDATA(color);
-		ILI9320setXY(x - x1, y - y1, x - x1, y - y1);
-		ILI9320lcdWriteDATA(color);
-		ILI9320setXY(x + y1, y + x1, x + y1, y + x1);
-		ILI9320lcdWriteDATA(color);
-		ILI9320setXY(x - y1, y + x1, x - y1, y + x1);
-		ILI9320lcdWriteDATA(color);
-		ILI9320setXY(x + y1, y - x1, x + y1, y - x1);
-		ILI9320lcdWriteDATA(color);
-		ILI9320setXY(x - y1, y - x1, x - y1, y - x1);
-		ILI9320lcdWriteDATA(color);
+		setXY(x + x1, y + y1, x + x1, y + y1);
+		lcdWriteDATA(color);
+		setXY(x - x1, y + y1, x - x1, y + y1);
+		lcdWriteDATA(color);
+		setXY(x + x1, y - y1, x + x1, y - y1);
+		lcdWriteDATA(color);
+		setXY(x - x1, y - y1, x - x1, y - y1);
+		lcdWriteDATA(color);
+		setXY(x + y1, y + x1, x + y1, y + x1);
+		lcdWriteDATA(color);
+		setXY(x - y1, y + x1, x - y1, y + x1);
+		lcdWriteDATA(color);
+		setXY(x + y1, y - x1, x + y1, y - x1);
+		lcdWriteDATA(color);
+		setXY(x - y1, y - x1, x - y1, y - x1);
+		lcdWriteDATA(color);
 	}
 	CS_HIGH();
-	ILI9320clrXY();
+	clrXY();
 }
 
-void ILI9320::ILI9320fillCircle(int x, int y, int radius, uint16_t color) {
+void ILI9320::fillCircle(int x, int y, int radius, uint16_t color) {
 	for (int y1 = -radius; y1 <= 0; y1++)
 		for (int x1 = -radius; x1 <= 0; x1++)
 			if (x1 * x1 + y1 * y1 <= radius * radius) {
-				ILI9320drawHLine(x + x1, y + y1, 2 * (-x1), color);
-				ILI9320drawHLine(x + x1, y - y1, 2 * (-x1), color);
+				drawHLine(x + x1, y + y1, 2 * (-x1), color);
+				drawHLine(x + x1, y - y1, 2 * (-x1), color);
 				break;
 			}
 }
 
-void ILI9320::ILI9320clrScr() {
+void ILI9320::clrScr() {
 	long i;
 	CS_LOW();
-	ILI9320clrXY();
-	for (i = 0; i < ((mResolution.x) * (mResolution.y)); i++) {
-
-		ILI9320lcdWriteDATA(0);
+	clrXY();
+	for (i = 0; i < ((m_resolution.x) * (m_resolution.y)); i++) {
+		lcdWriteDATA(0);
 	}
 	CS_HIGH();
 }
 
-void ILI9320::ILI9320printChar(uint8_t c, int x, int y, uint16_t color) {
+void ILI9320::printChar(uint8_t c, int x, int y, uint16_t color) {
 	uint8_t i, ch;
 	uint8_t j;
 	uint16_t temp;
 	CS_LOW();
-	temp = ((c - mCurrentFont.offset) * ((mCurrentFont.xSize / 8) * mCurrentFont.ySize)) + 4;
-	for (j = 0; j < mCurrentFont.ySize; j++) {
-		for (int zz = 0; zz < (mCurrentFont.xSize / 8); zz++) {
-			ch = mCurrentFont.font[temp + zz];
+	temp = ((c - m_currentFont.offset)
+			* ((m_currentFont.xSize / 8) * m_currentFont.ySize)) + 4;
+	for (j = 0; j < m_currentFont.ySize; j++) {
+		for (int zz = 0; zz < (m_currentFont.xSize / 8); zz++) {
+			ch = m_currentFont.font[temp + zz];
 			for (i = 0; i < 8; i++) {
-				ILI9320setXY(x + i + (zz * 8), y + j, x + i + (zz * 8) + 1,
+				setXY(x + i + (zz * 8), y + j, x + i + (zz * 8) + 1,
 						y + j + 1);
 
 				if ((ch & (1 << (7 - i))) != 0) {
-					ILI9320setPixel(color);
+					setPixel(color);
 				}
 			}
 		}
-		temp += (mCurrentFont.xSize / 8);
+		temp += (m_currentFont.xSize / 8);
 	}
 	CS_HIGH();
-	ILI9320clrXY();
+	clrXY();
 }
 
-void ILI9320::ILI9320rotateChar(uint8_t c, int x, int y, int pos, int deg,
+void ILI9320::rotateChar(uint8_t c, int x, int y, int pos, int deg,
 		uint16_t color) {
 	uint8_t i, j, ch;
 	uint16_t temp;
@@ -859,59 +865,60 @@ void ILI9320::ILI9320rotateChar(uint8_t c, int x, int y, int pos, int deg,
 	double radian;
 	radian = deg * 0.0175;
 	CS_LOW();
-	temp = ((c - mCurrentFont.offset) * ((mCurrentFont.xSize / 8) * mCurrentFont.ySize)) + 4;
-	for (j = 0; j < mCurrentFont.ySize; j++) {
-		for (int zz = 0; zz < (mCurrentFont.xSize / 8); zz++) {
-			ch = mCurrentFont.font[temp + zz];
+	temp = ((c - m_currentFont.offset)
+			* ((m_currentFont.xSize / 8) * m_currentFont.ySize)) + 4;
+	for (j = 0; j < m_currentFont.ySize; j++) {
+		for (int zz = 0; zz < (m_currentFont.xSize / 8); zz++) {
+			ch = m_currentFont.font[temp + zz];
 			for (i = 0; i < 8; i++) {
 				newx = x
-						+ (((i + (zz * 8) + (pos * mCurrentFont.xSize)) * cos(radian))
-								- ((j) * sin(radian)));
+						+ (((i + (zz * 8) + (pos * m_currentFont.xSize))
+								* cos(radian)) - ((j) * sin(radian)));
 				newy = y
 						+ (((j) * cos(radian))
-								+ ((i + (zz * 8) + (pos * mCurrentFont.xSize))
+								+ ((i + (zz * 8) + (pos * m_currentFont.xSize))
 										* sin(radian)));
 
-				ILI9320setXY(newx, newy, newx + 1, newy + 1);
+				setXY(newx, newy, newx + 1, newy + 1);
 
 				if ((ch & (1 << (7 - i))) != 0) {
-					ILI9320setPixel(color);
+					setPixel(color);
 				} else {
-					ILI9320setPixel(color);
+					setPixel(color);
 				}
 			}
 		}
-		temp += (mCurrentFont.xSize / 8);
+		temp += (m_currentFont.xSize / 8);
 	}
 	CS_HIGH();
-	ILI9320clrXY();
+	clrXY();
 }
 
-void ILI9320::ILI9320print(char *st, int x, int y, int deg, uint16_t color) {
+void ILI9320::print(char *st, int x, int y, int deg, uint16_t color) {
 	int stl, i;
 
 	stl = strlen(st);
 
-	if (mOrientation == PORTRAIT) {
+	if (m_orientation == PORTRAIT) {
 		if (x == RIGHT)
-			x = (mResolution.x) - (stl * mCurrentFont.xSize);
+			x = (m_resolution.x) - (stl * m_currentFont.xSize);
 		if (x == CENTER)
-			x = ((mResolution.x) - (stl * mCurrentFont.xSize)) / 2;
+			x = ((m_resolution.x) - (stl * m_currentFont.xSize)) / 2;
 	} else {
 		if (x == RIGHT)
-			x = (mResolution.y) - (stl * mCurrentFont.xSize);
+			x = (m_resolution.y) - (stl * m_currentFont.xSize);
 		if (x == CENTER)
-			x = ((mResolution.y) - (stl * mCurrentFont.xSize)) / 2;
+			x = ((m_resolution.y) - (stl * m_currentFont.xSize)) / 2;
 	}
 	for (i = 0; i < stl; i++) {
 		if (deg == 0)
-			ILI9320printChar(*st++, x + (i * (mCurrentFont.xSize)), y, color);
+			printChar(*st++, x + (i * (m_currentFont.xSize)), y, color);
 		else
-			ILI9320rotateChar(*st++, x, y, i, deg, color);
+			rotateChar(*st++, x, y, i, deg, color);
 	}
 }
 
-void ILI9320::ILI9320printNumI(long num, int x, int y, int length, char filler,
+void ILI9320::printNumI(long num, int x, int y, int length, char filler,
 		uint16_t color) {
 	char buf[25];
 	char st[27];
@@ -958,18 +965,19 @@ void ILI9320::ILI9320printNumI(long num, int x, int y, int length, char filler,
 
 	}
 
-	ILI9320print(st, x, y, 0, color);
+	print(st, x, y, 0, color);
 }
 
-void ILI9320::ILI9320convertFloat(char *buf, double num, int width, uint8_t prec) {
+void ILI9320::convertFloat(char *buf, double num, int width,
+		uint8_t prec) {
 	char format[10];
 
 	sprintf(format, "%%%i.%if", width, prec);
 	sprintf(buf, format, num);
 }
 
-void ILI9320::ILI9320printNumF(double num, uint8_t dec, int x, int y, char divider,
-		int length, char filler, uint16_t color) {
+void ILI9320::printNumF(double num, uint8_t dec, int x, int y,
+		char divider, int length, char filler, uint16_t color) {
 	char st[27];
 	bool neg = false;
 	if (dec < 1)
@@ -979,7 +987,7 @@ void ILI9320::ILI9320printNumF(double num, uint8_t dec, int x, int y, char divid
 
 	if (num < 0)
 		neg = true;
-	ILI9320convertFloat(st, num, length, dec);
+	convertFloat(st, num, length, dec);
 	if (divider != '.') {
 		for (int i = 0; i < sizeof(st); i++)
 			if (st[i] == '.')
@@ -999,46 +1007,46 @@ void ILI9320::ILI9320printNumF(double num, uint8_t dec, int x, int y, char divid
 		}
 	}
 
-	ILI9320print(st, x, y, 0, color);
+	print(st, x, y, 0, color);
 }
 
-void ILI9320::ILI9320drawBitmap(int x, int y, int sx, int sy, const uint16_t* data,
-		int scale) {
+void ILI9320::drawBitmap(int x, int y, int sx, int sy,
+		const uint16_t* data, int scale) {
 	uint16_t col;
 	int tx, ty, tc, tsx, tsy;
 
 	if (scale == 1) {
-		if (mOrientation == PORTRAIT) {
+		if (m_orientation == PORTRAIT) {
 			CS_LOW();
-			ILI9320setXY(x, y, x + sx - 1, y + sy - 1);
+			setXY(x, y, x + sx - 1, y + sy - 1);
 			for (tc = 0; tc < (sx * sy); tc++) {
 				col = data[tc];
-				ILI9320lcdWriteDATA(col);
+				lcdWriteDATA(col);
 			}
 			CS_HIGH();
 		} else {
 			CS_LOW();
 			for (ty = 0; ty < sy; ty++) {
-				ILI9320setXY(x, y + ty, x + sx - 1, y + ty);
+				setXY(x, y + ty, x + sx - 1, y + ty);
 				for (tx = sx - 1; tx >= 0; tx--) {
 					col = data[(ty * sx) + tx];
-					ILI9320lcdWriteDATA(col);
+					lcdWriteDATA(col);
 					//for (volatile int i = 0; i < 10000; i++); //kludge in case of too high clocking
 				}
 			}
 			CS_HIGH();
 		}
 	} else {
-		if (mOrientation == PORTRAIT) {
+		if (m_orientation == PORTRAIT) {
 			CS_LOW();
 			for (ty = 0; ty < sy; ty++) {
-				ILI9320setXY(x, y + (ty * scale), x + ((sx * scale) - 1),
+				setXY(x, y + (ty * scale), x + ((sx * scale) - 1),
 						y + (ty * scale) + scale);
 				for (tsy = 0; tsy < scale; tsy++)
 					for (tx = 0; tx < sx; tx++) {
 						col = data[(ty * sx) + tx];
 						for (tsx = 0; tsx < scale; tsx++)
-							ILI9320lcdWriteDATA(col);
+							lcdWriteDATA(col);
 					}
 			}
 			CS_HIGH();
@@ -1046,61 +1054,60 @@ void ILI9320::ILI9320drawBitmap(int x, int y, int sx, int sy, const uint16_t* da
 			CS_LOW();
 			for (ty = 0; ty < sy; ty++) {
 				for (tsy = 0; tsy < scale; tsy++) {
-					ILI9320setXY(x, y + (ty * scale) + tsy,
+					setXY(x, y + (ty * scale) + tsy,
 							x + ((sx * scale) - 1), y + (ty * scale) + tsy);
 					for (tx = sx - 1; tx >= 0; tx--) {
 						col = data[(ty * sx) + tx];
 						for (tsx = 0; tsx < scale; tsx++)
-							ILI9320lcdWriteDATA(col);
+							lcdWriteDATA(col);
 					}
 				}
 			}
 			CS_HIGH();
 		}
 	}
-	ILI9320clrXY();
+	clrXY();
 }
 
-
-void ILI9320::ILI9320fillScreenBackground(uint16_t color) {
+void ILI9320::fillScreenBackground(uint16_t color) {
 	uint16_t i, f;
 	CS_LOW();
 	for (i = 0; i < 320; i++) {
 		for (f = 0; f < 240; f++) {
-			ILI9320lcdWriteDATA(color);
+			lcdWriteDATA(color);
 		}
 	}
 	CS_HIGH();
 }
 
 /*
- void ILI9320::ILI9320setFont(const Font* font) {
-	mCurrentFont.font = font->font;
-	mCurrentFont.xSize = font->xSize;
-	mCurrentFont.ySize = font->ySize;
-	mCurrentFont.offset = font->offset;
-	mCurrentFont.numchars = font->numchars;
-}
+ void setFont(const Font* font) {
+ mCurrentFont.font = font->font;
+ mCurrentFont.xSize = font->xSize;
+ mCurrentFont.ySize = font->ySize;
+ mCurrentFont.offset = font->offset;
+ mCurrentFont.numchars = font->numchars;
+ }
  */
 
-void ILI9320::ILI9320setFont(const uint8_t* font) {
-	mCurrentFont.font = (uint8_t*)font;
-	mCurrentFont.xSize = font[0];
-	mCurrentFont.ySize = font[1];
-	mCurrentFont.offset = font[2];
-	mCurrentFont.numchars = font[3];
+void ILI9320::setFont(const uint8_t* font) {
+	m_currentFont.font = (uint8_t*) font;
+	m_currentFont.xSize = font[0];
+	m_currentFont.ySize = font[1];
+	m_currentFont.offset = font[2];
+	m_currentFont.numchars = font[3];
 }
 
-uint8_t* ILI9320::ILI9320getFont() {
-	return mCurrentFont.font;
+uint8_t* ILI9320::getFont() {
+	return m_currentFont.font;
 }
 
-uint8_t ILI9320::ILI9320getFontXsize() {
-	return mCurrentFont.xSize;
+uint8_t ILI9320::getFontXsize() {
+	return m_currentFont.xSize;
 }
 
-uint8_t ILI9320::ILI9320getFontYsize() {
-	return mCurrentFont.ySize;
+uint8_t ILI9320::getFontYsize() {
+	return m_currentFont.ySize;
 }
 
 static void swapInt(int *a, int*b) {

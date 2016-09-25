@@ -124,18 +124,26 @@ public:
 	void convertFloat(char *buf, double num, int width, uint8_t prec);
 	//calibration helpers
 	void showThreePointCalibrationHitPoint(uint16_t x1, uint16_t y1);
-
+	void setColor(uint8_t r, uint8_t g, uint8_t b);
 	inline void setResolution(uint16_t height, uint16_t width) {
 		m_resolution = ILI9320::Resolution(height, width);
 	}
 
-	inline Resolution getResolution() const {
+	inline Resolution getResolution() const
+	{
 		return m_resolution;
 	}
 
-	inline DispalySize getSize() {
+	inline DispalySize getSize()
+	{
 		return m_dispSize;
 	}
+
+	inline Orientation getScreenOrientation() const
+	{
+		return m_orientation;
+	}
+
 private:
 	TransferMode m_transferMode;
 	Orientation m_orientation;

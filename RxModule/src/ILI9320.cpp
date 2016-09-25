@@ -651,6 +651,11 @@ void ILI9320::drawLine(int x1, int y1, int x2, int y2, uint16_t color) {
 	clrXY();
 }
 
+void ILI9320::setColor(uint8_t r, uint8_t g, uint8_t b)
+{
+	lcdWriteDATA(r|g<<1|b<<2);	// rrrrrggggggbbbbb
+}
+
 void ILI9320::setPixel(uint16_t color) {
 	lcdWriteDATA(color);	// rrrrrggggggbbbbb
 }

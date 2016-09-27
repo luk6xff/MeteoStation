@@ -48,7 +48,7 @@ public:
 		DecoratorList *list=new DecoratorList();
 		list->Add(new DecoratorRectFill(Color::LightGray,false));
 		list->Add(new DecoratorColor(Color::Black));
-		Environment::Get()->RegisterDecoratorsGroup(F("Window"),list);
+		Environment::Get()->RegisterDecoratorsGroup(("Window"),list);
 	}
 	static void InitButton()
 	{
@@ -57,7 +57,7 @@ public:
 		list->Add(new DecoratorRectGradientFill(Color::Gray,Color::WhiteSmoke));
 		list->Add(new Decorator3DRect(Color::White,Color::Black));
 		list->Add(new DecoratorColor(Color::Black));
-		Environment::Get()->RegisterDecoratorsGroup(F("Button"),list);
+		Environment::Get()->RegisterDecoratorsGroup(("Button"),list);
 	}
 	static void RadioButton()
 	{
@@ -65,12 +65,12 @@ public:
 		list->Add(new DecoratorRectFill(Color::LightGray, false));
 		list->Add(new Decorator3DSquare(Color::Gray, Color::White, Color::LightGray, false));
 		list->Add(new DecoratorColor(Color::Black));
-		Environment::Get()->RegisterDecoratorsGroup(F("RadioButtonInactive"), list);
+		Environment::Get()->RegisterDecoratorsGroup(("RadioButtonInactive"), list);
 		DecoratorList *list_1 = new DecoratorList();
 		list_1->Add(new DecoratorRectFill(Color::LightGray, false));
 		list_1->Add(new Decorator3DSquare(Color::Gray, Color::White, Color::LightGray, true));
 		list_1->Add(new DecoratorColor(Color::Black));
-		Environment::Get()->RegisterDecoratorsGroup(F("RadioButtonActive"), list_1);
+		Environment::Get()->RegisterDecoratorsGroup(("RadioButtonActive"), list_1);
 	}
 	static void InitDialog()
 	{
@@ -78,15 +78,15 @@ public:
 		listDialog->Add(new DecoratorRectFill(Color::LightGray,false));
 		listDialog->Add(new Decorator3DRect(Color::White,Color::Gray));
 		listDialog->Add(new DecoratorColor(Color::Black));
-		Environment::Get()->RegisterDecoratorsGroup(F("Dialog"),listDialog);
+		Environment::Get()->RegisterDecoratorsGroup(("Dialog"),listDialog);
 		DecoratorList *list=new DecoratorList();
 		list->Add(new DecoratorRectFill(Color::LightBlue,false));
 		list->Add(new DecoratorColor(Color::White));
-		Environment::Get()->RegisterDecoratorsGroup(F("DialogCaption"),list);
+		Environment::Get()->RegisterDecoratorsGroup(("DialogCaption"),list);
 	}
 	static void InitLabel()
 	{
-		Environment::Get()->RegisterDecoratorsGroup(F("Label"),Environment::Get()->FindDecorators(F("Window")));
+		Environment::Get()->RegisterDecoratorsGroup(("Label"),Environment::Get()->FindDecorators(("Window")));
 	}
 	static void InitEditBox()
 	{
@@ -94,13 +94,13 @@ public:
 		list->Add(new DecoratorRectFill(Color::Black));
 		list->Add(new Decorator3DRect(Color::Gray,Color::White));
 		list->Add(new DecoratorColor(Color::White));
-		Environment::Get()->RegisterDecoratorsGroup(F("EditTextBox"),list);
+		Environment::Get()->RegisterDecoratorsGroup(("EditTextBox"),list);
 
 		list=new DecoratorList();
 		list->Add(new DecoratorRectFill(Color::LightGray));
 		list->Add(new Decorator3DRect(Color::Gray,Color::White));
 		list->Add(new DecoratorColor(Color::Black));
-		Environment::Get()->RegisterDecoratorsGroup(F("EditTextBoxReadOnly"),list);
+		Environment::Get()->RegisterDecoratorsGroup(("EditTextBoxReadOnly"),list);
 
 	}
 	static void InitGauge()
@@ -108,7 +108,7 @@ public:
 		DecoratorList *list=new DecoratorList();
 		list->Add(new Decorator3DRect(Color::White,Color::Gray));
 		list->Add(new DecoratorColor(Color::Green));
-		Environment::Get()->RegisterDecoratorsGroup(F("Gauge"),list);
+		Environment::Get()->RegisterDecoratorsGroup(("Gauge"),list);
 	}
 	static void InitTabControl()
 	{
@@ -119,19 +119,19 @@ public:
 		list->Add(new DecoratorBoundaryLine(DecoratorBoundaryLine::Top));
 		list->Add(new DecoratorBoundaryLine(DecoratorBoundaryLine::Right));
 		list->Add(new DecoratorColor(Color::Black));
-		Environment::Get()->RegisterDecoratorsGroup(F("ActiveTabButton"), list);
+		Environment::Get()->RegisterDecoratorsGroup(("ActiveTabButton"), list);
 
 		DecoratorList *list_ctrl = new DecoratorList();
 		list_ctrl->Add(new DecoratorRectFill(Color::LightGray, false));
 		list_ctrl->Add(new DecoratorColor(Color::Gray));
 		list_ctrl->Add(new DecoratorBoundaryLine(DecoratorBoundaryLine::Bottom));
-		Environment::Get()->RegisterDecoratorsGroup(F("BackTabButtons"), list_ctrl);
+		Environment::Get()->RegisterDecoratorsGroup(("BackTabButtons"), list_ctrl);
 
 		DecoratorList *list_tab = new DecoratorList();
 		list_tab->Add(new DecoratorRectFill(Color::LightGray, false));
 		list_tab->Add(new Decorator3DRect(Color::Gray, Color::Gray));
 		//list_tab->Add(new DecoratorColor(Color::Gray));
 		//list_tab->Add(new DecoratorBoundaryLine(DecoratorBoundaryLine::Left));
-		Environment::Get()->RegisterDecoratorsGroup(F("TabControl"), list_tab);
+		Environment::Get()->RegisterDecoratorsGroup(("TabControl"), list_tab);
 	}
 };

@@ -21,7 +21,7 @@
 */
 #include "TextBoxString.h"
 ///Implement button control
-class Button : public TextBoxTString<const __FlashStringHelper>
+class Button : public TextBoxTString<const char>
 {
 public:
 	///Constructor
@@ -32,7 +32,7 @@ public:
 	\param height window height
 	\param text button name
 	*/	
-	Button(int left,int top,int width,int height,const __FlashStringHelper * text):TextBoxTString<const __FlashStringHelper>(left,top,width,height,text,F("Button"))
+	Button(int left,int top,int width,int height,const char * text):TextBoxTString<const char>(left,top,width,height,text,("Button"))
 	{
 		SetFont(BigFont);
 		SetHorizontalAlignment(DC::Center);

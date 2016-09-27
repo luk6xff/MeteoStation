@@ -36,14 +36,14 @@ public:
 	\param width window width
 	\param height window height
 	*/
-	TabControl(const __FlashStringHelper * name, int left, int top, int width, int height):Window(name, left, top, width, height)
+	TabControl(const char * name, int left, int top, int width, int height):Window(name, left, top, width, height)
 	{
-		SetDecorators(Environment::Get()->FindDecorators(F("TabControl")));
-		AddChild(new Window(F("Back tab buttons"), 0, 0, width, _szy));
-		Children()[0]->SetDecorators(Environment::Get()->FindDecorators(F("BackTabButtons")));
+		SetDecorators(Environment::Get()->FindDecorators(("TabControl")));
+		AddChild(new Window(("Back tab buttons"), 0, 0, width, _szy));
+		Children()[0]->SetDecorators(Environment::Get()->FindDecorators(("BackTabButtons")));
 	}
 	///Adds pair: button + corresponding window. The size of added window is adjusted automatically
-	void AddTab(const __FlashStringHelper *buttonName,Window *window)
+	void AddTab(const char *buttonName,Window *window)
 	{
 		int wnd_width=Width();
 		int wnd_height=Height();
@@ -60,7 +60,7 @@ public:
 		if(_listWindow.Count()>1)
 			window->SetVisible(false);
 		else
-			_listButtons[0]->SetDecorators(Environment::Get()->FindDecorators(F("ActiveTabButton")));
+			_listButtons[0]->SetDecorators(Environment::Get()->FindDecorators(("ActiveTabButton")));
 		UpdateTabs(0);
 	}
 	///If new tab is selected, the size of buttons and their appearance are adjusted
@@ -90,14 +90,14 @@ public:
 		if(sel_index >=0)
 		{
 			UpdateTabs(sel_index);
-			DecoratorList *buttonDeco=Environment::Get()->FindDecorators(F("Button"));
+			DecoratorList *buttonDeco=Environment::Get()->FindDecorators(("Button"));
 			for(int i=0;i<_listButtons.Count();i++)
 			{
 				_listWindow[i]->SetVisible(i==sel_index);
 				if(i==sel_index)
 				{
 					_listWindow[i]->Invalidate();
-					_listButtons[i]->SetDecorators(Environment::Get()->FindDecorators(F("ActiveTabButton")));
+					_listButtons[i]->SetDecorators(Environment::Get()->FindDecorators(("ActiveTabButton")));
 				}
 				else
 				{

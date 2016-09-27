@@ -69,7 +69,7 @@ public:
 			if (_oldValue > _value)
 			{
 				dc->SetColor(_fillColor);
-				dc->FillRoundRect(4, bottom - _oldValue*saling_factor, right_offset - 3, min(bottom, dc_level + 3));
+				dc->FillRoundRect(4, bottom - _oldValue*saling_factor, right_offset - 3, std::min(bottom, dc_level + 3));
 			}
 			dc->SetColor(_barColor);
 			dc->FillRoundRect(4, dc_level, right_offset - 3, bottom);
@@ -81,7 +81,7 @@ public:
 			if (_oldValue > _value)
 			{
 				dc->SetColor(_fillColor);
-				dc->FillRoundRect(max(4, dc_level - 3), 4, _oldValue*saling_factor, bottom);
+				dc->FillRoundRect(std::max(4, dc_level - 3), 4, _oldValue*saling_factor, bottom);
 			}
 			dc->SetColor(_barColor);
 			dc->FillRoundRect(4, 4, dc_level, bottom);

@@ -29,7 +29,7 @@ extern uint8_t SmallFont[];
 ///Base class for window with text content
 class TextBox : public Window
 {
-	uint8_t *_font;
+	uint8_t const *_font;
 protected:
 	int _offset_x;
 	int _offset_y;
@@ -74,7 +74,7 @@ public:
 		_offset_y=offset_y;
 	}
 	///Sets font
-	void SetFont(uint8_t *font)
+	void SetFont(const uint8_t *font)
 	{
 		_font = font;
 	}

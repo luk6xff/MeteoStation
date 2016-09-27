@@ -22,6 +22,7 @@
 
 #include <math.h>
 #include "IDataBuffer.h"
+#include <algorithm>
 
 ///Buffer for sensor data. It is used by chart control.
 class TimeSerieBuffer : public IDataBuffer
@@ -74,7 +75,6 @@ public:
 			_size=size;
 		else
 		{
-			out<<F("Error: buffer size is too big")<<endln;
 			return false;
 		}
 		return true;
@@ -98,7 +98,6 @@ public:
 	{
 		if(index>=Size())
 		{
-			out<<F("Error: index outside of array bounds: ")<<index<<endln;
 			return;
 		}
 		_data_y[index]=(value*_factor_y);
@@ -117,8 +116,8 @@ public:
 		max_y=_data_y[_size-1];
 		for(int i=0;i<_size;i++)
 		{
-			min_y=min(min_y,_data_y[i]);
-			max_y=max(max_y,_data_y[i]);
+			min_y=std::min(min_y,(float)_data_y[i]);
+			max_y=std::max(max_y,(float)_data_y[i]);
 		}
 		min_y/=_factor_y;
 		max_y/=_factor_y;
@@ -128,7 +127,6 @@ public:
 	{
 		if(index>=Size())
 		{
-			out<<F("Error: index outside of array bounds: ")<<index<<endln;
 			return 0;
 		}
 		return _time_step*index;
@@ -138,7 +136,6 @@ public:
 	{
 		if(index>=Size())
 		{
-			out<<F("Error: index outside of array bounds: ")<<index<<endln;
 			return 0;
 		}
 		return _data_y[index]/_factor_y;

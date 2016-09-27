@@ -87,7 +87,7 @@ public:
 	{
 		if(_decorators == NULL)
 			_decorators=new DecoratorList();
-		_decorators->add(decorator);
+		_decorators->Add(decorator);
 	}
 	Dialog *FindDialog(const char *id);
 	void RegisterDialog(const char  *id,Dialog *dlg);
@@ -163,13 +163,7 @@ public:
 	{
 		return _isDirty;
 	}
-#ifdef DEBUG_AWIND
-	///Returns internal window name
-	const __FlashStringHelper *Name()
-	{
-		return _name;
-	}
-#endif
+
 	///Returns window left coordinate relative to the parent window
 	int Left()
 	{
@@ -194,7 +188,7 @@ public:
 	void AddChild(Window * window)
 	{
 		window->SetParent(this);
-		_children.add(window);
+		_children.Add(window);
 	}
 	///Returns Parent window
 	Window * Parent()

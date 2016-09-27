@@ -21,7 +21,7 @@
 */
 #include "TextBoxString.h"
 ///Implement Label control
-class Label : public TextBoxTString<const __FlashStringHelper>
+class Label : public TextBoxTString<const char>
 {
 public:
 	///Constructor
@@ -32,7 +32,7 @@ public:
 	\param height window height
 	\param text text to visualize
 	*/	
-	Label(int left,int top,int width,int height,const __FlashStringHelper * text):TextBoxTString<const __FlashStringHelper>(left,top,width,height,text,F("Label"))
+	Label(int left,int top,int width,int height,const char * text):TextBoxTString<const char>(left,top,width,height,text,("Label"))
 	{
 		SetFont(SmallFont);
 	}

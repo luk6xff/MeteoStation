@@ -20,7 +20,7 @@
   examples and tools supplied with the library.
 */
 #include "Dialog.h"
-#include "ICriticalProcess.h"
+//#include "ICriticalProcess.h"
 class ILoopProcess
 {
 public:
@@ -29,7 +29,7 @@ public:
 class DialogEntry
 {
 public:
-	const __FlashStringHelper *ID;
+	const char *ID;
 	Dialog *DlgWindow;
 };
 class TextBoxNumber;
@@ -47,12 +47,12 @@ public:
 	\param width screen width
 	\param height screen height
 	*/
-	MainWindow(int width,int height):Window(F("Main"),0,0,width,height),_isModalDialogActive(false)
+	MainWindow(int width,int height):Window(("Main"),0,0,width,height),_isModalDialogActive(false)
 	{
 		_modalWindow=NULL;
 	}
 	///Registers dialog window. All application dialogs have to be registered
-	void RegisterDialog(const __FlashStringHelper *id,Dialog * widnow)
+	void RegisterDialog(const char *id,Dialog * widnow)
 	{
 		widnow->RegisterEndDialogEventReceiver(this);
 
@@ -64,12 +64,12 @@ public:
 		AddChild(widnow);
 	}
 	///Finds registered dialog by the name
-	Dialog *FindDialog(const __FlashStringHelper *id)
+	Dialog *FindDialog(const char *id)
 	{
 		for(int i=0;i<_dialogs.Count();i++)
 		{
 			//out<<F("Find dialog:")<<id<<F(" Candidate:")<<_dialogs[i]->ID<<F(" Res:");
-			if(AHelper::compare_F(id, _dialogs[i]->ID))
+			if(strcmp(id, _dialogs[i]->ID)==0)
 				return _dialogs[i]->DlgWindow;
 
 		}

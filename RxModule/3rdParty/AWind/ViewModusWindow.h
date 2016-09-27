@@ -61,7 +61,7 @@ public:
 		_chartDecorator.Add(new DecoratorRectFill(Color::Black,false));
 
 		//SetBackColor(Color::Black);
-		_text=new TextBoxFString(width-100,height-45,95,35,F("Night"));
+		_text=new TextBoxFString(width-100,height-45,95,35,("Night"));
 		_text->SetFont(BigFont);
 		_text->SetMargins(12,10);
 		_modus=Day;
@@ -99,12 +99,12 @@ public:
 		if(_modus==Day)
 		{
 			_modus=Night;
-			_text->SetText(F("Day"));
+			_text->SetText(("Day"));
 		}
 		else
 		{
 			_modus=Day;	
-			_text->SetText(F("Night"));
+			_text->SetText(("Night"));
 		}
 		updateBackColor();
 		Invalidate();

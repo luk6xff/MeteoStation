@@ -43,10 +43,10 @@ public:
 	\param width window width
 	\param height window height
 	*/
-	ButtonWindow(Pictogram pictogram,int left,int top,int width,int height):Window(F("Button"),left,top,width,height)
+	ButtonWindow(Pictogram pictogram,int left,int top,int width,int height):Window(("Button"),left,top,width,height)
 	{
 		_pictogram=pictogram;
-		SetDecorators(Environment::Get()->FindDecorators(F("Button")));
+		SetDecorators(Environment::Get()->FindDecorators(("Button")));
 
 	}
 	///Implements drawing code

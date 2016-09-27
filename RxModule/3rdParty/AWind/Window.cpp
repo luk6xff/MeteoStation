@@ -18,16 +18,14 @@
   The license applies to all part of the library including the 
   examples and tools supplied with the library.
 */
-#include "Arduino.h"
-
 #include "Window.h"
 #include "MainWindow.h"
 
-Dialog *Window::FindDialog(const __FlashStringHelper *id)
+Dialog *Window::FindDialog(const char *id)
 {
 	return ((MainWindow *)RootWindow())->FindDialog(id);
 }
-void Window::RegisterDialog(const __FlashStringHelper *id,Dialog *dlg)
+void Window::RegisterDialog(const char *id,Dialog *dlg)
 {
 	((MainWindow *)RootWindow())->RegisterDialog(id,dlg);
 }
@@ -36,12 +34,11 @@ IDialogClosedEventReceiver::DialogResults Window::DoDialog(Dialog *dlg)
 	IDialogClosedEventReceiver::DialogResults res=((MainWindow *)RootWindow())->ProcessDoDialog(dlg);
 	return res;
 }
-#ifdef _VARIANT_ARDUINO_DUE_X_   //DUE
+
 char *dtostrf(double val, signed char width, unsigned char prec, char *sout) {
       char fmt[20];
       sprintf(fmt, "%%%d.%df", width, prec);
       sprintf(sout, fmt, val);
       return sout;
    }
-#endif
 

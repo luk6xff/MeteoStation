@@ -22,6 +22,7 @@
 #include "Color.h"
 #include "../../src/ILI9320.h"
 #include <cstdio>
+#include <math.h>
 
 ///Device context. Abstraction layer to the device specific drawing code. Coordinates in drawing function are in window coordinate system that internaly translated into screen coordinate system
 class DC
@@ -321,7 +322,7 @@ public:
 		//_lcd->setBackColor(VGA_TRANSPARENT);
 		SetDeviceColor(color);
 	}
-	void SetFont(uint8_t *font)
+	void SetFont(const uint8_t *font)
 	{
 		_lcd->setFont(font);
 	}

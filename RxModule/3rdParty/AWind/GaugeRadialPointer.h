@@ -90,7 +90,7 @@ public:
 				dc->MoveTo(x0+radius*sin_val,y0-radius*cos_val);
 				dc->LineTo(x0+radius*1.1*sin_val,y0-radius*1.1*cos_val);
 				value=_minValue+step_val*i;
-				x_offset=AHelper::GetNumberLength(value, _precision);
+				x_offset=GetNumberLength(value, _precision);
 				if(value<0)
 					x_offset++;
 				if(i==0)
@@ -125,3 +125,8 @@ private:
 	}
 };
 const float GaugeRadialPointer::_sector_angle_rad = 3.14 / 2 * 0.8;
+
+static int GetNumberLength(float number,int prec)
+{
+	return (abs(number)<1?0:log10(abs(number)))+2+prec+(number<0?1:0);
+}

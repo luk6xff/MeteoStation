@@ -18,8 +18,8 @@
   examples and tools supplied with the library.
 */
 #include "LinkedList.h"
-#include "AHelper.h"
 #include "Decorator.h"
+#include <string.h>
 
 typedef LinkedList<Decorator> DecoratorList;
 class DecoratorGroupEntry
@@ -48,7 +48,7 @@ public:
 		return _singltone;
 	}
 	///Registers decorators group. It is like application resources that can be shred between windows of the same type (e.g. buttons, text box and etc.)
-	void RegisterDecoratorsGroup(const __FlashStringHelper *id,DecoratorList * decorators)
+	void RegisterDecoratorsGroup(const char *id,DecoratorList * decorators)
 	{
 		DecoratorGroupEntry *entry=new DecoratorGroupEntry();
 		entry->ID=id;
@@ -56,11 +56,11 @@ public:
 		_shared_decorators.Add(entry);
 	}
 	///Finds registered decorators by the name
-	DecoratorList *FindDecorators(const __FlashStringHelper *id)
+	DecoratorList *FindDecorators(const char *id)
 	{
 		for(int i=0;i<_shared_decorators.Count();i++)
 		{
-			if(AHelper::compare_F(id, _shared_decorators[i]->ID))
+			if(strcmp(id, _shared_decorators[i]->ID) ==0)
 				return _shared_decorators[i]->Decorators;
 
 		}

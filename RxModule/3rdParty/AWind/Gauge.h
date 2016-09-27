@@ -20,6 +20,7 @@
   examples and tools supplied with the library.
 */
 #include "Window.h"
+#include <algorithm>
 ///Gauge window class, that allows visualisaion of data in form of bar or radial pointer
 class Gauge : public Window
 {
@@ -42,7 +43,7 @@ public:
 	\param height window height
 	*/
 	Gauge(int left,int top,int width,int height)
-		:Window(F("gauge"),left,top,width,height),
+		:Window(("gauge"),left,top,width,height),
 		_value(0),
 		_oldValue(0),
 		_minValue(0),
@@ -50,7 +51,7 @@ public:
 		_fillColor(Color::Black),
 		_drawOnlyPointer(false)
 	{
-		SetDecorators(Environment::Get()->FindDecorators(F("Gauge")));
+		SetDecorators(Environment::Get()->FindDecorators(("Gauge")));
 	}
 	///Sets fill color
 	void SetFillColor(Color fillColor)
@@ -74,8 +75,8 @@ public:
 	*/
 	float SetValue(float value)
 	{
-		_value=max(_minValue,value);
-		_value=min(_maxValue,_value);
+		_value=std::max(_minValue,value);
+		_value=std::min(_maxValue,_value);
 		//out<<F("Gauge value: ")<<_value<<endln;
 		_drawOnlyPointer=true;
 		if (this->IsVisible())

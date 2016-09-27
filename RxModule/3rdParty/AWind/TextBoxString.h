@@ -48,7 +48,7 @@ public:
 	\param text text to visualize
 	\param decorators name of predefined decorator
 	*/	
-	TextBoxTString(int left,int top,int width,int height,T *text,const __FlashStringHelper *decorators):TextBox(left,top,width,height)
+	TextBoxTString(int left,int top,int width,int height,T *text,const char *decorators):TextBox(left,top,width,height)
 	{
 		_text=text;
 		SetDecorators(Environment::Get()->FindDecorators(decorators));
@@ -70,6 +70,6 @@ public:
 	}
 };
 ///typedef for __FlashStringHelper - very usefull type that allows to save very limitted amount of on-board memory 
-typedef	TextBoxTString<const __FlashStringHelper> TextBoxFString;
+typedef	TextBoxTString<const char> TextBoxFString;
 ///typedef for common string
 typedef TextBoxTString<char> TextBoxString;

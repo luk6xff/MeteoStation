@@ -21,6 +21,9 @@
 */
 //#include "AHelper.h"
 ///Decorator primitive that sets current color. Overriden members description see Decorator class documentation
+#include <algorithm>
+
+
 class DecoratorColor : public Decorator
 {
 	Color _color;
@@ -170,11 +173,17 @@ public:
 		}
 	}
 };
+
+static int GetNumberLength(float number,int prec)
+{
+	return (abs(number)<1?0:log10(abs(number)))+2+prec+(number<0?1:0);
+}
+
 ///Axis decorator primitive. It is shared between gauge and chart objects. Overriden members description see Decorator class documentation
 class DecoratorAxis : public Decorator
 {
 public:
-	enum Orientation
+	enum  Orientation
 	{
 		HorizontalTop,     //!<Not implemented yet
 		HorizontalBottom, //!<Not implemented yet
@@ -252,7 +261,7 @@ public:
 		{
 		case VerticalRight:
 		case VerticalLeft:
-			return (AHelper::GetNumberLength(max(_minValue,_maxValue),1)*dc->FontWidth()+_tick_length)+_offsetX;
+			return (GetNumberLength(std::max(_minValue,_maxValue),1)*dc->FontWidth()+_tick_length)+_offsetX;
 		case HorizontalTop:
 		case HorizontalBottom:
 			return _length+_offsetX;
@@ -302,7 +311,7 @@ public:
 					{
 						dc->MoveTo(axis_right,y);
 						dc->LineTo(axis_right-_tick_length,y);
-						int val_width=AHelper::GetNumberLength(value,1)*dc->FontWidth();
+						int val_width=GetNumberLength(value,1)*dc->FontWidth();
 						dc->DrawNumber(value,1,axis_right-val_width,y-(dc->FontHeight()*(i==_numTicks-1?0:1)));
 					}
 				}

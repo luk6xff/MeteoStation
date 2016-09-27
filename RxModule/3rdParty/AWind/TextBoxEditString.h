@@ -103,5 +103,5 @@ public:
 		SetText(_tmpBuf);
 	}
 };
-typedef	TextBoxEditTString<const __FlashStringHelper> TextBoxEditFString;
+typedef	TextBoxEditTString<const char> TextBoxEditFString;
 typedef TextBoxEditTString<char> TextBoxEditString;

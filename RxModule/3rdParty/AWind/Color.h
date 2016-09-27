@@ -19,6 +19,7 @@
   The license applies to all part of the library including the 
   examples and tools supplied with the library.
 */
+#include <stdint.h>
 
 typedef unsigned long ARGB;
 typedef uint8_t byte;

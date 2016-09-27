@@ -54,12 +54,12 @@ public:
 		int x=_buttonDistance;
 		int y=_buttonDistance;
 		_editField=new TextBoxString(x,y,Width()-2*_buttonDistance,_buttonSize,"");
-		_editField->SetDecorators(Environment::Get()->FindDecorators(F("EditTextBoxReadOnly")));
+		_editField->SetDecorators(Environment::Get()->FindDecorators(("EditTextBoxReadOnly")));
 		_editField->SetFont(BigFont);
 		y+=_buttonSize+_buttonDistance;
-		_backspaceSymbol=new Button(5*(_buttonSize+_buttonDistance)+_buttonDistance,y,_buttonSize,_buttonSize,F("<-"));
-		_btnOK=new Button(6*(_buttonSize+_buttonDistance)+_buttonDistance,y,_buttonSize,_buttonSize,F("E"));
-		DecoratorList * btnDecorators=Environment::Get()->FindDecorators(F("Button"));
+		_backspaceSymbol=new Button(5*(_buttonSize+_buttonDistance)+_buttonDistance,y,_buttonSize,_buttonSize,("<-"));
+		_btnOK=new Button(6*(_buttonSize+_buttonDistance)+_buttonDistance,y,_buttonSize,_buttonSize,("E"));
+		DecoratorList * btnDecorators=Environment::Get()->FindDecorators(("Button"));
 		for(int i=0;i<10;i++)
 		{
 			x=(i-(i<5?0:5))*(_buttonSize+_buttonDistance);
@@ -71,8 +71,8 @@ public:
 			_digidWindows[i].SetDecorators(btnDecorators);
 			initTextBox(&_digidWindows[i]);
 		}
-		_pointSymbol=new Button(5*(_buttonSize+_buttonDistance)+_buttonDistance,y,_buttonSize,_buttonSize,F("."));
-		_btnCancel=new Button(6*(_buttonSize+_buttonDistance)+_buttonDistance,y,_buttonSize,_buttonSize,F("C"));
+		_pointSymbol=new Button(5*(_buttonSize+_buttonDistance)+_buttonDistance,y,_buttonSize,_buttonSize,("."));
+		_btnCancel=new Button(6*(_buttonSize+_buttonDistance)+_buttonDistance,y,_buttonSize,_buttonSize,("C"));
 		initTextBox(_editField);
 		initTextBox(_backspaceSymbol);
 		_backspaceSymbol->SetMargins(_textOffset,_textOffset*1.5);
@@ -93,7 +93,8 @@ public:
 	void Initialize(float value,int precision)
 	{
 		_editPosition=0;
-		dtostrf(value,0,precision,_editBuffer);
+		//dtostrf(value,0,precision,_editBuffer);
+		sprintf(_editBuffer,"%.2f",value);
 		_editField->SetText(_editBuffer);
 		_editField->Invalidate();
 		_editPosition=strlen(_editBuffer);

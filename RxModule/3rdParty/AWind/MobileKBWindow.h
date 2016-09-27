@@ -9,9 +9,9 @@
 extern uint8_t BigFont[];
 extern uint8_t SmallFont[];
 
-static const char mkbCaps[31] PROGMEM = "QWERTYUIOPASDFGHJKL\"ZXCVBNM;,.";
-static const char mkbSm[31] PROGMEM = "qwertyuiopasdfghjkl\"zxcvbnm;,.";
-static const char mkbNumSym[31] PROGMEM = "1234567890@#$%&-+_=/[]{}()<>,.";
+static const char mkbCaps[31] = "QWERTYUIOPASDFGHJKL\"ZXCVBNM;,.";
+static const char mkbSm[31]  = "qwertyuiopasdfghjkl\"zxcvbnm;,.";
+static const char mkbNumSym[31] = "1234567890@#$%&-+_=/[]{}()<>,.";
 
 class MobileKBWindow :  public Dialog
 {
@@ -44,10 +44,10 @@ public:
 
 		_editField=new TextBoxEditString(x,y,Width()-2*_butSpace,_butSize,"");
 		initTextBox(_editField);
-		_editField->SetDecorators(Environment::Get()->FindDecorators(F("EditTextBoxReadOnly")));
+		_editField->SetDecorators(Environment::Get()->FindDecorators(("EditTextBoxReadOnly")));
 		_editField->SetFont(BigFont);
 		
-		DecoratorList * btnDecorators=Environment::Get()->FindDecorators(F("Button"));
+		DecoratorList * btnDecorators=Environment::Get()->FindDecorators(("Button"));
 		y+=_butSize+_butSpace;
 		for(k=0;k<3;k++)
 		{
@@ -64,37 +64,37 @@ public:
 		}
 		
 		y=_butSizeSpace+_butSpace;
-		_btnBckSpc=new Button(_btn10W,y,_btn2W,_butSize,F("BckSpc"));
+		_btnBckSpc=new Button(_btn10W,y,_btn2W,_butSize,("BckSpc"));
 		initTextBox(_btnBckSpc);
 		_btnBckSpc->SetFont(SmallFont);
 		_btnBckSpc->SetMargins(1,tSmOff);
 		
 		y+=_butSize+_butSpace;
-		_btnOK=new Button(_btn10W,y,_btn2W,_butSize,F("Enter"));
+		_btnOK=new Button(_btn10W,y,_btn2W,_butSize,("Enter"));
 		initTextBox(_btnOK);
 		_btnOK->SetFont(SmallFont);
 		_btnOK->SetMargins(4,tSmOff);
 
 		y+=2*(_butSize+_butSpace);
-		_btnCaps=new Button(_butSpace,y,_btn2W,_butSize,F("aA"));
+		_btnCaps=new Button(_butSpace,y,_btn2W,_butSize,("aA"));
 		initTextBox(_btnCaps);
 		_btnCaps->SetMargins(7,2);
 
-		_btnNumSym=new Button(2*_butSizeSpace+_butSpace,y,_btn2W,_butSize,F("1&"));
+		_btnNumSym=new Button(2*_butSizeSpace+_butSpace,y,_btn2W,_butSize,("1&"));
 		initTextBox(_btnNumSym);
 		_btnNumSym->SetMargins(7,2);
 
-		_btnSpaceBar=new Button(4*_butSizeSpace+_butSpace,y,_btn2W*2+_butSpace,_butSize,F("Space"));
+		_btnSpaceBar=new Button(4*_butSizeSpace+_butSpace,y,_btn2W*2+_butSpace,_butSize,("Space"));
 		initTextBox(_btnSpaceBar);
 		_btnSpaceBar->SetFont(SmallFont);
 		_btnSpaceBar->SetMargins(32,tSmOff);
 
-		_btnClear=new Button(8*_butSizeSpace+_butSpace,y,_btn2W,_butSize,F("Clear"));
+		_btnClear=new Button(8*_butSizeSpace+_butSpace,y,_btn2W,_butSize,("Clear"));
 		initTextBox(_btnClear);
 		_btnClear->SetFont(SmallFont);
 		_btnClear->SetMargins(4,tSmOff);
 
-		_btnCancel=new Button(_btn10W,y,_btn2W,_butSize,F("Cancel"));
+		_btnCancel=new Button(_btn10W,y,_btn2W,_butSize,("Cancel"));
 		initTextBox(_btnCancel);
 		_btnCancel->SetFont(SmallFont);
 		_btnCancel->SetMargins(1,tSmOff);
@@ -122,7 +122,7 @@ private:
 	{
 		int i;
 		for(i=0;i<len;i++) {
-			let[i] = pgm_read_byte_near(buf + i);
+			let[i] = *(buf + i);
 		}
 	}
 

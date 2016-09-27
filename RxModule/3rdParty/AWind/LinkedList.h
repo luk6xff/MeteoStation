@@ -7,7 +7,7 @@
 
 #ifndef LINKEDLIST_H_
 #define LINKEDLIST_H_
-
+#if 0
 #include <stddef.h>
 
 template<class T>
@@ -316,6 +316,85 @@ void LinkedList<T>::clear(){
 	while(size() > 0)
 		shift();
 }
+#endif
 
+
+template <class T> class LinkedEntry
+{
+template<class U> friend class LinkedList;
+	LinkedEntry* Next; //!<Pointer to the next list item
+	T* Item;           //!<Pointer to the list element
+	LinkedEntry(T* item)
+	{
+		Item = item;
+		Next=nullptr;
+	}
+};
+///Implements list container. Examples can be found in ASensor and AWind libraries
+template <class T> class LinkedList
+{
+	LinkedEntry<T> * Head; //!<Pointer to the first item
+	int _count;  //!<Number of list items
+public:
+	LinkedList()
+	{
+		Head=nullptr;
+		_count=0;
+	};
+	///Copy constructor
+	/*LinkedList(LinkedList &srcList)
+	{
+		Head=NULL;
+		_count=0;
+		for(int i=0;i<srcList.Count();i++)
+			Add(srcList[i]);
+	};*/
+	///Adds new element to the list
+	void Add(T *item)
+	{
+		LinkedEntry<T> *new_entry=new LinkedEntry<T>(item);
+		if(Head!=nullptr)
+		{
+			LinkedEntry<T> *cur= Head;
+			while(cur->Next!=nullptr)
+			{
+				cur=cur->Next;
+			}
+			cur->Next = new_entry;
+		}
+		else
+		{
+			Head = new_entry;
+		}
+		_count++;
+	}
+	///Returns numbr of list items
+	int Count()
+	{
+		return _count;
+	}
+	///Implements [] operator
+	T* operator[](int pos)
+	{
+		if(pos>=_count)
+		{
+			//out<<F("Error: index is too big: ")<<pos<<endln;
+			return nullptr;
+		}
+		else
+		{
+			int index=0;
+			LinkedEntry<T> *cur= Head;
+			while(cur!=nullptr)
+			{
+				if(index == pos)
+					return cur->Item;
+				cur=cur->Next;
+				index++;
+			}
+		}
+		return nullptr;
+	}
+};
 
 #endif /* LINKEDLIST_H_ */

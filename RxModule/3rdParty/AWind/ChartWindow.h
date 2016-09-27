@@ -26,6 +26,8 @@
 #include "ChartDC.h"
 #include "DecoratorPrimitives.h"
 
+#include <algorithm>
+
 ///Chart window implement XY plots
 class ChartWindow : public Window
 {
@@ -44,7 +46,7 @@ public:
 	\param width window width
 	\param height window height
 	*/
-	ChartWindow(DecoratorAxis *xAxis,DecoratorAxis *yAxis,int left,int top,int width,int hight):Window(F("chart"),left,top,width,hight)
+	ChartWindow(DecoratorAxis *xAxis,DecoratorAxis *yAxis,int left,int top,int width,int hight):Window(("chart"),left,top,width,hight)
 	{
 		_buffer = NULL;
 		_xAxis=xAxis;
@@ -101,12 +103,12 @@ public:
 			dc->Rectangle3D(xOffset,2,Width()-2,Height()-2,Color::DarkGray,Color::White);
 
 			dc->SetColor(Color::Yellow);
-			_dc.MoveTo(dc,min_x,max(min_y,0));
-			_dc.LineTo(dc,max_x,max(min_y,0));
+			_dc.MoveTo(dc,min_x,std::max(min_y,(float)0));
+			_dc.LineTo(dc,max_x,std::max(min_y,(float)0));
 			if(_yAxis==NULL)
 			{
-				_dc.MoveTo(dc,max(min_x,0),min_y);
-				_dc.LineTo(dc,max(min_x,0),max_y);
+				_dc.MoveTo(dc,std::max(min_x,(float)0),min_y);
+				_dc.LineTo(dc,std::max(min_x,(float)0),max_y);
 			}
 			dc->SetColor(Color::LightBlue);
 			dc->SetFont(SmallFont);

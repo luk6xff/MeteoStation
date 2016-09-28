@@ -7,7 +7,7 @@
 
 #include "ILI9320.h"
 #include "../emdrv/ustimer/ustimer.h"
-#include "defaultFonts.h"
+#include "../3rdParty/AWind/defaultFonts.h"
 #include <math.h>
 #include "em_device.h"
 #include "em_bitband.h"

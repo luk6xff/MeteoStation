@@ -110,6 +110,25 @@ void ADS7843::init(void)
 	setIrqAndPowerDown();
 }
 
+bool ADS7843::read()
+{
+	return readPointXY(m_currentTouchedPoint,false);
+}
+
+bool ADS7843::dataAvailable()
+{
+	if (getTouchStatus()==ADS7843::TOUCH_STATUS_TOUCHING)
+	{
+		return true;
+	}
+	return false;
+}
+
+TouchPoint ADS7843::getTouchedPoint()
+{
+	return m_currentTouchedPoint;
+}
+
 void ADS7843::setIrqAndPowerDown(void)
 {
 	uint8_t buf[3] = { ADS7843_READ_X | ADS7843_DFR, 0, 0 };
@@ -221,7 +240,7 @@ uint16_t ADS7843::fastMedian(uint16_t *samples) const
 }
 
 
-ADS7843::TouchPoint ADS7843::translateCoordinates(const TouchPoint& rawPoint)
+TouchPoint ADS7843::translateCoordinates(const TouchPoint& rawPoint)
 {
   TouchPoint p;
   p.x=m_ax*rawPoint.x + m_bx*rawPoint.y + m_dx;

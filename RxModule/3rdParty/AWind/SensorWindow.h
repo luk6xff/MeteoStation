@@ -26,11 +26,9 @@
 #include "ChartWindow.h"
 #include "ViewModusWindow.h"
 #include "ISensorHasDataEventReceiver.h"
-
+#include "defaultFonts.h"
 
 extern uint8_t ArialNumFontPlus[];
-extern uint8_t BigFont[];
-extern uint8_t SmallFont[];
 
 ///Window that visualizes data from sensor in from from text or chart with different time scala (See example Sensors monitor)
 class SensorWindow : public Window, ISensorHasDataEventReceiver
@@ -73,16 +71,16 @@ public:
 	\param top top coordinate relative to parent indow
 	\param size window size (big or small)
 	*/	
-	SensorWindow(const __FlashStringHelper * name,SensorManager *sensorManager,int left,int top,WindowSize size=Big):Window(name,left,top,size == Big?BigWindowWidth:SmallWindowWidth,size == Big?BigWindowHeight:SmallWindowHeight)
+	SensorWindow(const char * name,SensorManager *sensorManager,int left,int top,WindowSize size=Big):Window(name,left,top,size == Big?BigWindowWidth:SmallWindowWidth,size == Big?BigWindowHeight:SmallWindowHeight)
 	{
 		Initialize(name,sensorManager,size,Width());
 	}
-	SensorWindow(const __FlashStringHelper * name,SensorManager *sensorManager,int left,int top,int width,int height):Window(name,left,top,width,height)
+	SensorWindow(const char * name,SensorManager *sensorManager,int left,int top,int width,int height):Window(name,left,top,width,height)
 	{
 		Initialize(name,sensorManager,User,BigWindowWidth);
 	}
 protected:
-	void Initialize(const __FlashStringHelper * name,SensorManager *sensorManager,WindowSize size,int textBoxWidth)
+	void Initialize(const char * name,SensorManager *sensorManager,WindowSize size,int textBoxWidth)
 	{
 		_sensorManager = sensorManager;
 		_sensorManager->RegisterHasDataEventReceiver(this);
@@ -142,19 +140,19 @@ public:
 			_chartWnd->SetVisible(true);
 			_textChartAxis->SetVisible(true);
 			_chartWnd->SetBuffer(_sensorManager->SecBuffer());
-			_textChartAxis->SetText(F("sec"));
+			_textChartAxis->SetText(("sec"));
 			_mode=ChartSec;
 		}
 		else if(_mode == ChartSec)
 		{
 			_chartWnd->SetBuffer(_sensorManager->MinBuffer());
-			_textChartAxis->SetText(F("min"));
+			_textChartAxis->SetText(("min"));
 			_mode=ChartMin;
 		}
 		else if(_mode == ChartMin)
 		{
 			_chartWnd->SetBuffer(_sensorManager->HowrsBuffer());
-			_textChartAxis->SetText(F("howr"));
+			_textChartAxis->SetText(("howr"));
 			_mode=ChartHowr;
 		}
 		_textChartAxis->SetVisible(!_textValue->IsVisible());

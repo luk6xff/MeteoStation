@@ -14,6 +14,7 @@
 #include "em_gpio.h"
 #include "Callback.h"
 #include "ILI9320.h"
+#include "LUTouch.h"
 
 /*********************************Hardware dependent part*****************************************/
 /*********************************Hardware dependent part*****************************************/
@@ -112,7 +113,7 @@
 #define ADS7843_READ_IN3           0xA0
 #define ADS7843_READ_IN4           0xE0
 
-class ADS7843
+class ADS7843 : public LUTouch
 {
 
 public:
@@ -120,11 +121,6 @@ public:
 	typedef enum {
 		TOUCH_STATUS_PENUP, TOUCH_STATUS_PENDOWN, TOUCH_STATUS_TOUCHING
 	} TouchStatus;
-
-	typedef struct {
-		uint16_t x;
-		uint16_t y;
-	} TouchPoint;
 
 	typedef struct {
 		uint16_t lastX;
@@ -143,7 +139,26 @@ public:
 	// This function initialize ADS7843's SPI interface and .
 	// @return None.
 	//*****************************************************************************
-	void init(void);
+	void init(void) override;
+
+	//*****************************************************************************
+	// @brief reads a current touch point to resu;t container
+	// @return If read was succesfull or not.
+	//*****************************************************************************
+	bool read() override;
+
+	//*****************************************************************************
+	// @brief checks if there are data available in the buffer (touchscreen has been enabled)
+	// @return true - when touched, false - otherwise.
+	//*****************************************************************************
+	bool dataAvailable() override;
+
+	//*****************************************************************************
+	// @brief gets coordinates of last touched point
+	// @return TouchPoint (x,y coordinates)
+	//*****************************************************************************
+	virtual TouchPoint getTouchedPoint() override;
+
 
 	//*****************************************************************************
 	// @brief Enables IqrPin on startup and enables powerdown between conversions

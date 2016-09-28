@@ -23,21 +23,23 @@
 #include "Window.h"
 #include "MainWindow.h"
 #include "ICriticalProcess.h"
+#include "../../src/ILI9320.h"
 
-UTFT *globalLcd;
+
+ILI9320 *globalLcd;
 ///Main window manager. Implement core funcctionality of AWind library. It is tempate class that has to be parametrized with main window class
 template <class T=MainWindow> class WindowsManager :  public ICriticalProcess, public ILoopProcess
 {
 	DC _dc;
 	T *_mainWindow;
-	URTouch  *_touch;
+	LUTouch  *_touch;
 public:
 	///Constructor
 	/**
 	\param lcd pointer to UTFT object (see UTFT library)
 	\param touch pointer to UTouch object (see UTouch library)
 	*/	
-	WindowsManager(UTFT *lcd,URTouch *touch=NULL):_dc(lcd),_touch(touch)
+	WindowsManager(ILI9320 *lcd,LUTouch *touch=NULL):_dc(lcd),_touch(touch)
 	{
 		globalLcd=lcd;
 	}
@@ -122,8 +124,9 @@ protected:
 		if (_touch->dataAvailable())
 		{
 			_touch->read();
-			int x=_touch->getX();
-			int y=_touch->getY();
+            TouchPoint p = _touch->getTouchedPoint();
+			int x = p.x;
+			int y = p.y;
 			//out<<F("Touch begins x:")<<x<<F(" y:")<<y<<endln;
 			if(x>0 && y>0)
 			{

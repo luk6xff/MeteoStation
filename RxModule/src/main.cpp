@@ -18,6 +18,50 @@
 #include "../emdrv/ustimer/ustimer.h"
 
 
+
+#include "../3rdParty/AWind/TextBoxString.h"
+#include "../3rdParty/AWind/TextBoxNumber.h"
+#include "../3rdParty/AWind/DecoratorPrimitives.h"
+#include "../3rdParty/AWind/WindowsManager.h"
+#include "../3rdParty/AWind/DefaultDecorators.h"
+#include "../3rdParty/AWind/defaultFonts.h"
+
+class TextExampleWindow : public MainWindow
+{
+	TextBoxNumber *_textNumber;
+public:
+	TextExampleWindow(int width,int height):MainWindow(width,height)
+	{
+		AddDecorator(new DecoratorRectFill(Color::Black));
+		AddDecorator(new DecoratorColor(Color::SkyBlue));
+		int x=0;
+		int y=40;
+		TextBoxFString *label=new TextBoxFString(x,y,width/2,25,("This is label: "));
+		label->SetFont(BigFont);
+		x=width*3.0/4;
+		_textNumber=new TextBoxNumber(x,y,width-x,25,0);
+		_textNumber->SetDecorators(GetDecorators()); // here we save one decorator beacuse main window and text window have thae same decorator properties: black background
+		_textNumber->SetFont(BigFont);
+		_textNumber->SetMargins(20,2);
+		_textNumber->SetNumber(4);
+		_textNumber->SetIsReadOnly(false);
+
+		AddChild(label);
+		AddChild(_textNumber);
+	}
+	void Create()
+	{
+	}
+	void Notify(Window * wnd)
+	{
+		if(wnd == _textNumber)
+		{
+			//out<<F("Value changed")<<((TextBoxNumber *)_textNumber)->GetNumber()<<endln;
+		}
+	}
+};
+
+
 /**************************************************************************//**
  * @brief  Main function
  *****************************************************************************/
@@ -41,11 +85,18 @@ int main(void) {
 	ili9320.init();
 	ADS7843 ads7843;
 	ads7843.performThreePointCalibration(ili9320);
+
+	//Awind Tests
+	DefaultDecorators::InitAll();
+	//initialize window manager
+	WindowsManager<TextExampleWindow> windowsManager(&ili9320,&ads7843);
+	windowsManager.Initialize();
+	windowsManager.loop();
 	while (1) {
-		if (ads7843.getTouchStatus()==ADS7843::TOUCH_STATUS_TOUCHING)
+		if (ads7843.dataAvailable())
 		{
-			ADS7843::TouchPoint p;
-			ads7843.readPointXY(p,false);
+			ads7843.read();
+			TouchPoint p = ads7843.getTouchedPoint();
 			ili9320.fillCircle(p.x, p.y,3, ILI9320::Colors::BLUE);
 		}
 	}

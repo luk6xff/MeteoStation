@@ -21,7 +21,7 @@ examples and tools supplied with the library.
 */
 #include "TextBoxString.h"
 ///Implement radio button control
-class RadioButton : public TextBoxTString<const __FlashStringHelper>
+class RadioButton : public TextBoxTString<const char>
 {
 	bool _isChecked;
 public:
@@ -33,10 +33,10 @@ public:
 	\param height window height
 	\param text button name
 	*/
-	RadioButton(int left, int top, int width, int height, const __FlashStringHelper * text) :TextBoxTString<const __FlashStringHelper>(left, top, width, height, text, F("Button")), _isChecked(false)
+	RadioButton(int left, int top, int width, int height, const char * text) :TextBoxTString<const char>(left, top, width, height, text, ("Button")), _isChecked(false)
 	{
 		SetFont(BigFont);
-		SetDecorators(Environment::Get()->FindDecorators(F("RadioButtonInactive")));
+		SetDecorators(Environment::Get()->FindDecorators(("RadioButtonInactive")));
 	}
 	bool IsChecked()
 	{
@@ -46,9 +46,9 @@ public:
 	{
 		_isChecked = isChecked;
 		if (_isChecked)
-			SetDecorators(Environment::Get()->FindDecorators(F("RadioButtonActive")));
+			SetDecorators(Environment::Get()->FindDecorators(("RadioButtonActive")));
 		else
-			SetDecorators(Environment::Get()->FindDecorators(F("RadioButtonInactive")));
+			SetDecorators(Environment::Get()->FindDecorators(("RadioButtonInactive")));
 		Invalidate();
 	}
 };

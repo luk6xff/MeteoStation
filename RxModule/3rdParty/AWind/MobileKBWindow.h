@@ -5,9 +5,7 @@
 #include "IDialogClosedEventReceiver.h"
 #include "DecoratorPrimitives.h"
 #include "Dialog.h"
-
-extern uint8_t BigFont[];
-extern uint8_t SmallFont[];
+#include "defaultFonts.h"
 
 static const char mkbCaps[31] = "QWERTYUIOPASDFGHJKL\"ZXCVBNM;,.";
 static const char mkbSm[31]  = "qwertyuiopasdfghjkl\"zxcvbnm;,.";

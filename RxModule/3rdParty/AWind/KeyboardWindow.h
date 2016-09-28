@@ -24,10 +24,8 @@
 #include "IDialogClosedEventReceiver.h"
 #include "DecoratorPrimitives.h"
 #include "Dialog.h"
+#include "defaultFonts.h"
 
-
-extern uint8_t BigFont[];
-extern uint8_t SmallFont[];
 ///Implements Keyboard window, that helps to enter text/number information into text fields
 class KeyboardWindow :  public Dialog
 {

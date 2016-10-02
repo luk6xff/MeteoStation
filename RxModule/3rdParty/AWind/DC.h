@@ -99,7 +99,7 @@ public:
 	///Draws rectangle. Input coordinates have to be defined in the window coordinate system
 	void Rectangle(int left,int top,int right,int bottom)
 	{
-		_lcd->drawRect(ToDC_X(left),ToDC_Y(top),ToDC_X(right),ToDC_Y(bottom),ILI9320::BLUE); //TODO
+		_lcd->drawRect(ToDC_X(left),ToDC_Y(top),ToDC_X(right),ToDC_Y(bottom),ILI9320::GREEN); //TODO
 	}
 	///Draws rectangle with 3D border. Input coordinates have to be defined in the window coordinate system
 	void Rectangle3D(int left,int top,int right,int bottom,Color color1,Color color2)
@@ -115,7 +115,7 @@ public:
 	///Fills rectangle. Input coordinates have to be defined in the window coordinate system
 	void FillRect(int left,int top,int right,int bottom)
 	{
-		_lcd->fillRect (ToDC_X(left),ToDC_Y(top),ToDC_X(right),ToDC_Y(bottom),ILI9320::BLUE); //TODO
+		_lcd->fillRect (ToDC_X(left),ToDC_Y(top),ToDC_X(right),ToDC_Y(bottom),ILI9320::WHITE); //TODO
 	}
 	///Fills rectangle with gradient color. Input coordinates have to be defined in the window coordinate system
 	void FillGradientRect(int left,int top,int right,int bottom,Color color1,Color color2)
@@ -150,12 +150,12 @@ public:
 	///Fills rounded rectangle. Input coordinates have to be defined in the window coordinate system
 	void FillRoundRect(int left,int top,int right,int bottom)
 	{
-		_lcd->fillRoundRect (ToDC_X(left),ToDC_Y(top),ToDC_X(right),ToDC_Y(bottom),ILI9320::BLUE); //TODO
+		_lcd->fillRoundRect (ToDC_X(left),ToDC_Y(top),ToDC_X(right),ToDC_Y(bottom),ILI9320::RED); //TODO
 	}
 	///Draws rounded rectangle. Input coordinates have to be defined in the window coordinate system
 	void DrawRoundRect(int left,int top,int right,int bottom)
 	{
-		_lcd->drawRoundRect (ToDC_X(left),ToDC_Y(top),ToDC_X(right),ToDC_Y(bottom),ILI9320::BLUE); //TODO
+		_lcd->drawRoundRect (ToDC_X(left),ToDC_Y(top),ToDC_X(right),ToDC_Y(bottom),ILI9320::YELLOW); //TODO
 	}
 	///Draws circle. Input coordinates have to be defined in the window coordinate system
 	void FillCircle(int x0, int y0, int radius)
@@ -229,7 +229,7 @@ public:
 	///Draws symbol. Input coordinates have to be defined in the screen system
 	void DrawSymbol(const char c,int dc_x,int dc_y)
 	{
-		_lcd->printChar(c, dc_x, dc_y,ILI9320::BLUE); //TODO
+		_lcd->printChar(c, dc_x, dc_y,ILI9320::FUCHSIA); //TODO
 	}
 	///Draws a character. Input coordinates have to be defined in the window coordinate system
 	void DrawChar(const char c,int x, int y)
@@ -253,8 +253,6 @@ public:
 			x = x + width - strlen(text)*_lcd->getFontXsize();
 		x=ToDC_X(x);
 		y=ToDC_Y(y);
-		//_lcd->print(text,x,y);
-		//out<<text<<" "<<strlen(text)<<endln;
 		for(int i=0;i<strlen(text);i++)
 		{
 			char c=text[i];
@@ -333,7 +331,7 @@ public:
 	}
 	void LineTo(int x,int y)
 	{ 
-		_lcd->drawLine(_last_x,_last_y,ToDC_X(x),ToDC_Y(y),ILI9320::BLUE); //TODO
+		_lcd->drawLine(_last_x,_last_y,ToDC_X(x),ToDC_Y(y),ILI9320::LIME); //TODO
 		_last_x=ToDC_X(x);
 		_last_y=ToDC_Y(y);
 	}

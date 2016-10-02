@@ -52,13 +52,12 @@ public:
 	{
 		_text=text;
 		SetDecorators(Environment::Get()->FindDecorators(decorators));
-		//_type=F("TextBoxString");
 	}
 	///Implements drawing code
 	virtual void OnDraw(DC *dc)
 	{
 		TextBox::OnDraw(dc);
-		dc->DrawText(_text, _offset_x, _offset_y, _horizontal_alignment,Width()- _offset_x*2);
+		dc->DrawText(_text, _offset_x, _offset_y, _horizontal_alignment,Width()- _offset_y*2);
 	}
 	///Initialize window with text
 	void SetText(T *text)

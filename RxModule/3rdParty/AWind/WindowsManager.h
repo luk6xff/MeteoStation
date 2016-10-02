@@ -36,8 +36,8 @@ template <class T=MainWindow> class WindowsManager :  public ICriticalProcess, p
 public:
 	///Constructor
 	/**
-	\param lcd pointer to UTFT object (see UTFT library)
-	\param touch pointer to UTouch object (see UTouch library)
+	\param lcd pointer to ILI9320 object
+	\param touch pointer to LUTouch object
 	*/	
 	WindowsManager(ILI9320 *lcd,LUTouch *touch=NULL):_dc(lcd),_touch(touch)
 	{
@@ -127,7 +127,6 @@ protected:
             TouchPoint p = _touch->getTouchedPoint();
 			int x = p.x;
 			int y = p.y;
-			//out<<F("Touch begins x:")<<x<<F(" y:")<<y<<endln;
 			if(x>0 && y>0)
 			{
 				Window *window=_dc.ScreenOrientation()==DC::Landscape?HitTest(x,y): HitTest(y, _dc.DeviceHeight()-x);

@@ -29,6 +29,9 @@
 #include "defaultFonts.h"
 
 extern uint8_t ArialNumFontPlus[];
+extern uint8_t SmallFont[];
+extern uint8_t BigFont[];
+extern uint8_t SevenSegNumFont[];
 
 ///Window that visualizes data from sensor in from from text or chart with different time scala (See example Sensors monitor)
 class SensorWindow : public Window, ISensorHasDataEventReceiver

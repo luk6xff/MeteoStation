@@ -1,4 +1,3 @@
-#include "../../src/ILI9320.h"
 #include "TextBoxStrTouch.h"
 #include "MobileKBWindow.h"
 

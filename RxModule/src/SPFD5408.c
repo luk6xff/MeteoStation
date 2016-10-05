@@ -30,6 +30,8 @@ static uint16_t pinRead(GPIO_Port_TypeDef port, uint8_t pin) {
 
 /*hardware dependent functions - end*/
 
+static void swapInt(int *a, int*b);
+
 static void allDataPinsInput(void) {
 	TFT_PIN_D15_INPUT();
 	TFT_PIN_D14_INPUT();
@@ -39,7 +41,7 @@ static void allDataPinsInput(void) {
 	TFT_PIN_D10_INPUT();
 	TFT_PIN_D9_INPUT();
 	TFT_PIN_D8_INPUT();
-#ifdef _16_BIT_MODE
+//#ifdef _16_BIT_MODE
 	TFT_PIN_D7_INPUT();
 	TFT_PIN_D6_INPUT();
 	TFT_PIN_D5_INPUT();
@@ -48,7 +50,7 @@ static void allDataPinsInput(void) {
 	TFT_PIN_D2_INPUT();
 	TFT_PIN_D1_INPUT();
 	TFT_PIN_D0_INPUT();
-#endif
+//#endif
 }
 
 static void allDataPinsOutput(void) {
@@ -60,7 +62,7 @@ static void allDataPinsOutput(void) {
 	TFT_PIN_D10_OUTPUT();
 	TFT_PIN_D9_OUTPUT();
 	TFT_PIN_D8_OUTPUT();
-#ifdef _16_BIT_MODE
+//#ifdef _16_BIT_MODE
 	TFT_PIN_D7_OUTPUT();
 	TFT_PIN_D6_OUTPUT();
 	TFT_PIN_D5_OUTPUT();
@@ -69,61 +71,59 @@ static void allDataPinsOutput(void) {
 	TFT_PIN_D2_OUTPUT();
 	TFT_PIN_D1_OUTPUT();
 	TFT_PIN_D0_OUTPUT();
-#endif
+//#endif
 }
 
 static void allDataPinsLow(void) {
-	pinWrite(TFT_PORT_D15, TFT_PIN_D15, 0);
-	pinWrite(TFT_PORT_D14, TFT_PIN_D14, 0);
-	pinWrite(TFT_PORT_D13, TFT_PIN_D13, 0);
-	pinWrite(TFT_PORT_D12, TFT_PIN_D12, 0);
-	pinWrite(TFT_PORT_D11, TFT_PIN_D11, 0);
-	pinWrite(TFT_PORT_D10, TFT_PIN_D10, 0);
-	pinWrite(TFT_PORT_D9, TFT_PIN_D9, 0);
-	pinWrite(TFT_PORT_D8, TFT_PIN_D8, 0);
-#ifdef _16_BIT_MODE
-	pinWrite(TFT_PORT_D7, TFT_PIN_D7, 0);
-	pinWrite(TFT_PORT_D6, TFT_PIN_D6, 0);
-	pinWrite(TFT_PORT_D5, TFT_PIN_D5, 0);
-	pinWrite(TFT_PORT_D4, TFT_PIN_D4, 0);
-	pinWrite(TFT_PORT_D3, TFT_PIN_D3, 0);
-	pinWrite(TFT_PORT_D2, TFT_PIN_D2, 0);
-	pinWrite(TFT_PORT_D1, TFT_PIN_D1, 0);
-	pinWrite(TFT_PORT_D0, TFT_PIN_D0, 0);
-#endif
+	setPin(TFT_PORT_D15, TFT_PIN_D15, 0);
+	setPin(TFT_PORT_D14, TFT_PIN_D14, 0);
+	setPin(TFT_PORT_D13, TFT_PIN_D13, 0);
+	setPin(TFT_PORT_D12, TFT_PIN_D12, 0);
+	setPin(TFT_PORT_D11, TFT_PIN_D11, 0);
+	setPin(TFT_PORT_D10, TFT_PIN_D10, 0);
+	setPin(TFT_PORT_D9, TFT_PIN_D9, 0);
+	setPin(TFT_PORT_D8, TFT_PIN_D8, 0);
+//#ifdef _16_BIT_MODE
+	setPin(TFT_PORT_D7, TFT_PIN_D7, 0);
+	setPin(TFT_PORT_D6, TFT_PIN_D6, 0);
+	setPin(TFT_PORT_D5, TFT_PIN_D5, 0);
+	setPin(TFT_PORT_D4, TFT_PIN_D4, 0);
+	setPin(TFT_PORT_D3, TFT_PIN_D3, 0);
+	setPin(TFT_PORT_D2, TFT_PIN_D2, 0);
+	setPin(TFT_PORT_D1, TFT_PIN_D1, 0);
+	setPin(TFT_PORT_D0, TFT_PIN_D0, 0);
+//#endif
 }
-
-
 
 static void pushData(uint16_t data) {
 #ifdef _8_BIT_MODE
 	data= (uint8_t)data;
-	pinWrite(TFT_PORT_D15,TFT_PIN_D15, (data >> 7) & 0x01);
-	pinWrite(TFT_PORT_D14,TFT_PIN_D14, (data >> 6) & 0x01);
-	pinWrite(TFT_PORT_D13,TFT_PIN_D13, (data >> 5) & 0x01);
-	pinWrite(TFT_PORT_D12,TFT_PIN_D12, (data >> 4) & 0x01);
-	pinWrite(TFT_PORT_D11,TFT_PIN_D11, (data >> 3) & 0x01);
-	pinWrite(TFT_PORT_D10,TFT_PIN_D10, (data >> 2) & 0x01);
-	pinWrite(TFT_PORT_D9,TFT_PIN_D9, (data >> 1) & 0x01);
-	pinWrite(TFT_PORT_D8,TFT_PIN_D8, data & 0x01);
+	setPin(TFT_PORT_D15,TFT_PIN_D15, (data >> 7) & 0x01);
+	setPin(TFT_PORT_D14,TFT_PIN_D14, (data >> 6) & 0x01);
+	setPin(TFT_PORT_D13,TFT_PIN_D13, (data >> 5) & 0x01);
+	setPin(TFT_PORT_D12,TFT_PIN_D12, (data >> 4) & 0x01);
+	setPin(TFT_PORT_D11,TFT_PIN_D11, (data >> 3) & 0x01);
+	setPin(TFT_PORT_D10,TFT_PIN_D10, (data >> 2) & 0x01);
+	setPin(TFT_PORT_D9,TFT_PIN_D9, (data >> 1) & 0x01);
+	setPin(TFT_PORT_D8,TFT_PIN_D8, data & 0x01);
 
 #else
-	pinWrite(TFT_PORT_D15, TFT_PIN_D15, (data >> 15) & 0x01);
-	pinWrite(TFT_PORT_D14, TFT_PIN_D14, (data >> 14) & 0x01);
-	pinWrite(TFT_PORT_D13, TFT_PIN_D13, (data >> 13) & 0x01);
-	pinWrite(TFT_PORT_D12, TFT_PIN_D12, (data >> 12) & 0x01);
-	pinWrite(TFT_PORT_D11, TFT_PIN_D11, (data >> 11) & 0x01);
-	pinWrite(TFT_PORT_D10, TFT_PIN_D10, (data >> 10) & 0x01);
-	pinWrite(TFT_PORT_D9, TFT_PIN_D9, (data >> 9) & 0x01);
-	pinWrite(TFT_PORT_D8, TFT_PIN_D8, (data >> 8) & 0x01);
-	pinWrite(TFT_PORT_D7, TFT_PIN_D7, (data >> 7) & 0x01);
-	pinWrite(TFT_PORT_D6, TFT_PIN_D6, (data >> 6) & 0x01);
-	pinWrite(TFT_PORT_D5, TFT_PIN_D5, (data >> 5) & 0x01);
-	pinWrite(TFT_PORT_D4, TFT_PIN_D4, (data >> 4) & 0x01);
-	pinWrite(TFT_PORT_D3, TFT_PIN_D3, (data >> 3) & 0x01);
-	pinWrite(TFT_PORT_D2, TFT_PIN_D2, (data >> 2) & 0x01);
-	pinWrite(TFT_PORT_D1, TFT_PIN_D1, (data >> 1) & 0x01);
-	pinWrite(TFT_PORT_D0, TFT_PIN_D0, data & 0x01);
+	setPin(TFT_PORT_D15, TFT_PIN_D15, (data >> 15) & 0x01);
+	setPin(TFT_PORT_D14, TFT_PIN_D14, (data >> 14) & 0x01);
+	setPin(TFT_PORT_D13, TFT_PIN_D13, (data >> 13) & 0x01);
+	setPin(TFT_PORT_D12, TFT_PIN_D12, (data >> 12) & 0x01);
+	setPin(TFT_PORT_D11, TFT_PIN_D11, (data >> 11) & 0x01);
+	setPin(TFT_PORT_D10, TFT_PIN_D10, (data >> 10) & 0x01);
+	setPin(TFT_PORT_D9, TFT_PIN_D9, (data >> 9) & 0x01);
+	setPin(TFT_PORT_D8, TFT_PIN_D8, (data >> 8) & 0x01);
+	setPin(TFT_PORT_D7, TFT_PIN_D7, (data >> 7) & 0x01);
+	setPin(TFT_PORT_D6, TFT_PIN_D6, (data >> 6) & 0x01);
+	setPin(TFT_PORT_D5, TFT_PIN_D5, (data >> 5) & 0x01);
+	setPin(TFT_PORT_D4, TFT_PIN_D4, (data >> 4) & 0x01);
+	setPin(TFT_PORT_D3, TFT_PIN_D3, (data >> 3) & 0x01);
+	setPin(TFT_PORT_D2, TFT_PIN_D2, (data >> 2) & 0x01);
+	setPin(TFT_PORT_D1, TFT_PIN_D1, (data >> 1) & 0x01);
+	setPin(TFT_PORT_D0, TFT_PIN_D0, data & 0x01);
 
 #endif
 }
@@ -133,33 +133,32 @@ static uint16_t getData(void) {
 #ifdef _8_BIT_MODE
 
 	Delay(100);
-	data |= pinRead(TFT_PORT_D15, TFT_PIN_D15) << 7;
+	data |= getPin(TFT_PORT_D15, TFT_PIN_D15) << 7;
 	data |= pinRead(TFT_PORT_D14, TFT_PIN_D14) << 6;
-	data |= pinRead(TFT_PORT_D13, TFT_PIN_D13) << 5;
-	data |= pinRead(TFT_PORT_D12, TFT_PIN_D12) << 4;
-	data |= pinRead(TFT_PORT_D11, TFT_PIN_D11) << 3;
-	data |= pinRead(TFT_PORT_D10, TFT_PIN_D10) << 2;
-	data |= pinRead(TFT_PORT_D9, TFT_PIN_D9) << 1;
-	data |= pinRead(TFT_PORT_D8, TFT_PIN_D8) << 0;
+	data |= getPin(TFT_PORT_D13, TFT_PIN_D13) << 5;
+	data |= getPin(TFT_PORT_D12, TFT_PIN_D12) << 4;
+	data |= getPin(TFT_PORT_D11, TFT_PIN_D11) << 3;
+	data |= getPin(TFT_PORT_D10, TFT_PIN_D10) << 2;
+	data |= getPin(TFT_PORT_D9, TFT_PIN_D9) << 1;
+	data |= getPin(TFT_PORT_D8, TFT_PIN_D8) << 0;
 #else
 	Delay(100);
-	data |= pinRead(TFT_PORT_D15, TFT_PIN_D15) << 15;
-	data |= pinRead(TFT_PORT_D14, TFT_PIN_D14) << 14;
-	data |= pinRead(TFT_PORT_D13, TFT_PIN_D13) << 13;
-	data |= pinRead(TFT_PORT_D12, TFT_PIN_D12) << 12;
-	data |= pinRead(TFT_PORT_D11, TFT_PIN_D11) << 11;
-	data |= pinRead(TFT_PORT_D10, TFT_PIN_D10) << 10;
-	data |= pinRead(TFT_PORT_D9, TFT_PIN_D9) << 9;
-	data |= pinRead(TFT_PORT_D8, TFT_PIN_D8) << 8;
-	data |= pinRead(TFT_PORT_D7, TFT_PIN_D7) << 7;
-	data |= pinRead(TFT_PORT_D6, TFT_PIN_D6) << 6;
-	data |= pinRead(TFT_PORT_D5, TFT_PIN_D5) << 5;
-	data |= pinRead(TFT_PORT_D4, TFT_PIN_D4) << 4;
-	data |= pinRead(TFT_PORT_D3, TFT_PIN_D3) << 3;
-	data |= pinRead(TFT_PORT_D2, TFT_PIN_D2) << 2;
-	data |= pinRead(TFT_PORT_D1, TFT_PIN_D1) << 1;
-	data |= pinRead(TFT_PORT_D0, TFT_PIN_D0) << 0;
-
+	data |= getPin(TFT_PORT_D15, TFT_PIN_D15) << 15;
+	data |= getPin(TFT_PORT_D14, TFT_PIN_D14) << 14;
+	data |= getPin(TFT_PORT_D13, TFT_PIN_D13) << 13;
+	data |= getPin(TFT_PORT_D12, TFT_PIN_D12) << 12;
+	data |= getPin(TFT_PORT_D11, TFT_PIN_D11) << 11;
+	data |= getPin(TFT_PORT_D10, TFT_PIN_D10) << 10;
+	data |= getPin(TFT_PORT_D9, TFT_PIN_D9) << 9;
+	data |= getPin(TFT_PORT_D8, TFT_PIN_D8) << 8;
+	data |= getPin(TFT_PORT_D7, TFT_PIN_D7) << 7;
+	data |= getPin(TFT_PORT_D6, TFT_PIN_D6) << 6;
+	data |= getPin(TFT_PORT_D5, TFT_PIN_D5) << 5;
+	data |= getPin(TFT_PORT_D4, TFT_PIN_D4) << 4;
+	data |= getPin(TFT_PORT_D3, TFT_PIN_D3) << 3;
+	data |= getPin(TFT_PORT_D2, TFT_PIN_D2) << 2;
+	data |= getPin(TFT_PORT_D1, TFT_PIN_D1) << 1;
+	data |= getPin(TFT_PORT_D0, TFT_PIN_D0) << 0;
 #endif
 	return data;
 

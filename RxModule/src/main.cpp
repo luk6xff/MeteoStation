@@ -153,6 +153,11 @@ void gui_update()
 }
 #endif
 
+
+void WindowCallback(UG_MESSAGE *mess)
+{
+
+}
 int gui_init()
 {
 	SPFD5408init();
@@ -161,9 +166,34 @@ int gui_init()
 	UG_FontSelect( &FONT_12X20 );
 	UG_SetForecolor(C_OLIVE);
 	UG_SetBackcolor(C_WHITE);
-	UG_PutString( 20, 50, (char*)"Hello There");
+	UG_PutString( 20, 50, (char*)"Hello World");
 //    UG_DriverRegister(DRIVER_FILL_FRAME, user_fill_frame);
 //    UG_DriverEnable(DRIVER_FILL_FRAME);
+	// Use uGui to draw an interface
+
+	#define MAX_OBJS 64
+	UG_WINDOW wnd;
+	UG_OBJECT objs[MAX_OBJS];
+	UG_WindowCreate( &wnd, objs, MAX_OBJS, WindowCallback );
+	UG_WindowResize( &wnd, 200, 100, 800, 500);
+	UG_WindowShow(&wnd);
+
+
+	UG_BUTTON btn;
+	UG_ButtonCreate(&wnd, &btn, BTN_ID_0, 20, 50, 140, 90 );
+	UG_ButtonSetFont(&wnd, BTN_ID_0, &FONT_10X16);
+	UG_ButtonSetText(&wnd, BTN_ID_0, (char*)"Push Me");
+	UG_ButtonShow(&wnd, BTN_ID_0);
+
+	UG_CHECKBOX cbx;
+	UG_CheckboxCreate(&wnd, &cbx, CHB_ID_0, 20, 100, 140, 150 );
+	UG_CheckboxSetFont(&wnd, CHB_ID_0, &FONT_10X16);
+	UG_CheckboxSetText(&wnd, CHB_ID_0, (char*)"Check Me");
+	UG_CheckboxSetCheched(&wnd, CHB_ID_0, CHB_STATE_PRESSED);
+	UG_CheckboxShow(&wnd, CHB_ID_0);
+
+
+	UG_Update();
 
     return 0;
 }

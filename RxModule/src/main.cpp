@@ -16,9 +16,11 @@
 #include "ads7843.h"
 #include "bitmaps.h"
 #include "../emdrv/ustimer/ustimer.h"
+#include "ugui.h"
+#include "SPFD5408.h"
 
 
-
+/*
 #include "../3rdParty/AWind/TextBoxString.h"
 #include "../3rdParty/AWind/TextBoxNumber.h"
 #include "../3rdParty/AWind/DecoratorPrimitives.h"
@@ -113,6 +115,58 @@ public:
 	{
 	}
 };
+*/
+
+static UG_GUI gui;
+
+#define RGB2RGB565(c) (((((c & 0x00ff0000) >> 16) >> 3) << 11) | \
+    ((((c & 0x0000ff00) >> 8) >> 2) << 5) | (((c & 0x000000ff) >> 0) >> 3 ))
+
+static void pixelSet(UG_S16 x, UG_S16 y, UG_COLOR c)
+{
+    SPFD5408drawPixel(x, y, RGB2RGB565(c));
+}
+
+#if 0
+
+static UG_RESULT user_fill_frame(UG_S16 x1, UG_S16 y1, UG_S16 x2, UG_S16 y2,
+    UG_COLOR c)
+{
+    ili9320_fill_frame(x1, y1, x2, y2, RGB2RGB565(c));
+
+    return UG_RESULT_OK;
+}
+
+
+void gui_update()
+{
+    u16 x, y;
+
+    /* Handle touch screen */
+    ads7843_get_xy(&x, &y);
+    if (x != -1 && y != -1)
+        UG_TouchUpdate(x, y, TOUCH_STATE_PRESSED);
+    else
+        UG_TouchUpdate(-1, -1, TOUCH_STATE_RELEASED);
+
+    UG_Update();
+}
+#endif
+
+int gui_init()
+{
+	SPFD5408init();
+    UG_Init(&gui, pixelSet, 320, 240);
+    UG_SelectGUI(&gui);
+	UG_FontSelect( &FONT_12X20 );
+	UG_SetForecolor(C_OLIVE);
+	UG_SetBackcolor(C_WHITE);
+	UG_PutString( 20, 50, (char*)"Hello There");
+//    UG_DriverRegister(DRIVER_FILL_FRAME, user_fill_frame);
+//    UG_DriverEnable(DRIVER_FILL_FRAME);
+
+    return 0;
+}
 
 //Sensor Demo
 /**************************************************************************//**
@@ -121,11 +175,13 @@ public:
 int main(void) {
 	/* Chip errata */
 	CHIP_Init();
-	CMU_OscillatorEnable(cmuOsc_HFXO, true, false);
-	CMU_ClockSelectSet(cmuClock_HF, cmuSelect_HFXO); //32MHZ
 	CMU_ClockDivSet(cmuClock_HF, cmuClkDiv_1);
-	CMU_ClockDivSet(cmuClock_HFPER, cmuClkDiv_1);
-	CMU_ClockEnable(cmuClock_HFPER, true);
+	CMU_OscillatorEnable(cmuOsc_HFXO, true, true);
+	CMU_ClockSelectSet(cmuClock_HF, cmuSelect_HFXO); //32MHZ
+	CMU_ClockEnable(cmuClock_GPIO, true);
+	//CMU_ClockEnable(cmuClock_HFPER, true);
+	//CMU_ClockDivSet(cmuClock_HFPER, cmuClkDiv_1);
+	//CMU_ClockEnable(cmuClock_HFPER, true);
 	//----------------------- ILI9320 first working tests -----------------------
 	//BSP_TraceProfilerSetup();
 	/*BSP_LedsInit();
@@ -134,11 +190,15 @@ int main(void) {
 	// Initialization of USTIMER driver
 
 	USTIMER_Init();
+#if 0
 	ILI9320 ili9320;
 	ili9320.init();
 	ADS7843 ads7843;
 	ads7843.performThreePointCalibration(ili9320);
+#endif
 
+	gui_init();
+#if 0
 	//Awind Tests
 	DefaultDecorators::InitAll();
 	//initialize window manager
@@ -149,13 +209,16 @@ int main(void) {
 	{
 		windowsManager.loop();
 	}
+#endif
 	while (1) {
+#if 0
 		if (ads7843.dataAvailable())
 		{
 			ads7843.read();
 			TouchPoint p = ads7843.getTouchedPoint();
 			ili9320.fillCircle(p.x, p.y,3, ILI9320::Colors::BLUE);
 		}
+#endif
 	}
 }
 

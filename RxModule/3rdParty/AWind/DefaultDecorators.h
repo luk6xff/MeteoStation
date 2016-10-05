@@ -53,7 +53,7 @@ public:
 	static void InitButton()
 	{
 		DecoratorList *list=new DecoratorList();
-		//list->Add(new DecoratorRectFill(Color::LightGray,false));
+		list->Add(new DecoratorRectFill(Color::LightGray,false));
 		list->Add(new DecoratorRectGradientFill(Color::Gray,Color::WhiteSmoke));
 		list->Add(new Decorator3DRect(Color::White,Color::Black));
 		list->Add(new DecoratorColor(Color::Black));

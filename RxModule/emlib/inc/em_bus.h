@@ -150,10 +150,10 @@ __STATIC_INLINE void BUS_RegBitWrite(volatile uint32_t *addr,
                                      unsigned int val)
 {
 #if defined( BITBAND_PER_BASE )
-  uint32_t aliasAddr =
-    BITBAND_PER_BASE + (((uint32_t)addr - PER_MEM_BASE) * 32) + (bit * 4);
+  //uint32_t aliasAddr =
+  //  BITBAND_PER_BASE + (((uint32_t)addr - PER_MEM_BASE) << 5) + (bit << 2);
 
-  *(volatile uint32_t *)aliasAddr = (uint32_t)val;
+  *(volatile uint32_t *)(BITBAND_PER_BASE + (((uint32_t)addr - PER_MEM_BASE) << 5) + (bit << 2)) = (uint32_t)val;
 #else
   uint32_t tmp = *addr;
 

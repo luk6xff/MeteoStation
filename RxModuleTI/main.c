@@ -4,13 +4,17 @@
 #include "driverlib/gpio.h"
 #include "driverlib/systick.h"
 #include "driverlib/interrupt.h"
+#include "driverlib/uart.h"
 #include "ILI9320.h"
 #include "inc/hw_memmap.h"
+#include "inc/hw_ints.h"
 #include "inc/hw_types.h"
 #include "utils/uartstdio.h"
 #include "ugui.h"
 
-
+#define RED_LED   GPIO_PIN_1
+#define BLUE_LED  GPIO_PIN_2
+#define GREEN_LED GPIO_PIN_3
 
 static UG_GUI gui;
 
@@ -55,7 +59,7 @@ void WindowCallback(UG_MESSAGE *mess)
 }
 int gui_init()
 {
-    init(_16_BIT, LANDSCAPE);
+    init(_16_BIT, PORTRAIT);
     UG_Init(&gui, pixelSet, 320, 240);
     UG_SelectGUI(&gui);
 	UG_FontSelect( &FONT_12X20 );
@@ -95,39 +99,116 @@ int gui_init()
 
 
 
+void UART5IntHandler(void)
+{
+    unsigned long ulStatus;
 
+    //
+    // Get the interrrupt status.
+    //
+    ulStatus = UARTIntStatus(UART5_BASE, true);
 
+    //
+    // Clear the asserted interrupts.
+    //
+    UARTIntClear(UART5_BASE, ulStatus);
 
+    //
+    // Loop while there are characters in the receive FIFO.
+    //
+    while(UARTCharsAvail(UART5_BASE))
+    {
+        // Read the next character from the UART and write it to the console.
 
-
+        //UARTCharPutNonBlocking(UART5_BASE, UARTCharGetNonBlocking(UART5_BASE));
+    	UARTprintf("%c", UARTCharGetNonBlocking(UART5_BASE));
+    }
+}
 
 //*****************************************************************************
 //
-//! \addtogroup systick_examples_list
-//! <h1>Systick Interrupt (systick_int)</h1>
-//!
-//! This example shows how to configure the SysTick and the SysTick
-//! interrupt.
-//!
-//! This example uses the following peripherals and I/O signals.  You must
-//! review these and change as needed for your own board:
-//! - NONE
-//!
-//! The following UART signals are configured only for displaying console
-//! messages for this example.  These are not required for operation of
-//! Systick.
-//! - UART0 peripheral
+// Send a string to the UART.
+//
+//*****************************************************************************
+static void
+UARTSend(const unsigned char *pucBuffer, unsigned long ulCount)
+{
+    // Loop while there are more characters to send.
+    while(ulCount--)
+    {
+        // Write the next character to the UART.
+        UARTCharPutNonBlocking(UART5_BASE, *pucBuffer++);
+    }
+}
+
+//! - UART5 peripheral
+//! - GPIO Port E peripheral (for UART5 pins)
+//! - UART1RX - PE4
+//! - UART1TX - PE5
+
+static void uartESP8266Setup(void)
+{
+    //
+    // Set the clocking to run directly from the crystal.
+    //
+    //SysCtlClockSet(SYSCTL_SYSDIV_1 | SYSCTL_USE_OSC | SYSCTL_OSC_MAIN |
+                       //SYSCTL_XTAL_16MHZ);
+
+    //
+    // Enable the GPIO port that is used for the on-board LED.
+    //
+    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF);
+
+    //
+    // Enable the GPIO pins for the LED (PF2).
+    //
+    GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, RED_LED|BLUE_LED|GREEN_LED);
+
+    //
+    // Enable the peripherals used by this example.
+    //
+    SysCtlPeripheralEnable(SYSCTL_PERIPH_UART5);
+    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOE);
+
+    //
+    // Enable processor interrupts.
+    //
+    IntMasterEnable();
+
+    //
+    // Set GPIO PE4 and PE5 as UART pins.
+    //
+    GPIOPinConfigure(GPIO_PE4_U5RX);
+    GPIOPinConfigure(GPIO_PE5_U5TX);
+    GPIOPinTypeUART(GPIO_PORTE_BASE, GPIO_PIN_4 | GPIO_PIN_5);
+
+    //
+    // Configure the UART for 115,200, 8-N-1 operation.
+    //
+    UARTConfigSetExpClk(UART5_BASE, SysCtlClockGet(), 115200,
+                            (UART_CONFIG_WLEN_8 | UART_CONFIG_STOP_ONE |
+                             UART_CONFIG_PAR_NONE));
+
+    //
+    // Enable the UART interrupt.
+    //
+    IntEnable(INT_UART5);
+    UARTIntEnable(UART5_BASE, UART_INT_RX | UART_INT_RT);
+
+    //
+    // Prompt for text to be entered.
+    //
+    UARTSend((unsigned char *)"AT", 2);
+
+}
+
+
+
+
+//! - UART0 peripheral - Console UART
 //! - GPIO Port A peripheral (for UART0 pins)
 //! - UART0RX - PA0
 //! - UART0TX - PA1
-//!
-//! This example uses the following interrupt handlers.  To use this example
-//! in your own application you must add these interrupt handlers to your
-//! vector table.
-//! - SysTickIntHandler
-//!
-//
-//*****************************************************************************
 
 //*****************************************************************************
 //
@@ -176,6 +257,7 @@ InitConsole(void)
 // The interrupt handler for the for Systick interrupt.
 //
 //*****************************************************************************
+static int uartCounter =0;
 void
 SysTickIntHandler(void)
 {
@@ -183,6 +265,8 @@ SysTickIntHandler(void)
     // Update the Systick interrupt counter.
     //
     g_ulCounter++;
+    uartCounter++;
+
 }
 
 //*****************************************************************************
@@ -197,9 +281,7 @@ SysTickIntHandler(void)
 //
 //*****************************************************************************
 
-#define RED_LED   GPIO_PIN_1
-#define BLUE_LED  GPIO_PIN_2
-#define GREEN_LED GPIO_PIN_3
+
 
 int main(void)
 {
@@ -207,7 +289,7 @@ int main(void)
     // Setup the system clock to run at 80 Mhz from PLL with crystal reference
     //
 	SysCtlClockSet(SYSCTL_SYSDIV_2_5|SYSCTL_USE_PLL|SYSCTL_OSC_MAIN|SYSCTL_XTAL_16MHZ);
-    //SysCtlClockSet(SYSCTL_SYSDIV_1 | SYSCTL_USE_OSC | SYSCTL_OSC_MAIN | SYSCTL_XTAL_16MHZ);
+    //SysCtlClockSet(SYSCTL_SYSDIV_4 | SYSCTL_USE_OSC | SYSCTL_OSC_MAIN | SYSCTL_XTAL_16MHZ);
     //
     // Enable and configure the GPIO port for the LED operation.
     //
@@ -215,12 +297,13 @@ int main(void)
     GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, RED_LED|BLUE_LED|GREEN_LED);
 
     //init(_16_BIT, PORTRAIT);
-    //init(_16_BIT, LANDSCAPE);
-    gui_init();
+    init(_16_BIT, LANDSCAPE);
+    //gui_init();
 
     drawRoundRect(10, 10, 200, 260, BLUE);
-    fillCircle(120, 120, 50, BLUE);
+    fillCircle(150, 120, 50, BLUE);
     InitConsole();
+    uartESP8266Setup();
     unsigned long ulPrevCount = 0;
 	//
 	// Display the setup on the console.
@@ -259,6 +342,10 @@ int main(void)
             UARTprintf("Number of interrupts: %d\r", g_ulCounter);
             GPIOPinWrite(GPIO_PORTF_BASE, RED_LED|BLUE_LED|GREEN_LED, BLUE_LED);
             ulPrevCount = g_ulCounter;
+        }
+        if(!(uartCounter%50))
+        {
+            UARTSend((unsigned char *)"AT\r\n", 4);
         }
     }
 }

@@ -15,8 +15,8 @@
 #include "driverlib/rom_map.h"
 
 
-#define Delay(ms)  MAP_SysCtlDelay( (MAP_SysCtlClockGet()/(3*1000))*ms );
-
+//#define Delay(ms)  MAP_SysCtlDelay( (MAP_SysCtlClockGet()/(3*1000))*ms );
+#define Delay(ms)  MAP_SysCtlDelay( 8000*ms);
 
 /*********************************Hardware dependent part*****************************************/
 /*********************************Hardware dependent part*****************************************/
@@ -137,13 +137,13 @@ static inline uint16_t getPin(unsigned long port, unsigned char pin) {
 #define TFT_PIN_D4_OUTPUT() GPIOPinTypeGPIOOutput(TFT_PORT_D4,TFT_PIN_D4)
 #define TFT_PIN_D4_INPUT()  GPIOPinTypeGPIOInput(TFT_PORT_D4,TFT_PIN_D4)
 
-#define TFT_PORT_D3 GPIO_PORTB_BASE //GPIO_PORTA_BASE //
-#define TFT_PIN_D3 GPIO_PIN_3 //GPIO_PIN_7 //
+#define TFT_PORT_D3 GPIO_PORTB_BASE //GPIO_PORTE_BASE //
+#define TFT_PIN_D3 GPIO_PIN_3 //GPIO_PIN_5 //
 #define TFT_PIN_D3_OUTPUT() GPIOPinTypeGPIOOutput(TFT_PORT_D3,TFT_PIN_D3)
 #define TFT_PIN_D3_INPUT()  GPIOPinTypeGPIOInput(TFT_PORT_D3,TFT_PIN_D3)
 
-#define TFT_PORT_D2 GPIO_PORTB_BASE //GPIO_PORTA_BASE //
-#define TFT_PIN_D2 GPIO_PIN_2 //GPIO_PIN_6 //
+#define TFT_PORT_D2 GPIO_PORTB_BASE //GPIO_PORTE_BASE //
+#define TFT_PIN_D2 GPIO_PIN_2 //GPIO_PIN_4 //
 #define TFT_PIN_D2_OUTPUT() GPIOPinTypeGPIOOutput(TFT_PORT_D2,TFT_PIN_D2)
 #define TFT_PIN_D2_INPUT()  GPIOPinTypeGPIOInput(TFT_PORT_D2,TFT_PIN_D2)
 
@@ -499,6 +499,9 @@ void init(TransferMode tMode, Orientation o) {
 
 	CLOCKS_ENABLE();
 
+	//HWREG(GPIO_PORTB_BASE + GPIO_O_LOCK) = GPIO_LOCK_KEY;
+	//HWREG(GPIO_PORTB_BASE + GPIO_O_CR) |= 0x80;
+
 	LCD_TRANS_ENABLE_OUTPUT(); //LCD ENABLE
 	LCD_TRANS_HIGH() ;
 	Delay(1);
@@ -558,9 +561,9 @@ void init(TransferMode tMode, Orientation o) {
 
 	//********Set RAM area************************
 	WriteRegister(0x50, 0x0000);   //Set X Start.
-	WriteRegister(0x51, m_resolution.maxX);   //Set X End. (239)
+	WriteRegister(0x51, /*m_resolution.maxX*/239);   //Set X End. (239)
 	WriteRegister(0x52, 0x0000);   //Set Y Start.
-	WriteRegister(0x53, m_resolution.maxY);   //Set Y End. (319)
+	WriteRegister(0x53, /*m_resolution.maxY*/319);   //Set Y End. (319)
 	WriteRegister(0x60, 0x2700);   //Driver Output Control.
 	WriteRegister(0x61, 0x0001);   //Driver Output Control.
 	WriteRegister(0x6A, 0x0000);   //Vertical Srcoll Control.
@@ -581,11 +584,12 @@ void init(TransferMode tMode, Orientation o) {
 	WriteRegister(0x97, 0x0000);	//
 	WriteRegister(0x98, 0x0000);	//Frame Cycle Contral.
 	//********Display On******************
+	Delay(100);
 	WriteRegister(0x07, 0x0173);
-	Delay(50);
+	Delay(100);
 	//
 	WriteCommand(0x22);
-	fillScreenBackground(LIGHT_GREEN);
+	fillScreenBackground(YELLOW);
 	//setFont(BigFont);
 
 
@@ -607,12 +611,23 @@ void setXY(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2) {
 		y1 = temp;
 
 	}
+#if 0
 	lcdWriteCOMMAND_DATA(0x20, x1);
 	lcdWriteCOMMAND_DATA(0x21, y1);
 	lcdWriteCOMMAND_DATA(0x50, x1);
 	lcdWriteCOMMAND_DATA(0x52, y1);
 	lcdWriteCOMMAND_DATA(0x51, x2);
 	lcdWriteCOMMAND_DATA(0x53, y2);
+	lcdWriteCOMMAND(0x22);
+#endif
+	lcdWriteCOMMAND_DATA(0x50, x1);
+	lcdWriteCOMMAND_DATA(0x52, y1);
+	lcdWriteCOMMAND_DATA(0x51, x2);
+	lcdWriteCOMMAND_DATA(0x53, y2);
+	for(volatile int i= 0;i<100000;i++);
+	Delay(1);	//kludge for hanging and strange stuff
+	lcdWriteCOMMAND_DATA(0x20, x1);
+	lcdWriteCOMMAND_DATA(0x21, y1);
 	lcdWriteCOMMAND(0x22);
 }
 

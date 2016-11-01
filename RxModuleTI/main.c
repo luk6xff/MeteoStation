@@ -293,24 +293,39 @@ int main(void)
     //
     // Enable and configure the GPIO port for the LED operation.
     //
+    unsigned long ulPrevCount = 0;
+#if 1
     SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF);
     GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, RED_LED|BLUE_LED|GREEN_LED);
-
-    //init(_16_BIT, PORTRAIT);
-    init(_16_BIT, LANDSCAPE);
+    GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, GREEN_LED);
+    GPIOPinWrite(GPIO_PORTF_BASE, RED_LED, 1&0xFF ? RED_LED : 0);
+    GPIOPinWrite(GPIO_PORTF_BASE, BLUE_LED, 1&0xFF ? BLUE_LED : 0);
+    GPIOPinWrite(GPIO_PORTF_BASE, GREEN_LED, 1&0xFF ? GREEN_LED : 0);
+    GPIOPinWrite(GPIO_PORTF_BASE, BLUE_LED, 0&0xFF ? BLUE_LED : 0);
+    init(_16_BIT, PORTRAIT);
+    //init(_16_BIT, LANDSCAPE);
     //gui_init();
-
-    drawRoundRect(10, 10, 200, 260, BLUE);
-    fillCircle(150, 120, 50, BLUE);
-    InitConsole();
+#if 1
+    //drawRoundRect(10, 10, 230, 191, BLUE); //!!!!!!!!WORKS
+    drawRoundRect(0, 0, 239, 319, BLUE); //!!!!!!!!WORKS
+    fillRoundRect(0, 0, 239, 319, BLUE);
+    fillCircle(200, 110, 30, GREEN);
+    for(int x = 30; x<210; x++)
+    	drawVLine(x, 0, 318, YELLOW);
+    for(int y = 200; y<280; y++)
+    	drawHLine(10, y, 200, GREEN);
+    fillCircle(120, 280, 30, GREEN);
     uartESP8266Setup();
-    unsigned long ulPrevCount = 0;
-	//
+#endif
+    for(int x = 0; x<240; x++)
+    	for(int y = 0; y<320; y++)
+    		drawPixel(x,y,BLUE);
+    InitConsole();
 	// Display the setup on the console.
 	//
 	UARTprintf("SysTick Firing Interrupt ->");
 	UARTprintf("\n   Rate = 1sec\n\n");
-
+	UARTprintf("REG: 0x%x",ReadRegister(0x0000));
 	//
 	// Initialize the interrupt counter.
 	//
@@ -325,7 +340,7 @@ int main(void)
 	SysTickIntEnable();
 
 	SysTickEnable();
-
+#endif
     while(1)
     {
 

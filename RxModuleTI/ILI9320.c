@@ -38,7 +38,7 @@ static inline uint16_t getPin(unsigned long port, unsigned char pin) {
 							SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOC); \
 						}
 //==================/CS=====================
-#define CS_PIN      GPIO_PIN_6
+#define CS_PIN      GPIO_PIN_6//GPIO_PIN_3//
 #define CS_PORT     GPIO_PORTD_BASE
 #define CS_OUTPUT() GPIOPinTypeGPIOOutput(CS_PORT, CS_PIN)
 #define CS_HIGH()   setPin(CS_PORT , CS_PIN, 1)
@@ -77,83 +77,83 @@ static inline uint16_t getPin(unsigned long port, unsigned char pin) {
 #define LCD_TRANS_LOW()    	setPin(LCD_TRANS_ENABLE_PORT , LCD_TRANS_ENABLE_PIN, 0)
 
 //------------------DATA-------------------
-#define TFT_PORT_D15 GPIO_PORTC_BASE
-#define TFT_PIN_D15 GPIO_PIN_7
+#define TFT_PORT_D15 GPIO_PORTC_BASE//GPIO_PORTD_BASE//
+#define TFT_PIN_D15 GPIO_PIN_7//GPIO_PIN_0//
 #define TFT_PIN_D15_OUTPUT() GPIOPinTypeGPIOOutput(TFT_PORT_D15,TFT_PIN_D15)
 #define TFT_PIN_D15_INPUT()  GPIOPinTypeGPIOInput(TFT_PORT_D15,TFT_PIN_D15)
 
-#define TFT_PORT_D14 GPIO_PORTC_BASE
-#define TFT_PIN_D14 GPIO_PIN_6
+#define TFT_PORT_D14 GPIO_PORTC_BASE//GPIO_PORTD_BASE//
+#define TFT_PIN_D14 GPIO_PIN_6//GPIO_PIN_1//
 #define TFT_PIN_D14_OUTPUT() GPIOPinTypeGPIOOutput(TFT_PORT_D14,TFT_PIN_D14)
 #define TFT_PIN_D14_INPUT()  GPIOPinTypeGPIOInput(TFT_PORT_D14,TFT_PIN_D14)
 
-#define TFT_PORT_D13 GPIO_PORTC_BASE
-#define TFT_PIN_D13 GPIO_PIN_5
+#define TFT_PORT_D13 GPIO_PORTC_BASE//GPIO_PORTD_BASE//
+#define TFT_PIN_D13 GPIO_PIN_5//GPIO_PIN_2//
 #define TFT_PIN_D13_OUTPUT() GPIOPinTypeGPIOOutput(TFT_PORT_D13,TFT_PIN_D13)
 #define TFT_PIN_D13_INPUT()  GPIOPinTypeGPIOInput(TFT_PORT_D13,TFT_PIN_D13)
 
-#define TFT_PORT_D12 GPIO_PORTC_BASE
-#define TFT_PIN_D12 GPIO_PIN_4
+#define TFT_PORT_D12 GPIO_PORTC_BASE//GPIO_PORTB_BASE//
+#define TFT_PIN_D12 GPIO_PIN_4//GPIO_PIN_5//
 #define TFT_PIN_D12_OUTPUT() GPIOPinTypeGPIOOutput(TFT_PORT_D12,TFT_PIN_D12)
 #define TFT_PIN_D12_INPUT()  GPIOPinTypeGPIOInput(TFT_PORT_D12,TFT_PIN_D12)
 
-#define TFT_PORT_D11 GPIO_PORTD_BASE
-#define TFT_PIN_D11 GPIO_PIN_3
+#define TFT_PORT_D11 GPIO_PORTD_BASE//GPIO_PORTB_BASE//
+#define TFT_PIN_D11 GPIO_PIN_3//GPIO_PIN_7//
 #define TFT_PIN_D11_OUTPUT() GPIOPinTypeGPIOOutput(TFT_PORT_D11,TFT_PIN_D11)
 #define TFT_PIN_D11_INPUT()  GPIOPinTypeGPIOInput(TFT_PORT_D11,TFT_PIN_D11)
 
-#define TFT_PORT_D10 GPIO_PORTD_BASE
-#define TFT_PIN_D10 GPIO_PIN_2
+#define TFT_PORT_D10 GPIO_PORTD_BASE//GPIO_PORTE_BASE//
+#define TFT_PIN_D10 GPIO_PIN_2//GPIO_PIN_0//
 #define TFT_PIN_D10_OUTPUT() GPIOPinTypeGPIOOutput(TFT_PORT_D10,TFT_PIN_D10)
 #define TFT_PIN_D10_INPUT()  GPIOPinTypeGPIOInput(TFT_PORT_D10,TFT_PIN_D10)
 
-#define TFT_PORT_D9 GPIO_PORTD_BASE
-#define TFT_PIN_D9  GPIO_PIN_1
+#define TFT_PORT_D9 GPIO_PORTD_BASE//GPIO_PORTB_BASE//
+#define TFT_PIN_D9  GPIO_PIN_1//GPIO_PIN_2//
 #define TFT_PIN_D9_OUTPUT() GPIOPinTypeGPIOOutput(TFT_PORT_D9,TFT_PIN_D9)
 #define TFT_PIN_D9_INPUT()  GPIOPinTypeGPIOInput(TFT_PORT_D9,TFT_PIN_D9)
 
-#define TFT_PORT_D8 GPIO_PORTD_BASE
-#define TFT_PIN_D8  GPIO_PIN_0
+#define TFT_PORT_D8 GPIO_PORTD_BASE//GPIO_PORTD_BASE//
+#define TFT_PIN_D8  GPIO_PIN_0//GPIO_PIN_7//
 #define TFT_PIN_D8_OUTPUT() GPIOPinTypeGPIOOutput(TFT_PORT_D8,TFT_PIN_D8)
 #define TFT_PIN_D8_INPUT()  GPIOPinTypeGPIOInput(TFT_PORT_D8,TFT_PIN_D8)
 
-#define TFT_PORT_D7 GPIO_PORTB_BASE
-#define TFT_PIN_D7 GPIO_PIN_7
+#define TFT_PORT_D7 GPIO_PORTB_BASE//GPIO_PORTD_BASE//
+#define TFT_PIN_D7 GPIO_PIN_7//GPIO_PIN_6//
 #define TFT_PIN_D7_OUTPUT() GPIOPinTypeGPIOOutput(TFT_PORT_D7,TFT_PIN_D7)
 #define TFT_PIN_D7_INPUT()  GPIOPinTypeGPIOInput(TFT_PORT_D7,TFT_PIN_D7)
 
-#define TFT_PORT_D6 GPIO_PORTB_BASE
-#define TFT_PIN_D6 GPIO_PIN_6
+#define TFT_PORT_D6 GPIO_PORTE_BASE//GPIO_PORTC_BASE//
+#define TFT_PIN_D6 GPIO_PIN_0//GPIO_PIN_7//
 #define TFT_PIN_D6_OUTPUT() GPIOPinTypeGPIOOutput(TFT_PORT_D6,TFT_PIN_D6)
 #define TFT_PIN_D6_INPUT()  GPIOPinTypeGPIOInput(TFT_PORT_D6,TFT_PIN_D6)
 
-#define TFT_PORT_D5 GPIO_PORTB_BASE
-#define TFT_PIN_D5 GPIO_PIN_5
+#define TFT_PORT_D5 GPIO_PORTB_BASE//GPIO_PORTC_BASE//
+#define TFT_PIN_D5 GPIO_PIN_5//GPIO_PIN_6//
 #define TFT_PIN_D5_OUTPUT() GPIOPinTypeGPIOOutput(TFT_PORT_D5,TFT_PIN_D5)
 #define TFT_PIN_D5_INPUT()  GPIOPinTypeGPIOInput(TFT_PORT_D5,TFT_PIN_D5)
 
-#define TFT_PORT_D4 GPIO_PORTB_BASE
-#define TFT_PIN_D4 GPIO_PIN_4
+#define TFT_PORT_D4 GPIO_PORTB_BASE//GPIO_PORTC_BASE//
+#define TFT_PIN_D4 GPIO_PIN_4//GPIO_PIN_5//
 #define TFT_PIN_D4_OUTPUT() GPIOPinTypeGPIOOutput(TFT_PORT_D4,TFT_PIN_D4)
 #define TFT_PIN_D4_INPUT()  GPIOPinTypeGPIOInput(TFT_PORT_D4,TFT_PIN_D4)
 
-#define TFT_PORT_D3 GPIO_PORTB_BASE //GPIO_PORTE_BASE //
-#define TFT_PIN_D3 GPIO_PIN_3 //GPIO_PIN_5 //
+#define TFT_PORT_D3 GPIO_PORTB_BASE//GPIO_PORTC_BASE//
+#define TFT_PIN_D3 GPIO_PIN_3//GPIO_PIN_4//
 #define TFT_PIN_D3_OUTPUT() GPIOPinTypeGPIOOutput(TFT_PORT_D3,TFT_PIN_D3)
 #define TFT_PIN_D3_INPUT()  GPIOPinTypeGPIOInput(TFT_PORT_D3,TFT_PIN_D3)
 
-#define TFT_PORT_D2 GPIO_PORTB_BASE //GPIO_PORTE_BASE //
-#define TFT_PIN_D2 GPIO_PIN_2 //GPIO_PIN_4 //
+#define TFT_PORT_D2 GPIO_PORTB_BASE//GPIO_PORTB_BASE//
+#define TFT_PIN_D2 GPIO_PIN_2//GPIO_PIN_3//
 #define TFT_PIN_D2_OUTPUT() GPIOPinTypeGPIOOutput(TFT_PORT_D2,TFT_PIN_D2)
 #define TFT_PIN_D2_INPUT()  GPIOPinTypeGPIOInput(TFT_PORT_D2,TFT_PIN_D2)
 
-#define TFT_PORT_D1 GPIO_PORTB_BASE
-#define TFT_PIN_D1 GPIO_PIN_1
+#define TFT_PORT_D1 GPIO_PORTB_BASE//GPIO_PORTB_BASE//
+#define TFT_PIN_D1 GPIO_PIN_1//GPIO_PIN_1//
 #define TFT_PIN_D1_OUTPUT() GPIOPinTypeGPIOOutput(TFT_PORT_D1,TFT_PIN_D1)
 #define TFT_PIN_D1_INPUT()  GPIOPinTypeGPIOInput(TFT_PORT_D1,TFT_PIN_D1)
 
-#define TFT_PORT_D0 GPIO_PORTB_BASE
-#define TFT_PIN_D0 GPIO_PIN_0
+#define TFT_PORT_D0 GPIO_PORTB_BASE//GPIO_PORTB_BASE//
+#define TFT_PIN_D0 GPIO_PIN_0//GPIO_PIN_0//
 #define TFT_PIN_D0_OUTPUT() GPIOPinTypeGPIOOutput(TFT_PORT_D0,TFT_PIN_D0)
 #define TFT_PIN_D0_INPUT()  GPIOPinTypeGPIOInput(TFT_PORT_D0,TFT_PIN_D0)
 
@@ -283,23 +283,22 @@ static void pushData(uint16_t data) {
 
 #else
 
-	setPin(TFT_PORT_D15, TFT_PIN_D15, (data >> 15) & 0x01);
-	setPin(TFT_PORT_D14, TFT_PIN_D14, (data >> 14) & 0x01);
-	setPin(TFT_PORT_D13, TFT_PIN_D13, (data >> 13) & 0x01);
-	setPin(TFT_PORT_D12, TFT_PIN_D12, (data >> 12) & 0x01);
-	setPin(TFT_PORT_D11, TFT_PIN_D11, (data >> 11) & 0x01);
-	setPin(TFT_PORT_D10, TFT_PIN_D10, (data >> 10) & 0x01);
-	setPin(TFT_PORT_D9, TFT_PIN_D9, (data >> 9) & 0x01);
-	setPin(TFT_PORT_D8, TFT_PIN_D8, (data >> 8) & 0x01);
-	setPin(TFT_PORT_D7, TFT_PIN_D7, (data >> 7) & 0x01);
-	setPin(TFT_PORT_D6, TFT_PIN_D6, (data >> 6) & 0x01);
-	setPin(TFT_PORT_D5, TFT_PIN_D5, (data >> 5) & 0x01);
-	setPin(TFT_PORT_D4, TFT_PIN_D4, (data >> 4) & 0x01);
-	setPin(TFT_PORT_D3, TFT_PIN_D3, (data >> 3) & 0x01);
-	setPin(TFT_PORT_D2, TFT_PIN_D2, (data >> 2) & 0x01);
-	setPin(TFT_PORT_D1, TFT_PIN_D1, (data >> 1) & 0x01);
 	setPin(TFT_PORT_D0, TFT_PIN_D0, data & 0x01);
-
+	setPin(TFT_PORT_D1, TFT_PIN_D1, (data >> 1) & 0x01);
+	setPin(TFT_PORT_D2, TFT_PIN_D2, (data >> 2) & 0x01);
+	setPin(TFT_PORT_D3, TFT_PIN_D3, (data >> 3) & 0x01);
+	setPin(TFT_PORT_D4, TFT_PIN_D4, (data >> 4) & 0x01);
+	setPin(TFT_PORT_D5, TFT_PIN_D5, (data >> 5) & 0x01);
+	setPin(TFT_PORT_D6, TFT_PIN_D6, (data >> 6) & 0x01);
+	setPin(TFT_PORT_D7, TFT_PIN_D7, (data >> 7) & 0x01);
+	setPin(TFT_PORT_D8, TFT_PIN_D8, (data >> 8) & 0x01);
+	setPin(TFT_PORT_D9, TFT_PIN_D9, (data >> 9) & 0x01);
+	setPin(TFT_PORT_D10, TFT_PIN_D10, (data >> 10) & 0x01);
+	setPin(TFT_PORT_D11, TFT_PIN_D11, (data >> 11) & 0x01);
+	setPin(TFT_PORT_D12, TFT_PIN_D12, (data >> 12) & 0x01);
+	setPin(TFT_PORT_D13, TFT_PIN_D13, (data >> 13) & 0x01);
+	setPin(TFT_PORT_D14, TFT_PIN_D14, (data >> 14) & 0x01);
+	setPin(TFT_PORT_D15, TFT_PIN_D15, (data >> 15) & 0x01);
 
 #endif
 }
@@ -417,8 +416,8 @@ static void WriteRegister(uint16_t index, uint16_t data) {
  ** DB[15:0]  ---------[index]----------[data]-----------------------  **
  **                                                                    **
  ************************************************************************/
-/*
- static uint16_t ReadRegister(uint16_t index) {   //NOT USED
+
+ uint16_t ReadRegister(uint16_t index) {   //NOT USED
  uint16_t data = 0;
 
  CS_LOW();
@@ -460,7 +459,7 @@ static void WriteRegister(uint16_t index, uint16_t data) {
  allDataPinsOutput();
  return data;
  }
- */
+
 
 
 
@@ -502,8 +501,8 @@ void init(TransferMode tMode, Orientation o) {
 	//HWREG(GPIO_PORTB_BASE + GPIO_O_LOCK) = GPIO_LOCK_KEY;
 	//HWREG(GPIO_PORTB_BASE + GPIO_O_CR) |= 0x80;
 
-	LCD_TRANS_ENABLE_OUTPUT(); //LCD ENABLE
-	LCD_TRANS_HIGH() ;
+	//LCD_TRANS_ENABLE_OUTPUT(); //LCD ENABLE
+	//LCD_TRANS_HIGH() ;
 	Delay(1);
 	CS_OUTPUT();
 	Delay(1);
@@ -589,7 +588,7 @@ void init(TransferMode tMode, Orientation o) {
 	Delay(100);
 	//
 	WriteCommand(0x22);
-	fillScreenBackground(YELLOW);
+	fillScreenBackground(RED);
 	//setFont(BigFont);
 
 
@@ -624,20 +623,22 @@ void setXY(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2) {
 	lcdWriteCOMMAND_DATA(0x52, y1);
 	lcdWriteCOMMAND_DATA(0x51, x2);
 	lcdWriteCOMMAND_DATA(0x53, y2);
-	for(volatile int i= 0;i<100000;i++);
-	Delay(1);	//kludge for hanging and strange stuff
+	//for(volatile int i= 0;i<100000;i++);
+	//Delay(1);	//kludge for hanging and strange stuff
 	lcdWriteCOMMAND_DATA(0x20, x1);
 	lcdWriteCOMMAND_DATA(0x21, y1);
 	lcdWriteCOMMAND(0x22);
 }
 
 void clrXY() {
-	///CS_LOW();
+#if 1
+	CS_LOW();
 	if (m_orientation == PORTRAIT)
 		setXY(0, 0, m_resolution.maxX, m_resolution.maxY);
 	else
 		setXY(0, 0, m_resolution.maxY, m_resolution.maxX);
-	//CS_HIGH();
+	CS_HIGH();
+#endif
 }
 
 void drawHLine(int x, int y, int l, uint16_t color) {

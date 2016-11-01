@@ -84,6 +84,8 @@ typedef enum {
 }Orientation;
 
 
+uint16_t ReadRegister(uint16_t index);
+
 void init(TransferMode tMode, Orientation o);
 void clrScr();
 void drawPixel(int x, int y, uint16_t color);

@@ -604,11 +604,13 @@ void drawLine(int x1, int y1, int x2, int y2, uint16_t color)
 	clrXY();
 }
 
-void setColor(uint8_t r, uint8_t g, uint8_t b) {
+void setColor(uint8_t r, uint8_t g, uint8_t b)
+{
 	lcdWriteDATA(r | g << 1 | b << 2);	// rrrrrggggggbbbbb
 }
 
-void setPixel(uint16_t color) {
+void setPixel(uint16_t color)
+{
 	lcdWriteDATA(color);	// rrrrrggggggbbbbb
 }
 
@@ -620,7 +622,8 @@ void drawPixel(int x, int y, uint16_t color) {
 	clrXY();
 }
 
-void drawRect(int x1, int y1, int x2, int y2, uint16_t color) {
+void drawRect(int x1, int y1, int x2, int y2, uint16_t color)
+{
 	if (x1 > x2) {
 		int temp = x1;
 		x1 = x2;
@@ -638,7 +641,8 @@ void drawRect(int x1, int y1, int x2, int y2, uint16_t color) {
 	drawVLine(x2, y1, y2 - y1, color);
 }
 
-void drawRoundRect(int x1, int y1, int x2, int y2, uint16_t color) {
+void drawRoundRect(int x1, int y1, int x2, int y2, uint16_t color)
+{
 	if (x1 > x2) {
 		int temp = x1;
 		x1 = x2;
@@ -1059,5 +1063,202 @@ static void swapInt(int *a, int*b) {
 	int temp = *a;
 	*b = temp;
 	*a = *b;
+}
+
+void ILI9320PixelDrawMultiple(void *pvDisplayData, long lX,
+                                           long lY, long lX0, long lCount,
+                                           long lBPP,
+                                           const unsigned char *pucData,
+                                           const unsigned char *pucPalette)
+{
+    unsigned long ulByte;
+
+    //
+    // Set the cursor increment to left to right, followed by top to bottom.
+    //
+    WriteCommand(0x03);
+#ifdef PORTRAIT
+    WriteData(0x0030);
+#else
+//LANDSCAPE
+    WriteData(0x0028);
+#endif
+
+    //
+    // Set the starting X address of the display cursor.
+    //
+    WriteCommand(0x20);
+#ifdef PORTRAIT
+    WriteData(lX);
+#else
+//LANDSCAPE
+    WriteData(239 - lY);
+#endif
+
+    //
+    // Set the Y address of the display cursor.
+    //
+    WriteCommand(0x21);
+#ifdef PORTRAIT
+    WriteData(lY);
+#else
+//LANDSCAPE
+    WriteData(lX);
+#endif
+
+
+    //
+    // Write the data RAM write command.
+    //
+    WriteCommand(0x22);
+
+    //
+    // Determine how to interpret the pixel data based on the number of bits
+    // per pixel.
+    //
+    switch(lBPP)
+    {
+        //
+        // The pixel data is in 1 bit per pixel format.
+        //
+        case 1:
+        {
+            //
+            // Loop while there are more pixels to draw.
+            //
+            while(lCount)
+            {
+                //
+                // Get the next byte of image data.
+                //
+                ulByte = *pucData++;
+
+                //
+                // Loop through the pixels in this byte of image data.
+                //
+                for(; (lX0 < 8) && lCount; lX0++, lCount--)
+                {
+                    //
+                    // Draw this pixel in the appropriate color.
+                    //
+                    WriteData(((unsigned long *)pucPalette)[(ulByte >>
+                                                             (7 - lX0)) & 1]);
+                }
+
+                //
+                // Start at the beginning of the next byte of image data.
+                //
+                lX0 = 0;
+            }
+
+            //
+            // The image data has been drawn.
+            //
+            break;
+        }
+
+        //
+        // The pixel data is in 4 bit per pixel format.
+        //
+        case 4:
+        {
+            //
+            // Loop while there are more pixels to draw.  "Duff's device" is
+            // used to jump into the middle of the loop if the first nibble of
+            // the pixel data should not be used.  Duff's device makes use of
+            // the fact that a case statement is legal anywhere within a
+            // sub-block of a switch statement.  See
+            // http://en.wikipedia.org/wiki/Duff's_device for detailed
+            // information about Duff's device.
+            //
+            switch(lX0 & 1)
+            {
+                case 0:
+                    while(lCount)
+                    {
+                        //
+                        // Get the upper nibble of the next byte of pixel data
+                        // and extract the corresponding entry from the
+                        // palette.
+                        //
+                        ulByte = (*pucData >> 4) * 3;
+                        ulByte = (*(unsigned long *)(pucPalette + ulByte) &
+                                  0x00ffffff);
+
+                        //
+                        // Translate this palette entry and write it to the
+                        // screen.
+                        //
+                        WriteData(DPYCOLORTRANSLATE(ulByte));
+
+                        //
+                        // Decrement the count of pixels to draw.
+                        //
+                        lCount--;
+
+                        //
+                        // See if there is another pixel to draw.
+                        //
+                        if(lCount)
+                        {
+                case 1:
+                            //
+                            // Get the lower nibble of the next byte of pixel
+                            // data and extract the corresponding entry from
+                            // the palette.
+                            //
+                            ulByte = (*pucData++ & 15) * 3;
+                            ulByte = (*(unsigned long *)(pucPalette + ulByte) &
+                                      0x00ffffff);
+
+                            //
+                            // Translate this palette entry and write it to the
+                            // screen.
+                            //
+                            WriteData(DPYCOLORTRANSLATE(ulByte));
+
+                            //
+                            // Decrement the count of pixels to draw.
+                            //
+                            lCount--;
+                        }
+                    }
+            }
+
+            //
+            // The image data has been drawn.
+            //
+            break;
+        }
+
+        //
+        // The pixel data is in 8 bit per pixel format.
+        //
+        case 8:
+        {
+            //
+            // Loop while there are more pixels to draw.
+            //
+            while(lCount--)
+            {
+                //
+                // Get the next byte of pixel data and extract the
+                // corresponding entry from the palette.
+                //
+                ulByte = *pucData++ * 3;
+                ulByte = *(unsigned long *)(pucPalette + ulByte) & 0x00ffffff;
+
+                //
+                // Translate this palette entry and write it to the screen.
+                //
+                WriteData(DPYCOLORTRANSLATE(ulByte));
+            }
+
+            //
+            // The image data has been drawn.
+            //
+            break;
+        }
+    }
 }
 

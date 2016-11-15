@@ -25,7 +25,8 @@
 
 #ifndef __GRLIB_H__
 #define __GRLIB_H__
-
+#include <stdint.h>
+#include <stdbool.h>
 //*****************************************************************************
 //
 //! \addtogroup primitives_api
@@ -1513,7 +1514,7 @@ extern const tFont g_sFontCm16;
 #define g_psFontCm16 (const tFont *)&g_sFontCm16
 extern const tFont g_sFontCm16b;
 #define g_psFontCm16b (const tFont *)&g_sFontCm16b
-#if 0
+
 extern const tFont g_sFontCm16i;
 #define g_psFontCm16i (const tFont *)&g_sFontCm16i
 extern const tFont g_sFontCm18;
@@ -1528,6 +1529,7 @@ extern const tFont g_sFontCm20b;
 #define g_psFontCm20b (const tFont *)&g_sFontCm20b
 extern const tFont g_sFontCm20i;
 #define g_psFontCm20i (const tFont *)&g_sFontCm20i
+#if 0
 extern const tFont g_sFontCm22;
 #define g_psFontCm22 (const tFont *)&g_sFontCm22
 extern const tFont g_sFontCm22b;

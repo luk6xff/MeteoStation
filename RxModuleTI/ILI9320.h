@@ -26,6 +26,10 @@ extern "C"
 #include <stdlib.h>
 #include <stdbool.h>
 
+#define DPYCOLORTRANSLATE(c)    ((((c) & 0x00f80000) >> 8) |                  \
+                                 (((c) & 0x0000fc00) >> 5) |                  \
+                                 (((c) & 0x000000f8) >> 3))
+
 #define LEFT 0
 #define RIGHT 9999
 #define CENTER 9998
@@ -127,6 +131,11 @@ void convertFloat(char *buf, double num, int width, uint8_t prec);
 //calibration helpers
 void showThreePointCalibrationHitPoint(uint16_t x1, uint16_t y1);
 void setColor(uint8_t r, uint8_t g, uint8_t b);
+void ILI9320PixelDrawMultiple(void *pvDisplayData, long lX,
+                                           long lY, long lX0, long lCount,
+                                           long lBPP,
+                                           const unsigned char *pucData,
+                                           const unsigned char *pucPalette);
 
 //*****************************************************************************
 //

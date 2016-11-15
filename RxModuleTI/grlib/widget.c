@@ -124,10 +124,10 @@ tWidgetMessageQueue;
 tWidget g_sRoot =
 {
     sizeof(tWidget),
-    0,
-    0,
-    0,
-    0,
+	(void*)0,
+    (void*)0,
+	(void*)0,
+	(void*)0,
     {
         0,
         0,
@@ -495,8 +495,7 @@ WidgetDefaultMsgProc(tWidget *psWidget, uint32_t ui32Message,
 //! \return None.
 //
 //*****************************************************************************
-void
-WidgetAdd(tWidget *psParent, tWidget *psWidget)
+void WidgetAdd(tWidget *psParent, tWidget *psWidget)
 {
     //
     // Check the arguments.
@@ -508,35 +507,27 @@ WidgetAdd(tWidget *psParent, tWidget *psWidget)
     // Make this widget be a child of its parent.
     //
     psWidget->psParent = psParent;
-
     //
     // See if this parent already has children.
     //
     if(psParent->psChild)
     {
-        //
+
         // Find the last child of this parent and also check that widget is not
         // already present at this level of the tree.
-        //
-        for(psParent = psParent->psChild; psParent->psNext;
-            psParent = psParent->psNext)
+        for(psParent = psParent->psChild; psParent->psNext; psParent = psParent->psNext)
         {
-            //
             // If we find this widget here already, just return.  If we don't
             // do this, we allow errant programs to add the same child twice
             // resulting in looping on message processing.
-            //
             if(psParent == psWidget)
             {
                 return;
             }
         }
-
-        //
         // We perform one final check to see if we are about to add the widget
         // twice.  We need this to catch the case of a single child which
         // causes the previous loop to exit before performing the widget check.
-        //
         if(psParent == psWidget)
         {
             return;

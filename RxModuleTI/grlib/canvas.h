@@ -381,7 +381,7 @@ tCanvasWidget;
                i32Height, ui32Style, ui32FillColor, ui32OutlineColor,         \
                ui32TextColor, psFont, pcText, pui8Image, pfnOnPaint)          \
         tCanvasWidget sName =                                                 \
-            CanvasStruct(psParent, psNext, psChild, psDisplay, i32X, i32Y,       \
+            CanvasStruct(psParent, psNext, psChild, psDisplay, i32X, i32Y,    	\
                          i32Width, i32Height, ui32Style, ui32FillColor,       \
                          ui32OutlineColor, ui32TextColor, psFont, pcText,     \
                          pui8Image, pfnOnPaint)

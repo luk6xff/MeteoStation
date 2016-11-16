@@ -9,6 +9,7 @@
 #define ADS7843_H_
 
 #include <stdbool.h>
+#include <stdint.h>
 
 /*********************************Hardware dependent part*****************************************/
 /*********************************Hardware dependent part*****************************************/
@@ -36,42 +37,13 @@
 #endif
 
 //------------------INT_IRQ----------------------
-
-#define ADS7843_PIN_INT      14
-#define ADS7843_PORT_INT     gpioPortA
-#define ADS7843_INT_OUTPUT() GPIO_PinModeSet(ADS7843_PORT_INT, ADS7843_PIN_INT, gpioModePushPull, 1)
-#define ADS7843_INT_INPUT() GPIO_PinModeSet(ADS7843_PORT_INT, ADS7843_PIN_INT,  gpioModeInputPull , 1)
+#define ADS7843_PIN_INT      GPIO_PIN_1
+#define ADS7843_PORT_INT     GPIO_PORTF_BASE
+#define ADS7843_INT_INPUT()  GPIOPinTypeGPIOInput(ADS7843_PORT_INT ,ADS7843_PIN_INT)
 #define ADS7843_INT_IRQ_CONFIG_FALLING(enable) GPIO_IntConfig(ADS7843_PORT_INT, ADS7843_PIN_INT, false, true, enable)
 #define ADS7843_INT_IRQ_CONFIG_RISING(enable) GPIO_IntConfig(ADS7843_PORT_INT, ADS7843_PIN_INT, true, false, enable)
-#define ADS7843_INT_IRQ_CONFIG_PIN_DISABLE() GPIO_IntConfig(ADS7843_PORT_INT, ADS7843_PIN_INT, false, false, false)
-#define ADS7843_INT_HIGH()   GPIO_PinOutSet(ADS7843_PORT_INT , ADS7843_PIN_INT )
-#define ADS7843_INT_LOW()    GPIO_PinOutClear(ADS7843_PORT_INT , ADS7843_PIN_INT )
-#define ADS7843_GET_INT_PIN() GPIO_PinInGet(ADS7843_PORT_INT, ADS7843_PIN_INT)
+#define ADS7843_GET_INT_PIN() GPIOPinRead(ADS7843_PORT_INT, ADS7843_PIN_INT)
 
-//------------------CLK----------------------
-
-#define ADS7843_PIN_CLK      2
-#define ADS7843_PORT_CLK     gpioPortD
-#define ADS7843_CLK_OUTPUT() GPIO_PinModeSet(ADS7843_PORT_CLK, ADS7843_PIN_CLK, gpioModePushPull, 0)
-#define ADS7843_CLK_HIGH()   GPIO_PinOutSet(ADS7843_PORT_CLK , ADS7843_PIN_CLK )
-#define ADS7843_CLK_LOW()    GPIO_PinOutClear(ADS7843_PORT_CLK , ADS7843_PIN_CLK )
-
-//------------------MOSI---------------------
-
-#define ADS7843_PIN_MOSI      0
-#define ADS7843_PORT_MOSI     gpioPortD
-#define ADS7843_MOSI_OUTPUT() GPIO_PinModeSet(ADS7843_PORT_MOSI, ADS7843_PIN_MOSI, gpioModePushPull, 1)
-#define ADS7843_MOSI_HIGH()   GPIO_PinOutSet(ADS7843_PORT_MOSI, ADS7843_PIN_MOSI )
-#define ADS7843_MOSI_LOW()    GPIO_PinOutClear(ADS7843_PORT_MOSI , ADS7843_PIN_MOSI )
-
-//------------------MIS0---------------------
-
-#define ADS7843_PIN_MISO      1
-#define ADS7843_PORT_MISO     gpioPortD
-#define ADS7843_MISO_OUTPUT() GPIO_PinModeSet(ADS7843_PORT_MISO, ADS7843_PIN_MISO, gpioModePushPull, 1)
-#define ADS7843_MISO_INPUT()   GPIO_PinModeSet(ADS7843_PORT_MISO, ADS7843_PIN_MISO, gpioModeInput, 0)
-#define ADS7843_MISO_HIGH()   GPIO_PinOutSet(ADS7843_PORT_MISO , ADS7843_PIN_MISO )
-#define ADS7843_MISO_LOW()    GPIO_PinOutClear(ADS7843_PORT_MISO , ADS7843_PIN_MISO )
 
 /*********************************Hardware dependent part - END*****************************************/
 
@@ -169,16 +141,16 @@ void ADS7843readXY(uint16_t *x, uint16_t *y);
 // @brief Read the XY coordinate of touch point.
 // @retun true - if read while pendown is touching , false - otherwise
 //*****************************************************************************
-bool ADS7843readPointXY(TouchPoint& touchPoint, bool calibrationEnabled);
+bool ADS7843readPointXY(TouchPoint* touchPoint, bool calibrationEnabled);
 
 //*****************************************************************************
 //@brief  Touch screen calibration.
 //*****************************************************************************
 //uint8_t ADS7843performThreePointCalibration(ILI9320& lcd);
 
-uint16_t ADS7843fastMedian(uint16_t *samples) const;
+uint16_t ADS7843fastMedian(uint16_t *samples);
 
-TouchPoint ADS7843translateCoordinates(const TouchPoint& rawPoint);
+TouchPoint ADS7843translateCoordinates(const TouchPoint* rawPoint);
 
 TouchStatus ADS7843getTouchStatus();
 
@@ -188,7 +160,7 @@ TouchStatus ADS7843getTouchStatus();
 //*****************************************************************************
 bool ADS7843getIrqPinState(void);
 
-bool ADS7843readOnePointRawCoordinates(TouchPoint& point);
+bool ADS7843readOnePointRawCoordinates(TouchPoint* point);
 
 TouchInfo m_touchInfoData;
 //corection coefficients

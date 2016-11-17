@@ -7,6 +7,7 @@
 #include "driverlib/uart.h"
 #include "ILI9320.h"
 #include "ILI9320_driver.h"
+#include "ads7843.h"
 #include "inc/hw_memmap.h"
 #include "inc/hw_ints.h"
 #include "inc/hw_types.h"
@@ -277,6 +278,9 @@ int main(void) {
 	GPIOPinWrite(GPIO_PORTF_BASE, BLUE_LED, 0 & 0xFF ? BLUE_LED : 0);
 	ILI9320Init();
 
+	//ADS7843
+	ADS7843init();
+
     tContext sContext;
     tRectangle sRect;
     GrContextInit(&sContext, &g_ILI9320);
@@ -348,9 +352,23 @@ int main(void) {
 					BLUE_LED);
 			ulPrevCount = g_ulCounter;
 		}
+
 		if (!(uartCounter % 50)) {
 			UARTSend((unsigned char *) "AT\r\n", 4);
 		}
+
+		if(ADS7843getIrqPinState())
+		{
+			ADS7843read();
+			TouchPoint a;
+			a = ADS7843getTouchedPoint();
+			UARTprintf("RESULTS: x=%d, y=%d\n\r", a.x, a.y);
+		}
+		else
+		{
+			//UARTprintf("NOT_PUSHED \r");
+		}
+
 #endif
 	}
 

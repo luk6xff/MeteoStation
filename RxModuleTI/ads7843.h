@@ -14,15 +14,9 @@
 /*********************************Hardware dependent part*****************************************/
 /*********************************Hardware dependent part*****************************************/
 
-//==================CS=====================
-#define ADS7843_PIN_CS      3
-#define ADS7843_PORT_CS     gpioPortD
-#define ADS7843_CS_OUTPUT() GPIO_PinModeSet(ADS7843_PORT_CS, ADS7843_PIN_CS, gpioModePushPull, 1)
-#define ADS7843_CS_HIGH()   GPIO_PinOutSet(ADS7843_PORT_CS , ADS7843_PIN_CS )
-#define ADS7843_CS_LOW()    GPIO_PinOutClear(ADS7843_PORT_CS , ADS7843_PIN_CS )
-
 //------------------BUSY_PIN---------------------- TODO!
 #define ADS7843_USE_PIN_BUSYx
+#define ADS7843_ENABLE_TOUCH_INT
 
 #ifdef ADS7843_USE_PIN_BUSY
 #define ADS7843_PIN_BUSY       6
@@ -37,11 +31,12 @@
 #endif
 
 //------------------INT_IRQ----------------------
-#define ADS7843_PIN_INT      GPIO_PIN_1
+#define ADS7843_PIN_INT      GPIO_PIN_4
 #define ADS7843_PORT_INT     GPIO_PORTF_BASE
+#define ADS7843_PORT_INT_CLOCK()	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF)
 #define ADS7843_INT_INPUT()  GPIOPinTypeGPIOInput(ADS7843_PORT_INT ,ADS7843_PIN_INT)
-#define ADS7843_INT_IRQ_CONFIG_FALLING(enable) GPIO_IntConfig(ADS7843_PORT_INT, ADS7843_PIN_INT, false, true, enable)
-#define ADS7843_INT_IRQ_CONFIG_RISING(enable) GPIO_IntConfig(ADS7843_PORT_INT, ADS7843_PIN_INT, true, false, enable)
+//#define ADS7843_INT_IRQ_CONFIG_FALLING(enable) GPIO_IntConfig(ADS7843_PORT_INT, ADS7843_PIN_INT, false, true, enable)
+//#define ADS7843_INT_IRQ_CONFIG_RISING(enable) GPIO_IntConfig(ADS7843_PORT_INT, ADS7843_PIN_INT, true, false, enable)
 #define ADS7843_GET_INT_PIN() GPIOPinRead(ADS7843_PORT_INT, ADS7843_PIN_INT)
 
 
@@ -90,6 +85,11 @@ typedef struct {
 	uint16_t curY;
 	volatile TouchStatus touchStatus;
 } TouchInfo;
+
+typedef struct {
+	uint16_t x;
+	uint16_t y;
+} TouchPoint;
 
 //*****************************************************************************
 // @brief Initialize ADS7843
@@ -162,8 +162,5 @@ bool ADS7843getIrqPinState(void);
 
 bool ADS7843readOnePointRawCoordinates(TouchPoint* point);
 
-TouchInfo m_touchInfoData;
-//corection coefficients
-float m_ax, m_bx, m_dx, m_ay, m_by, m_dy;
 
 #endif /* ADS7843_H_ */

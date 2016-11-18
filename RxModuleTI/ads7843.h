@@ -30,14 +30,24 @@
 
 #endif
 
+
+//------------------SSI0 CS_PIN----------------------
+#define ADS7843_PIN_CS      	GPIO_PIN_3
+#define ADS7843_PORT_CS     	GPIO_PORTA_BASE
+#define ADS7843_PORT_CS_CLOCK()	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA)
+#define ADS7843_CS_OUTPUT()  	GPIOPinTypeGPIOOutput(ADS7843_PORT_CS, ADS7843_PIN_CS)
+#define ADS7843_CS_HIGH()  		GPIOPinWrite(ADS7843_PORT_CS, ADS7843_PIN_CS, ADS7843_PIN_CS)
+#define ADS7843_CS_LOW()  		GPIOPinWrite(ADS7843_PORT_CS, ADS7843_PIN_CS, 0)
+
+
 //------------------INT_IRQ----------------------
-#define ADS7843_PIN_INT      GPIO_PIN_4
-#define ADS7843_PORT_INT     GPIO_PORTF_BASE
-#define ADS7843_PORT_INT_CLOCK()	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF)
-#define ADS7843_INT_INPUT()  GPIOPinTypeGPIOInput(ADS7843_PORT_INT ,ADS7843_PIN_INT)
+#define ADS7843_PIN_INT      	GPIO_PIN_4
+#define ADS7843_PORT_INT     	GPIO_PORTF_BASE
+#define ADS7843_PORT_INT_CLOCK()SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF)
+#define ADS7843_INT_INPUT()  	GPIOPinTypeGPIOInput(ADS7843_PORT_INT ,ADS7843_PIN_INT)
 //#define ADS7843_INT_IRQ_CONFIG_FALLING(enable) GPIO_IntConfig(ADS7843_PORT_INT, ADS7843_PIN_INT, false, true, enable)
 //#define ADS7843_INT_IRQ_CONFIG_RISING(enable) GPIO_IntConfig(ADS7843_PORT_INT, ADS7843_PIN_INT, true, false, enable)
-#define ADS7843_GET_INT_PIN() GPIOPinRead(ADS7843_PORT_INT, ADS7843_PIN_INT)
+#define ADS7843_GET_INT_PIN() 	GPIOPinRead(ADS7843_PORT_INT, ADS7843_PIN_INT)
 
 
 /*********************************Hardware dependent part - END*****************************************/
@@ -91,6 +101,11 @@ typedef struct {
 	uint16_t y;
 } TouchPoint;
 
+typedef struct
+{
+	float m_ax, m_bx, m_dx, m_ay, m_by, m_dy;
+}CalibCoefficients;
+
 //*****************************************************************************
 // @brief Initialize ADS7843
 // @param None.
@@ -143,10 +158,6 @@ void ADS7843readXY(uint16_t *x, uint16_t *y);
 //*****************************************************************************
 bool ADS7843readPointXY(TouchPoint* touchPoint, bool calibrationEnabled);
 
-//*****************************************************************************
-//@brief  Touch screen calibration.
-//*****************************************************************************
-//uint8_t ADS7843performThreePointCalibration(ILI9320& lcd);
 
 uint16_t ADS7843fastMedian(uint16_t *samples);
 
@@ -154,6 +165,8 @@ TouchPoint ADS7843translateCoordinates(const TouchPoint* rawPoint);
 
 TouchStatus ADS7843getTouchStatus();
 
+
+void ADS7843setCalibrationCoefficients(const CalibCoefficients* coeffs);
 //*****************************************************************************
 // @brief Get IRQ pin status: false - pen down, true - pen up
 // @retun false - while pen down (LCD is being touched) , true - pen up

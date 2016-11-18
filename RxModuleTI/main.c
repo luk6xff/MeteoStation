@@ -5,9 +5,6 @@
 #include "driverlib/systick.h"
 #include "driverlib/interrupt.h"
 #include "driverlib/uart.h"
-#include "ILI9320.h"
-#include "ILI9320_driver.h"
-#include "ads7843.h"
 #include "inc/hw_memmap.h"
 #include "inc/hw_ints.h"
 #include "inc/hw_types.h"
@@ -24,6 +21,10 @@
 #include "utils/ustdlib.h"
 #include "utils/sine.h"
 #include "driverlib/fpu.h"
+#include "ILI9320.h"
+#include "ILI9320_driver.h"
+#include "ads7843.h"
+#include "3PointCalibration.h"
 
 #define RED_LED   GPIO_PIN_1
 #define BLUE_LED  GPIO_PIN_2
@@ -324,18 +325,15 @@ int main(void) {
 	InitConsole();
 	//UARTprintf("SysTick Firing Interrupt ->");
 	//UARTprintf("\n   Rate = 1sec\n\n");
-	//UARTprintf("REG: 0x%x", ReadRegister(0x0000));
-
-
 
 	//Enable all interrupts
 	IntMasterEnable();
 
 	// Enable the SysTick and its Interrupt.
 	g_ulCounter = 0;
-	SysTickPeriodSet(SysCtlClockGet());
-	SysTickIntEnable();
-	SysTickEnable();
+	//SysTickPeriodSet(SysCtlClockGet());
+	//SysTickIntEnable();
+	//SysTickEnable();
 
 	while (1) {
         // Process any messages in the widget message queue.
@@ -357,15 +355,28 @@ int main(void) {
 			UARTSend((unsigned char *) "AT\r\n", 4);
 		}
 
-		if(ADS7843getIrqPinState())
+		if(!ADS7843getIrqPinState()) //if touch panel is being touched
 		{
 			ADS7843read();
 			TouchPoint a;
 			a = ADS7843getTouchedPoint();
 			UARTprintf("RESULTS: x=%d, y=%d\n\r", a.x, a.y);
+			GrContextForegroundSet(&sContext, ClrRed);
+			GrCircleFill(&sContext, a.x, a.y, 3);
 		}
 		else
 		{
+			static int once = 0;
+			CalibCoefficients coefs;
+			if(!once)
+			{
+				performThreePointCalibration(&sContext, &coefs);
+				ADS7843setCalibrationCoefficients(&coefs);
+				UARTprintf("COEFFSa: a.x=%d, a.y=%d\n\r", coefs.m_ax, coefs.m_ay);
+				UARTprintf("COEFFSb: b.x=%d, b.y=%d\n\r", coefs.m_bx, coefs.m_by);
+				UARTprintf("COEFFSd: d.x=%d, d.y=%d\n\r", coefs.m_dx, coefs.m_dy);
+				once++;
+			}
 			//UARTprintf("NOT_PUSHED \r");
 		}
 

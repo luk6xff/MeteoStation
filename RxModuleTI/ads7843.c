@@ -21,7 +21,7 @@
 static TouchInfo m_touchInfoData;
 static TouchPoint m_currentTouchedPoint;
 //corection coefficients
-static float m_ax, m_bx, m_dx, m_ay, m_by, m_dy;
+static CalibCoefficients calibCoefs;
 
 // Configure the SoftSSI module.  The size of the FIFO buffers can be
 // Module SSI0, pins are assigned as follows:
@@ -35,19 +35,22 @@ static void spiInit(void) {
 	SysCtlPeripheralEnable(SYSCTL_PERIPH_SSI0);
 
 	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
+	//GPIOPinConfigure(GPIO_PA3_SSI0FSS);
+	ADS7843_PORT_CS_CLOCK();
+	ADS7843_CS_OUTPUT(); //SSI0FSS will be handled manually
+
 	GPIOPinConfigure(GPIO_PA2_SSI0CLK);
-	GPIOPinConfigure(GPIO_PA3_SSI0FSS);
 	GPIOPinConfigure(GPIO_PA4_SSI0RX);
 	GPIOPinConfigure(GPIO_PA5_SSI0TX);
 
 	GPIOPinTypeSSI(GPIO_PORTA_BASE,
-	GPIO_PIN_5 | GPIO_PIN_4 | GPIO_PIN_3 | GPIO_PIN_2);
+	GPIO_PIN_5 | GPIO_PIN_4 | /*GPIO_PIN_3 |*/ GPIO_PIN_2);
 
 	// Configure and enable the SSI port for SPI master mode.  Use SSI0,
 	// system clock supply, idle clock level low and active low clock in
 	// freescale SPI mode, master mode, 1MHz SSI frequency, and 8-bit data.
 	SSIConfigSetExpClk(SSI0_BASE, SysCtlClockGet(), SSI_FRF_MOTO_MODE_0,
-	SSI_MODE_MASTER, 100000, 8);
+	SSI_MODE_MASTER, 1000000, 8);
 
 	// Enable the SSI0 module.
 	SSIEnable(SSI0_BASE);
@@ -59,6 +62,7 @@ static void spiInit(void) {
 
 static void spiWriteReadData(uint8_t* txBuf, uint8_t txSize, uint8_t* rxBuf,
 		uint8_t rxSize) {
+	ADS7843_CS_LOW();
 	if (txBuf != (void*) 0) {
 		for (int txIdx = 0; txIdx < txSize; ++txIdx) {
 			SSIDataPut(SSI0_BASE, txBuf[txIdx]);
@@ -73,23 +77,26 @@ static void spiWriteReadData(uint8_t* txBuf, uint8_t txSize, uint8_t* rxBuf,
 			SSIDataGet(SSI0_BASE, &rxBuf[rxIdx]);
 		}
 	}
+	ADS7843_CS_HIGH();
 }
 
 static uint16_t spiReadData(uint8_t reg) {
-	uint8_t txBuf = reg;
-	uint32_t rxBuf[2] = { 0, 0 };
+	uint8_t txBuf[3] = {reg, 0, 0};
+	uint32_t rxBuf[3] = {0, 0, 0};
 	uint16_t cur = 0x0000;
-	//ADS7843_CS_LOW();
-	SSIDataPut(SSI0_BASE, txBuf);
-	while (SSIBusy(SSI0_BASE)) {
+	ADS7843_CS_LOW();
+	for (int idx = 0; idx < 3; ++idx) {
+		SSIDataPut(SSI0_BASE, txBuf[idx]);
+		while (SSIBusy(SSI0_BASE)) {
+		}
 	}
-	//read 2 ytes of data
-	for (int idx = 0; idx < 2; ++idx) {
+	//read 3 bytes of data
+	for (int idx = 0; idx < 3; ++idx) {
 		SSIDataGet(SSI0_BASE, &rxBuf[idx]);
 		rxBuf[idx] &= 0x00FF;
 	}
-	cur = ((rxBuf[0] << 4) | (rxBuf[1] >> 4)) & 0x0FFF;
-	//ADS7843_CS_HIGH();
+	cur = ((rxBuf[1] << 4) | (rxBuf[2] >> 4)) & 0x0FFF;
+	ADS7843_CS_HIGH();
 	return cur;
 }
 
@@ -112,7 +119,6 @@ void ADS7843init(void) {
 }
 
 bool ADS7843read() {
-	m_touchInfoData.touchStatus = TOUCH_STATUS_TOUCHING; //TEST
 	return ADS7843readPointXY(&m_currentTouchedPoint, false);
 }
 
@@ -228,12 +234,13 @@ uint16_t ADS7843fastMedian(uint16_t *samples) {
 
 TouchPoint ADS7843translateCoordinates(const TouchPoint* rawPoint) {
 	TouchPoint p;
-	p.x = m_ax * rawPoint->x + m_bx * rawPoint->y + m_dx;
-	p.y = m_ay * rawPoint->x + m_by * rawPoint->y + m_dy;
+	p.x = calibCoefs.m_ax * rawPoint->x + calibCoefs.m_bx * rawPoint->y + calibCoefs.m_dx;
+	p.y = calibCoefs.m_ay * rawPoint->x + calibCoefs.m_by * rawPoint->y + calibCoefs.m_dy;
 	return p;
 }
 
 bool ADS7843readPointXY(TouchPoint* touchPoint, bool calibrationEnabled) {
+    m_touchInfoData.touchStatus = TOUCH_STATUS_TOUCHING; //TODO to be removed!!
 	if (m_touchInfoData.touchStatus == TOUCH_STATUS_TOUCHING) {
 		uint16_t xyDataBuf[2][7]; //7 samples
 		uint8_t i, j;
@@ -257,6 +264,18 @@ bool ADS7843readPointXY(TouchPoint* touchPoint, bool calibrationEnabled) {
 TouchStatus ADS7843getTouchStatus() {
 	return m_touchInfoData.touchStatus;
 }
+
+void ADS7843setCalibrationCoefficients(const CalibCoefficients* coeffs)
+{
+	calibCoefs.m_ax = coeffs->m_ax;
+	calibCoefs.m_ay = coeffs->m_ay;
+	calibCoefs.m_bx = coeffs->m_bx;
+	calibCoefs.m_by = coeffs->m_by;
+	calibCoefs.m_dx = coeffs->m_dx;
+	calibCoefs.m_dy = coeffs->m_dy;
+
+}
+
 
 bool ADS7843readOnePointRawCoordinates(TouchPoint* point) {
 	TouchPoint tempP;
@@ -282,77 +301,4 @@ bool ADS7843readOnePointRawCoordinates(TouchPoint* point) {
 	return true;
 }
 
-/*
- uint8_t ADS7843performThreePointCalibration(ILI9320& lcd)
- {
- TouchPoint p1,p2,p3;
- TouchPoint t1,t2,t3;
- // point 1 is at 25%,50%, 2 is at 75%,25% and 3 is at 75%,75%
- ILI9320DispalySize size_ = lcd.getSize();
- p1.x= (size_.x *25) /100;
- p1.y= (size_.y *50) /100;
- p2.x= (size_.x *75) /100;
- p2.y= (size_.y *25) /100;
- p3.x= (size_.x *75) /100;
- p3.y= (size_.y *75) /100;
- ADS7843_INT_IRQ_CONFIG_FALLING(false); //disable ext interrupts
- ADS7843_INT_IRQ_CONFIG_RISING(false);
- //1st point
- lcd.print("Tap & hold the point", 5, 10, 0, ILI9320ColorsRED);
- lcd.drawCircle(p1.x,p1.y,30, ILI9320ColorsBLACK);
- lcd.fillCircle(p1.x,p1.y,10, ILI9320ColorsBLACK);
- readOnePointRawCoordinates(t1);
- lcd.drawCircle(p1.x,p1.y,30, ILI9320ColorsGREEN);
- lcd.fillCircle(p1.x,p1.y,10, ILI9320ColorsGREEN);
- Delay(1000000); //1s
- //2nd point
- lcd.drawCircle(p2.x,p2.y,30, ILI9320ColorsBLACK);
- lcd.fillCircle(p2.x,p2.y,10, ILI9320ColorsBLACK);
- readOnePointRawCoordinates(t2);
- lcd.drawCircle(p2.x,p2.y,30, ILI9320ColorsGREEN);
- lcd.fillCircle(p2.x,p2.y,10, ILI9320ColorsGREEN);
- Delay(1000000); //1s
- //3rd point
- lcd.drawCircle(p3.x,p3.y,30, ILI9320ColorsBLACK);
- lcd.fillCircle(p3.x,p3.y,10, ILI9320ColorsBLACK);
- readOnePointRawCoordinates(t3);
- lcd.drawCircle(p3.x,p3.y,30, ILI9320ColorsGREEN);
- lcd.fillCircle(p3.x,p3.y,10, ILI9320ColorsGREEN);
 
-
- //final computation based on:
- //https://www.maximintegrated.com/en/app-notes/index.mvp/id/5296
- // and
- //http://www.ti.com/lit/an/slyt277/slyt277.pdf
- int32_t delta,deltaX1,deltaX2,deltaX3,deltaY1,deltaY2,deltaY3;
- // intermediate values for the calculation
- delta=((int32_t)(t1.x-t3.x)*(int32_t)(t2.y-t3.y))-((int32_t)(t2.x-t3.x)*(int32_t)(t1.y-t3.y));
-
- deltaX1=((int32_t)(p1.x-p3.x)*(int32_t)(t2.y-t3.y))-((int32_t)(p2.x-p3.x)*(int32_t)(t1.y-t3.y));
- deltaX2=((int32_t)(t1.x-t3.x)*(int32_t)(p2.x-p3.x))-((int32_t)(t2.x-t3.x)*(int32_t)(p1.x-p3.x));
- deltaX3=p1.x*((int32_t)t2.x*(int32_t)t3.y - (int32_t)t3.x*(int32_t)t2.y) -
- p2.x*(t1.x*(int32_t)t3.y - (int32_t)t3.x*(int32_t)t1.y) +
- p3.x*((int32_t)t1.x*(int32_t)t2.y - (int32_t)t2.x*(int32_t)t1.y);
-
- deltaY1=((int32_t)(p1.y-p3.y)*(int32_t)(t2.y-t3.y))-((int32_t)(p2.y-p3.y)*(int32_t)(t1.y-t3.y));
- deltaY2=((int32_t)(t1.x-t3.x)*(int32_t)(p2.y-p3.y))-((int32_t)(t2.x-t3.x)*(int32_t)(p1.y-p3.y));
- deltaY3=p1.y*((int32_t)t2.x*(int32_t)t3.y - (int32_t)t3.x*(int32_t)t2.y) -
- p2.y*((int32_t)t1.x*(int32_t)t3.y - (int32_t)t3.x*(int32_t)t1.y) +
- p3.y*((int32_t)t1.x*(int32_t)t2.y - (int32_t)t2.x*t1.y);
-
- // final values
- m_ax=(float)deltaX1/(float)delta;
- m_bx=(float)deltaX2/(float)delta;
- m_dx=(float)deltaX3/(float)delta;
-
- m_ay=(float)deltaY1/(float)delta;
- m_by=(float)deltaY2/(float)delta;
- m_dy=(float)deltaY3/(float)delta;
- lcd.print("Success - storing data...", 0, 100, 0, ILI9320ColorsRED);
- Delay(1000000); //1s
- lcd.clrScr();
- ADS7843_INT_IRQ_CONFIG_FALLING(true);
-
- return 0;
- }
- */

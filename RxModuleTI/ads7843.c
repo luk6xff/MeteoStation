@@ -50,7 +50,7 @@ static void spiInit(void) {
 	// system clock supply, idle clock level low and active low clock in
 	// freescale SPI mode, master mode, 1MHz SSI frequency, and 8-bit data.
 	SSIConfigSetExpClk(SSI0_BASE, SysCtlClockGet(), SSI_FRF_MOTO_MODE_0,
-	SSI_MODE_MASTER, 1000000, 8);
+	SSI_MODE_MASTER, 100000, 8);
 
 	// Enable the SSI0 module.
 	SSIEnable(SSI0_BASE);
@@ -172,45 +172,6 @@ void ADS7843readRawXY(uint16_t *x, uint16_t *y) {
 	*y = spiReadData(ADS7843_READ_Y | ADS7843_DFR);
 }
 
-void ADS7843readXY(uint16_t *x, uint16_t *y) {
-	uint16_t xyDataBuf[2][TOUCH_MAX_NUM_OF_SAMPLES];
-	uint8_t i, j;
-	uint16_t temp;
-
-	for (i = 0; i < 7; i++) {
-		ADS7843readRawXY(&xyDataBuf[0][i], &xyDataBuf[1][i]);
-	}
-	*x = ADS7843fastMedian(xyDataBuf[0]);
-	*y = ADS7843fastMedian(xyDataBuf[1]);
-	return;
-// Discard the first and the last one of the data and sort remained data
-	for (i = 1; i < TOUCH_MAX_NUM_OF_SAMPLES - 2; i++) {
-		for (j = i + 1; j < TOUCH_MAX_NUM_OF_SAMPLES - 1; j++) {
-			if (xyDataBuf[0][i] > xyDataBuf[0][j]) {
-				temp = xyDataBuf[0][i];
-				xyDataBuf[0][i] = xyDataBuf[0][j];
-				xyDataBuf[0][j] = temp;
-			}
-
-			if (xyDataBuf[1][i] > xyDataBuf[1][j]) {
-				temp = xyDataBuf[1][i];
-				xyDataBuf[1][i] = xyDataBuf[1][j];
-				xyDataBuf[1][j] = temp;
-			}
-		}
-	}
-	xyDataBuf[0][0] = 0;
-	xyDataBuf[1][0] = 0;
-
-// Discard the first and the last one of the sorted data
-// and compute the average value of the remained data.
-	for (i = 2; i < TOUCH_MAX_NUM_OF_SAMPLES - 2; i++) {
-		xyDataBuf[0][0] += xyDataBuf[0][i];
-		xyDataBuf[1][0] += xyDataBuf[1][i];
-	}
-	*x = xyDataBuf[0][0] / (TOUCH_MAX_NUM_OF_SAMPLES - 4);
-	*y = xyDataBuf[1][0] / (TOUCH_MAX_NUM_OF_SAMPLES - 4);
-}
 
 uint16_t ADS7843fastMedian(uint16_t *samples) {
 	// do a fast median selection  - code stolen from https://github.com/andysworkshop/stm32plus library
@@ -243,10 +204,8 @@ bool ADS7843readPointXY(TouchPoint* touchPoint, bool calibrationEnabled) {
     m_touchInfoData.touchStatus = TOUCH_STATUS_TOUCHING; //TODO to be removed!!
 	if (m_touchInfoData.touchStatus == TOUCH_STATUS_TOUCHING) {
 		uint16_t xyDataBuf[2][7]; //7 samples
-		uint8_t i, j;
-		uint16_t temp;
 		TouchPoint p;
-		for (i = 0; i < 7; i++) {
+		for (uint8_t i = 0; i < 7; i++) {
 			ADS7843readRawXY(&xyDataBuf[0][i], &xyDataBuf[1][i]);
 		}
 		p.x = ADS7843fastMedian(xyDataBuf[0]);
@@ -279,7 +238,7 @@ void ADS7843setCalibrationCoefficients(const CalibCoefficients* coeffs)
 
 bool ADS7843readOnePointRawCoordinates(TouchPoint* point) {
 	TouchPoint tempP;
-	const uint16_t samplesNum = 100;
+	const uint16_t samplesNum = 500;
 	uint16_t idx = 0;
 	uint32_t xSum = 0;
 	uint32_t ySum = 0;

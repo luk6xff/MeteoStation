@@ -5,12 +5,12 @@
  *      Author: igbt6
  */
 #include "3PointCalibration.h"
+#include "delay.h"
 
-
-uint8_t performThreePointCalibration(const tContext* ctx, CalibCoefficients* coefs)
+uint8_t performThreePointCalibration(tContext* ctx, CalibCoefficients* coefs)
 {
-	uint32_t ulClockMS = SysCtlClockGet() / (3 * 1000);
 
+	const uint16_t delayMs = 2000; //2s
 	TouchPoint p1, p2, p3;
 	TouchPoint t1, t2, t3;
 	// point 1 is at 25%,50%, 2 is at 75%,25% and 3 is at 75%,75%
@@ -33,15 +33,23 @@ uint8_t performThreePointCalibration(const tContext* ctx, CalibCoefficients* coe
     GrContextForegroundSet(ctx, ClrBlue);
 	drawCalibrationPoint(ctx, p1.x, p1.y, 30);
 	ADS7843readOnePointRawCoordinates(&t1);
-	SysCtlDelay(1000 * ulClockMS); //1s
+    GrContextForegroundSet(ctx, ClrYellow);
+	drawCalibrationPoint(ctx, p1.x, p1.y, 30);
+	delay_ms(delayMs);
 	//2nd point
+    GrContextForegroundSet(ctx, ClrBlue);
 	drawCalibrationPoint(ctx, p2.x, p2.y, 30);
 	ADS7843readOnePointRawCoordinates(&t2);
-	SysCtlDelay(1000 * ulClockMS); //1s
+    GrContextForegroundSet(ctx, ClrYellow);
+	drawCalibrationPoint(ctx, p2.x, p2.y, 30);
+	delay_ms(delayMs);
 	//3rd point
+    GrContextForegroundSet(ctx, ClrBlue);
 	drawCalibrationPoint(ctx, p3.x, p3.y, 30);
 	ADS7843readOnePointRawCoordinates(&t3);
-	SysCtlDelay(1000 * ulClockMS); //1s
+    GrContextForegroundSet(ctx, ClrYellow);
+	drawCalibrationPoint(ctx, p3.x, p3.y, 30);
+	delay_ms(delayMs);
 
 	//final computation based on:
 	//https://www.maximintegrated.com/en/app-notes/index.mvp/id/5296
@@ -94,7 +102,7 @@ uint8_t performThreePointCalibration(const tContext* ctx, CalibCoefficients* coe
     GrContextFontSet(ctx, &g_sFontCm16);
     GrStringDrawCentered(ctx, "Success-storing data...", -1,
                          GrContextDpyWidthGet(ctx) / 2, 50, 0);
-	SysCtlDelay(1000 * ulClockMS); //1s
+	delay_ms(delayMs);
 	ctx->psDisplay->pfnFlush((void *)0);
 	//ADS7843_INT_IRQ_CONFIG_FALLING(true); //TODO
 

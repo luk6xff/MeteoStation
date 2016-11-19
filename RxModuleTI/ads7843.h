@@ -147,10 +147,6 @@ void ADS7843penIRQCallback(uint8_t pin);
 //*****************************************************************************
 void ADS7843readRawXY(uint16_t *x, uint16_t *y);
 
-//*****************************************************************************
-//@brief read the x, y axis ADC convert value from ADS7843(with software filter)
-//*****************************************************************************
-void ADS7843readXY(uint16_t *x, uint16_t *y);
 
 //*****************************************************************************
 // @brief Read the XY coordinate of touch point.

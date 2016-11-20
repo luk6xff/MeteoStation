@@ -25,6 +25,7 @@
 #include "ILI9320_driver.h"
 #include "ads7843.h"
 #include "3PointCalibration.h"
+#include "config.h"
 
 #define RED_LED   GPIO_PIN_1
 #define BLUE_LED  GPIO_PIN_2
@@ -262,8 +263,8 @@ void SysTickIntHandler(void) {
 
 
 int main(void) {
-	FPUEnable();
-	FPULazyStackingEnable();
+	//FPUEnable();
+	//FPULazyStackingEnable();
 	//
 	// Setup the system clock to run at 80 Mhz from PLL with crystal reference
 	//
@@ -279,6 +280,8 @@ int main(void) {
 	GPIOPinWrite(GPIO_PORTF_BASE, BLUE_LED, 0 & 0xFF ? BLUE_LED : 0);
 	ILI9320Init();
 
+	//Configuration
+	configInit();
 	//ADS7843
 	ADS7843init();
 
@@ -323,8 +326,7 @@ int main(void) {
 
     uartESP8266Setup();
 	InitConsole();
-	//UARTprintf("SysTick Firing Interrupt ->");
-	//UARTprintf("\n   Rate = 1sec\n\n");
+
 
 	//Enable all interrupts
 	IntMasterEnable();
@@ -336,6 +338,8 @@ int main(void) {
 	//SysTickEnable();
 
 	while (1) {
+		ConfigParameters* cfg1 = configGetCurrent();
+		if(cfg1->touchScreenParams.isUpdated == 0){}
         // Process any messages in the widget message queue.
         WidgetMessageQueueProcess();
 #if 1
@@ -366,16 +370,23 @@ int main(void) {
 		}
 		else
 		{
-			static int once = 0;
-			CalibCoefficients coefs;
-			if(!once)
+			CalibCoefficients coeffs;
+			ConfigParameters* cfg = configGetCurrent();
+			if(cfg->touchScreenParams.isUpdated == 0)
 			{
-				performThreePointCalibration(&sContext, &coefs);
-				ADS7843setCalibrationCoefficients(&coefs);
-				UARTprintf("COEFFSa: a.x=%d, a.y=%d\n\r", coefs.m_ax, coefs.m_ay);
-				UARTprintf("COEFFSb: b.x=%d, b.y=%d\n\r", coefs.m_bx, coefs.m_by);
-				UARTprintf("COEFFSd: d.x=%d, d.y=%d\n\r", coefs.m_dx, coefs.m_dy);
-				once++;
+				performThreePointCalibration(&sContext, &coeffs);
+				ADS7843setCalibrationCoefficients(&coeffs);
+				cfg->touchScreenParams.calibCoeffs = coeffs;
+				cfg->touchScreenParams.isUpdated = 0xFF;
+				configSave();
+
+				UARTprintf("COEFFSa: a.x=%d, a.y=%d\n\r", coeffs.m_ax, coeffs.m_ay);
+				UARTprintf("COEFFSb: b.x=%d, b.y=%d\n\r", coeffs.m_bx, coeffs.m_by);
+				UARTprintf("COEFFSd: d.x=%d, d.y=%d\n\r", coeffs.m_dx, coeffs.m_dy);
+			}
+			else
+			{
+				ADS7843setCalibrationCoefficients(&configGetCurrent()->touchScreenParams.calibCoeffs);
 			}
 			//UARTprintf("NOT_PUSHED \r");
 		}

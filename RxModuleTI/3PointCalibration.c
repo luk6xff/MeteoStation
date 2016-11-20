@@ -10,7 +10,7 @@
 uint8_t performThreePointCalibration(tContext* ctx, CalibCoefficients* coefs)
 {
 
-	const uint16_t delayMs = 2000; //2s
+	const uint16_t delayMs = 1000; //2s
 	TouchPoint p1, p2, p3;
 	TouchPoint t1, t2, t3;
 	// point 1 is at 25%,50%, 2 is at 75%,25% and 3 is at 75%,75%

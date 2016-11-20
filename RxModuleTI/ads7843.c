@@ -123,7 +123,7 @@ bool ADS7843read() {
 }
 
 bool ADS7843dataAvailable() {
-	if (ADS7843getTouchStatus() ==TOUCH_STATUS_TOUCHING) {
+	if (ADS7843getTouchStatus() == TOUCH_STATUS_PENDOWN) {
 		return true;
 	}
 	return false;
@@ -139,25 +139,19 @@ void ADS7843setIrqAndPowerDown(void) {
 	spiWriteReadData(buf, 3, 0, 0);
 }
 
-void ADS7843penIRQCallback(uint8_t pin) {
-	/*
-	 if (pin == ADS7843_PIN_INT) {
-	 if (!ADS7843getIrqPinState()) //if pendown
-	 {
-	 //ADS7843_INT_IRQ_CONFIG_PIN_DISABLE();
-	 ADS7843_INT_IRQ_CONFIG_FALLING(false);
-	 ADS7843_INT_IRQ_CONFIG_RISING(true);
-	 m_touchInfoData.touchStatus = TOUCH_STATUS_TOUCHING;
-	 } else {
-	 ADS7843_INT_IRQ_CONFIG_RISING(false);
-	 ADS7843_INT_IRQ_CONFIG_FALLING(true);
-	 m_touchInfoData.touchStatus = TOUCH_STATUS_PENUP;
-	 }
-	 }
-	 */
+void ADS7843touchPenIntHandler()
+{
+
+	if (!ADS7843getIntPinState()) //if pendown
+	{
+		//ADS7843_INT_IRQ_CONFIG_PIN_DISABLE();
+		m_touchInfoData.touchStatus = TOUCH_STATUS_PENDOWN;
+	} else {
+		m_touchInfoData.touchStatus = TOUCH_STATUS_PENUP;
+	}
 }
 
-bool ADS7843getIrqPinState(void) {
+bool ADS7843getIntPinState(void) {
 	return  ADS7843_GET_INT_PIN()>0;
 }
 
@@ -201,8 +195,8 @@ TouchPoint ADS7843translateCoordinates(const TouchPoint* rawPoint) {
 }
 
 bool ADS7843readPointXY(TouchPoint* touchPoint, bool calibrationEnabled) {
-    m_touchInfoData.touchStatus = TOUCH_STATUS_TOUCHING; //TODO to be removed!!
-	if (m_touchInfoData.touchStatus == TOUCH_STATUS_TOUCHING) {
+    m_touchInfoData.touchStatus = TOUCH_STATUS_PENDOWN; //TODO to be removed!!
+	if (m_touchInfoData.touchStatus == TOUCH_STATUS_PENDOWN) {
 		uint16_t xyDataBuf[2][7]; //7 samples
 		TouchPoint p;
 		for (uint8_t i = 0; i < 7; i++) {
@@ -243,10 +237,10 @@ bool ADS7843readOnePointRawCoordinates(TouchPoint* point) {
 	uint32_t xSum = 0;
 	uint32_t ySum = 0;
 
-	while (ADS7843getIrqPinState())
+	while (ADS7843getIntPinState())
 		; //wait till we pen down the panel
 	for (;;) {
-		if (!ADS7843getIrqPinState()) {
+		if (!ADS7843getIntPinState()) {
 			ADS7843readPointXY(&tempP, true);
 			xSum += tempP.x;
 			ySum += tempP.y;

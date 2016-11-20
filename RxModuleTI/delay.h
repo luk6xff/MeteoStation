@@ -8,7 +8,7 @@
 #ifndef DELAY_H_
 #define DELAY_H_
 
-#include "driverlib/sysctl.h"
+
 #include <stdint.h>
 
 void delay_ms(uint32_t ms);

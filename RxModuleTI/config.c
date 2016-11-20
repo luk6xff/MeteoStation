@@ -28,8 +28,8 @@ static const ConfigParameters defaultSettings =
 		},
 		.openweatherDomain = {"https://openweathermap.org/"},
 #endif
-		0xFF
-
+		0xFF,
+		0x00
 };
 
 
@@ -54,8 +54,6 @@ void configInit(void)
 void configLoadFactory(void)
 {
 	m_currentParameters = defaultSettings;
-	//m_currentParameters.touchScreenParams.isUpdated = 15;
-	//m_currentParameters.touchScreenParams.calibCoeffs.m_ax = 0.222;
 }
 
 void configLoad(void)
@@ -81,3 +79,5 @@ ConfigParameters* configGetCurrent(void)
 {
 	return &m_currentParameters;
 }
+
+

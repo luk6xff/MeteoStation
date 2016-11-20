@@ -4,6 +4,9 @@
  *  Created on: 18 lis 2016
  *      Author: igbt6
  */
+#include "inc/hw_types.h"
+#include "inc/hw_memmap.h"
+
 #include "3PointCalibration.h"
 #include "delay.h"
 

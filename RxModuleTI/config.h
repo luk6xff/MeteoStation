@@ -60,6 +60,7 @@ typedef struct
 	char openweatherDomain[50];
 #endif
 	uint8_t paramsVersion;
+	uint8_t isModified;
 
 }ConfigParameters;
 

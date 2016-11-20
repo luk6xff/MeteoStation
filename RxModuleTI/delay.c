@@ -5,6 +5,12 @@
  *      Author: igbt6
  */
 
+
+#include "inc/hw_types.h"
+#include "inc/hw_memmap.h"
+
+#include "driverlib/sysctl.h"
+
 #include "delay.h"
 
 

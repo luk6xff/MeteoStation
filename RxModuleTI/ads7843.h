@@ -11,6 +11,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "inc/hw_ints.h"
+
 /*********************************Hardware dependent part*****************************************/
 /*********************************Hardware dependent part*****************************************/
 
@@ -32,22 +34,25 @@
 
 
 //------------------SSI0 CS_PIN----------------------
-#define ADS7843_PIN_CS      	GPIO_PIN_3
-#define ADS7843_PORT_CS     	GPIO_PORTA_BASE
-#define ADS7843_PORT_CS_CLOCK()	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA)
-#define ADS7843_CS_OUTPUT()  	GPIOPinTypeGPIOOutput(ADS7843_PORT_CS, ADS7843_PIN_CS)
-#define ADS7843_CS_HIGH()  		GPIOPinWrite(ADS7843_PORT_CS, ADS7843_PIN_CS, ADS7843_PIN_CS)
-#define ADS7843_CS_LOW()  		GPIOPinWrite(ADS7843_PORT_CS, ADS7843_PIN_CS, 0)
+#define ADS7843_PIN_CS      			GPIO_PIN_3
+#define ADS7843_PORT_CS     			GPIO_PORTA_BASE
+#define ADS7843_PORT_CS_CLOCK()			SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA)
+#define ADS7843_CS_OUTPUT()  			GPIOPinTypeGPIOOutput(ADS7843_PORT_CS, ADS7843_PIN_CS)
+#define ADS7843_CS_HIGH()  				GPIOPinWrite(ADS7843_PORT_CS, ADS7843_PIN_CS, ADS7843_PIN_CS)
+#define ADS7843_CS_LOW()  				GPIOPinWrite(ADS7843_PORT_CS, ADS7843_PIN_CS, 0)
 
 
 //------------------INT_IRQ----------------------
-#define ADS7843_PIN_INT      	GPIO_PIN_4
-#define ADS7843_PORT_INT     	GPIO_PORTF_BASE
-#define ADS7843_PORT_INT_CLOCK()SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF)
-#define ADS7843_INT_INPUT()  	GPIOPinTypeGPIOInput(ADS7843_PORT_INT ,ADS7843_PIN_INT)
-//#define ADS7843_INT_IRQ_CONFIG_FALLING(enable) GPIO_IntConfig(ADS7843_PORT_INT, ADS7843_PIN_INT, false, true, enable)
-//#define ADS7843_INT_IRQ_CONFIG_RISING(enable) GPIO_IntConfig(ADS7843_PORT_INT, ADS7843_PIN_INT, true, false, enable)
-#define ADS7843_GET_INT_PIN() 	GPIOPinRead(ADS7843_PORT_INT, ADS7843_PIN_INT)
+#define ADS7843_PIN_INT      			GPIO_PIN_4
+#define ADS7843_PORT_INT     			GPIO_PORTF_BASE
+#define ADS7843_INT_INTERRUPT_PORT     	INT_GPIOF
+#define ADS7843_PORT_INT_CLOCK()		SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF)
+#define ADS7843_INT_INPUT()  			GPIOPinTypeGPIOInput(ADS7843_PORT_INT, ADS7843_PIN_INT)
+#define ADS7843_INT_CONFIG_AS_FALLING() GPIOIntTypeSet(ADS7843_PORT_INT, ADS7843_PIN_INT, GPIO_FALLING_EDGE)
+#define ADS7843_INT_CONFIG_AS_RAISING() GPIOIntTypeSet(ADS7843_PORT_INT, ADS7843_PIN_INT, GPIO_RAISING_EDGE)
+#define ADS7843_INT_INTERRUPT_ENABLE() 	GPIOPinIntEnable(ADS7843_PORT_INT, ADS7843_PIN_INT); IntEnable(ADS7843_INT_INTERRUPT_PORT);
+#define ADS7843_INT_INTERRUPT_DISABLE() GPIOPinIntDisable(ADS7843_PORT_INT, ADS7843_PIN_INT); IntDisable(ADS7843_INT_INTERRUPT_PORT);
+#define ADS7843_GET_INT_PIN() 			GPIOPinRead(ADS7843_PORT_INT, ADS7843_PIN_INT)
 
 
 /*********************************Hardware dependent part - END*****************************************/
@@ -137,7 +142,8 @@ TouchPoint ADS7843getTouchedPoint();
 //*****************************************************************************
 void ADS7843setIrqAndPowerDown(void);
 
-void ADS7843penIRQCallback(uint8_t pin);
+
+void ADS7843touchPenIntHandler();
 
 //****************************************************************************
 // @brief Read the x, y axis ADC convert value once from ADS7843
@@ -167,7 +173,7 @@ void ADS7843setCalibrationCoefficients(const CalibCoefficients* coeffs);
 // @brief Get IRQ pin status: false - pen down, true - pen up
 // @retun false - while pen down (LCD is being touched) , true - pen up
 //*****************************************************************************
-bool ADS7843getIrqPinState(void);
+bool ADS7843getIntPinState(void);
 
 bool ADS7843readOnePointRawCoordinates(TouchPoint* point);
 

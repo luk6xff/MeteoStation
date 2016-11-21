@@ -222,7 +222,7 @@ int main(void) {
 			ADS7843read();
 			TouchPoint a;
 			a = ADS7843getTouchedPoint();
-			debugConsolePrintf("RESULTS: x=%d, y=%d\n\r", a.x, a.y);
+			//debugConsolePrintf("RESULTS: x=%d, y=%d\n\r", a.x, a.y);
 			GrContextForegroundSet(&sContext, ClrRed);
 			GrCircleFill(&sContext, a.x, a.y, 3);
 		}

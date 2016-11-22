@@ -39,6 +39,40 @@
 extern tCanvasWidget g_sBackground;
 extern tPushButtonWidget g_sPushBtn;
 
+
+
+static bool performTouchScreenCalibration(tContext* ctx)
+{
+	CalibCoefficients coeffs;
+	bool ret = false;
+	tBoolean intsOff;
+	//disable all interrupts
+	intsOff = IntMasterDisable();
+	ConfigParameters* cfg = configGetCurrent();
+	if(cfg->touchScreenParams.isUpdated == 0)
+	{
+		performThreePointCalibration(ctx, &coeffs);
+		ADS7843setCalibrationCoefficients(&coeffs);
+		cfg->touchScreenParams.calibCoeffs = coeffs;
+		cfg->touchScreenParams.isUpdated = 0xFF;
+		configSave();
+
+		debugConsolePrintf("COEFFSa: a.x=%d, a.y=%d\n\r", coeffs.m_ax, coeffs.m_ay);
+		debugConsolePrintf("COEFFSb: b.x=%d, b.y=%d\n\r", coeffs.m_bx, coeffs.m_by);
+		debugConsolePrintf("COEFFSd: d.x=%d, d.y=%d\n\r", coeffs.m_dx, coeffs.m_dy);
+		ret= true;
+	}
+	else
+	{
+		ADS7843setCalibrationCoefficients(&configGetCurrent()->touchScreenParams.calibCoeffs);
+	}
+
+	if(!intsOff)
+	{
+		IntMasterEnable();
+	}
+	return ret;
+}
 //*****************************************************************************
 //
 // Forward reference to the button press handler.
@@ -58,7 +92,7 @@ Canvas(g_sBackground, WIDGET_ROOT, 0, &g_sPushBtn,
 RectangularButton(g_sPushBtn, &g_sBackground, 0, 0,
 		 	 	  &g_ILI9320, 60, 60, 200, 40,
                   (PB_STYLE_OUTLINE | PB_STYLE_TEXT_OPAQUE | PB_STYLE_TEXT |
-                  PB_STYLE_FILL | PB_STYLE_RELEASE_NOTIFY),
+                  PB_STYLE_FILL | PB_STYLE_PRESSED),
                   ClrDarkBlue, ClrBlue, ClrWhite, ClrWhite,
                   g_psFontCm20b, "Show Welcome", 0, 0, 0, 0, OnButtonPress);
 
@@ -184,16 +218,6 @@ int main(void) {
 #endif
     WidgetAdd(WIDGET_ROOT, (tWidget *)&g_sBackground);
     WidgetPaint(WIDGET_ROOT);
-    WidgetAdd((tWidget *)&g_sPushBtn, (tWidget *)&g_sHello);
-
-    PushButtonTextSet(&g_sPushBtn, "Hide Welcome");
-
-    //
-    // Repaint the pushbutton and all widgets beneath it (in this case,
-    // the welcome message).
-    //
-    WidgetPaint((tWidget *)&g_sPushBtn);
-
 
 	//touchScreenControler
 	touchScreenInit();
@@ -201,6 +225,8 @@ int main(void) {
 	//wifi module
     //esp8266Init();
 
+    // Set the touch screen event handler.
+	touchScreenSetTouchCallback(WidgetPointerMessage);
 
 	//Enable all interrupts
 	IntMasterEnable();
@@ -210,13 +236,14 @@ int main(void) {
 	SysTickIntEnable();
 	SysTickEnable();
 
+	//do touch screen calibration if needed
+	performTouchScreenCalibration(&sContext);
+
 	while (1) {
-		ConfigParameters* cfg1 = configGetCurrent();
-		if(cfg1->touchScreenParams.isUpdated == 0){}
+
         // Process any messages in the widget message queue.
         WidgetMessageQueueProcess();
-#if 1
-
+#if 0
 		if(!ADS7843getIntPinState()) //if touch panel is being touched
 		{
 			ADS7843read();
@@ -225,28 +252,6 @@ int main(void) {
 			//debugConsolePrintf("RESULTS: x=%d, y=%d\n\r", a.x, a.y);
 			GrContextForegroundSet(&sContext, ClrRed);
 			GrCircleFill(&sContext, a.x, a.y, 3);
-		}
-		else
-		{
-			CalibCoefficients coeffs;
-			ConfigParameters* cfg = configGetCurrent();
-			if(cfg->touchScreenParams.isUpdated == 0)
-			{
-				performThreePointCalibration(&sContext, &coeffs);
-				ADS7843setCalibrationCoefficients(&coeffs);
-				cfg->touchScreenParams.calibCoeffs = coeffs;
-				cfg->touchScreenParams.isUpdated = 0xFF;
-				configSave();
-
-				debugConsolePrintf("COEFFSa: a.x=%d, a.y=%d\n\r", coeffs.m_ax, coeffs.m_ay);
-				debugConsolePrintf("COEFFSb: b.x=%d, b.y=%d\n\r", coeffs.m_bx, coeffs.m_by);
-				debugConsolePrintf("COEFFSd: d.x=%d, d.y=%d\n\r", coeffs.m_dx, coeffs.m_dy);
-			}
-			else
-			{
-				ADS7843setCalibrationCoefficients(&configGetCurrent()->touchScreenParams.calibCoeffs);
-			}
-			//debugConsolePrintf("NOT_PUSHED \r");
 		}
 
 #endif

@@ -6,6 +6,7 @@
  */
 
 #include <stdint.h>
+#include <stdbool.h>
 
 #include "inc/hw_types.h"
 #include "inc/hw_memmap.h"
@@ -15,21 +16,30 @@
 #include "driverlib/sysctl.h"
 #include "driverlib/interrupt.h"
 #include "driverlib/timer.h"
+
+#include "grlib/grlib.h"
+#include "grlib/widget.h"
+
 #include "touch.h"
 #include "ads7843.h"
 
 #include "debugConsole.h"  //FOR DEBUG ONLY
 
-#define TIMER_SCAN_PERIOD_MS 1000 //
+#define TIMER_SCAN_PERIOD_MS 3 //
 //touch callback
 static int32_t (*touchCallback)(uint32_t message, int32_t x, int32_t y);
 static volatile uint32_t m_counter = 0; //increments every 1 [ms]
+static volatile uint8_t m_WidgetPtrStatus = 0; //status of touch pointer passed to touch callback: WIDGET_MSG_PTR_DOWN, WIDGET_MSG_PTR_MOVE, WIDGET_MSG_PTR_UP
+static volatile uint8_t m_MoveTouchStatus = 0;
+
 
 //private methods declarations
 static void touchScreenTimerInit();
 static void touchScreenTimerEnable(bool enable);
 static void touchIntPinInit();
 static void touchIntPinInterruptEnable(bool enable);
+
+void TouchScreenIntHandler(void);
 
 //Configures Timer0A as a 32-bit periodic timer
 static void touchScreenTimerInit()
@@ -50,7 +60,7 @@ static void touchScreenTimerInit()
     m_counter = 0;
 
     // Disable Timer0A.
-    touchScreenTimerEnable(false);
+    touchScreenTimerEnable(true);
 }
 
 //Fires up/down the timer
@@ -71,6 +81,7 @@ static void touchIntPinInit()
 	ADS7843_PORT_INT_CLOCK();
 	ADS7843_INT_INPUT();
 	ADS7843_INT_CONFIG_AS_FALLING();
+	GPIOPortIntRegister(ADS7843_PORT_INT, TouchScreenIntHandler);
     IntMasterEnable();
     touchIntPinInterruptEnable(true);
 }
@@ -91,7 +102,7 @@ void touchScreenInit()
 {
 	ADS7843init();
 	touchScreenTimerInit();
-	touchIntPinInit();
+	//touchIntPinInit(); //not used
 }
 
 
@@ -104,17 +115,21 @@ void touchScreenSetTouchCallback(int32_t (*callback)(uint32_t message, int32_t x
 void TouchScreenIntHandler(void)
 {
 	GPIOPinIntClear(ADS7843_PORT_INT, ADS7843_PIN_INT);
+
 	if(GPIOPinIntStatus(ADS7843_PORT_INT, false) & ADS7843_PIN_INT)
 	{
+		touchIntPinInterruptEnable(false);
 		ADS7843touchPenIntHandler();
 		if(ADS7843dataAvailable())
 		{
-			//disable further interrupts on this pin
-			touchIntPinInterruptEnable(false);
 		    // Enable Timer
 		    touchScreenTimerEnable(true);
 
 		    debugConsolePrintf("PEN_DOWN\r\n");
+		}
+		else
+		{
+			touchIntPinInterruptEnable(true);
 		}
 
 	}
@@ -122,20 +137,33 @@ void TouchScreenIntHandler(void)
 
 void TouchScreenTimer0AIntHandler(void)
 {
+	static uint8_t lastWidgetPtrStatus = 0;
 	TimerIntClear(TIMER0_BASE, TIMER_TIMA_TIMEOUT);
-	ADS7843touchPenIntHandler();
-	if(ADS7843dataAvailable())
+	if((++m_counter % TIMER_SCAN_PERIOD_MS) == 0) //after every 3ms
 	{
-		if((++m_counter % TIMER_SCAN_PERIOD_MS) == 0) //after every 3ms
+		ADS7843touchPenIntHandler();
+		if(ADS7843dataAvailable())
 		{
-			debugConsolePrintf("Number of interrupts: %d\r", m_counter);
+			m_WidgetPtrStatus = WIDGET_MSG_PTR_DOWN;
+			//debugConsolePrintf("Number of interrupts: %d\r", m_counter);
+			debugConsolePrintf("PEN_DOWN\r\n");
+			if(++m_MoveTouchStatus% 10)
+			{
+				m_WidgetPtrStatus = WIDGET_MSG_PTR_DOWN;
+				debugConsolePrintf("PEN_MOVE\r\n");
+			}
 		}
-	}
-	else
-	{
-	    // disable Timer
-	    touchScreenTimerEnable(false);
-		//enable it back
-		touchIntPinInterruptEnable(true);
+		else
+		{
+			m_WidgetPtrStatus = 0;
+			m_WidgetPtrStatus = WIDGET_MSG_PTR_UP;
+			debugConsolePrintf("PEN_UP\r\n");
+		}
+		if(touchCallback && lastWidgetPtrStatus != m_WidgetPtrStatus)
+		{
+			ADS7843read();
+			touchCallback(m_WidgetPtrStatus, ADS7843getTouchedPoint().x, ADS7843getTouchedPoint().y);
+		}
+		lastWidgetPtrStatus = m_WidgetPtrStatus;
 	}
 }

@@ -19,6 +19,7 @@ extern void ILI9320Init(void);
 extern void ILI9320BacklightOn(void);
 extern unsigned short ILI9320ControllerIdGet(void);
 extern void ILI9320BacklightOff(void);
+extern void ILI9320ClearAll(void);
 extern const tDisplay g_ILI9320;
 
 

@@ -1529,6 +1529,15 @@ extern const tFont g_sFontCm20b;
 #define g_psFontCm20b (const tFont *)&g_sFontCm20b
 extern const tFont g_sFontCm20i;
 #define g_psFontCm20i (const tFont *)&g_sFontCm20i
+extern const tFont g_sFontCmss20;
+#define g_psFontCmss20 (const tFont *)&g_sFontCmss20
+extern const tFont g_sFontCmss48;
+#define g_psFontCmss48 (const tFont *)&g_sFontCmss48
+extern const tFont g_sFontCmss14;
+#define g_psFontCmss14 (const tFont *)&g_sFontCmss14
+extern const tFont g_sFontCmss24;
+#define g_psFontCmss24 (const tFont *)&g_sFontCmss24
+
 #if 0
 extern const tFont g_sFontCm22;
 #define g_psFontCm22 (const tFont *)&g_sFontCm22
@@ -1658,8 +1667,7 @@ extern const tFont g_sFontCmss12b;
 #define g_psFontCmss12b (const tFont *)&g_sFontCmss12b
 extern const tFont g_sFontCmss12i;
 #define g_psFontCmss12i (const tFont *)&g_sFontCmss12i
-extern const tFont g_sFontCmss14;
-#define g_psFontCmss14 (const tFont *)&g_sFontCmss14
+
 extern const tFont g_sFontCmss14b;
 #define g_psFontCmss14b (const tFont *)&g_sFontCmss14b
 extern const tFont g_sFontCmss14i;
@@ -1676,8 +1684,6 @@ extern const tFont g_sFontCmss18b;
 #define g_psFontCmss18b (const tFont *)&g_sFontCmss18b
 extern const tFont g_sFontCmss18i;
 #define g_psFontCmss18i (const tFont *)&g_sFontCmss18i
-extern const tFont g_sFontCmss20;
-#define g_psFontCmss20 (const tFont *)&g_sFontCmss20
 extern const tFont g_sFontCmss20b;
 #define g_psFontCmss20b (const tFont *)&g_sFontCmss20b
 extern const tFont g_sFontCmss20i;
@@ -1688,8 +1694,7 @@ extern const tFont g_sFontCmss22b;
 #define g_psFontCmss22b (const tFont *)&g_sFontCmss22b
 extern const tFont g_sFontCmss22i;
 #define g_psFontCmss22i (const tFont *)&g_sFontCmss22i
-extern const tFont g_sFontCmss24;
-#define g_psFontCmss24 (const tFont *)&g_sFontCmss24
+
 extern const tFont g_sFontCmss24b;
 #define g_psFontCmss24b (const tFont *)&g_sFontCmss24b
 extern const tFont g_sFontCmss24i;
@@ -1760,8 +1765,6 @@ extern const tFont g_sFontCmss46b;
 #define g_psFontCmss46b (const tFont *)&g_sFontCmss46b
 extern const tFont g_sFontCmss46i;
 #define g_psFontCmss46i (const tFont *)&g_sFontCmss46i
-extern const tFont g_sFontCmss48;
-#define g_psFontCmss48 (const tFont *)&g_sFontCmss48
 extern const tFont g_sFontCmss48b;
 #define g_psFontCmss48b (const tFont *)&g_sFontCmss48b
 extern const tFont g_sFontCmss48i;

@@ -147,15 +147,15 @@ void TouchScreenTimer0AIntHandler(void)
 			m_WidgetPtrStatus = WIDGET_MSG_PTR_DOWN;
 			//debugConsolePrintf("Number of interrupts: %d\r", m_counter);
 			debugConsolePrintf("PEN_DOWN\r\n");
-			if(++m_MoveTouchStatus% 10)
+			if(++m_MoveTouchStatus> 10)
 			{
-				m_WidgetPtrStatus = WIDGET_MSG_PTR_DOWN;
+				m_WidgetPtrStatus = WIDGET_MSG_PTR_MOVE;
 				debugConsolePrintf("PEN_MOVE\r\n");
 			}
 		}
 		else
 		{
-			m_WidgetPtrStatus = 0;
+			m_MoveTouchStatus = 0;
 			m_WidgetPtrStatus = WIDGET_MSG_PTR_UP;
 			debugConsolePrintf("PEN_UP\r\n");
 		}

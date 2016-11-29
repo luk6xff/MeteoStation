@@ -97,7 +97,7 @@ typedef struct
 	Screens up;
 	Screens down;
 	Screens left;
-	uint8_t right;
+	Screens right;
 }ScreenContainer;
 
 
@@ -154,6 +154,49 @@ typedef struct
 }
 tButtonToggle;
 
+
+//*****************************************************************************
+//
+// Structure that describes swipes data.
+//
+//*****************************************************************************
+typedef struct
+{
+	//
+	//
+	//
+	#define  MIN_SWIPE_DIFFERENCE 50
+	int32_t initX;
+	int32_t initY;
+	int32_t bufX[20];
+	int32_t bufY[20];
+	bool swipeOnGoing;
+    enum
+    {
+        SWIPE_UP,
+		SWIPE_DOWN,
+		SWIPE_LEFT,
+		SWIPE_RIGHT,
+		SWIPE_NONE,
+    }
+    swipeDirecttion;
+}Swipe;
+
+
+//*****************************************************************************
+//
+// Structure that describes whole Application Context
+//
+//*****************************************************************************
+typedef struct
+{
+	bool wifiEnabled;
+	bool swipeEnabled;
+	char* currentCity;
+
+}AppContext;
+
+
 //*****************************************************************************
 //
 // Application globals
@@ -163,6 +206,8 @@ static tContext g_sContext;
 static volatile State g_mainState = STATE_RESET;
 static volatile ConnectionState g_connState = CONN_STATE_NOT_CONECTED;
 static volatile Screens g_currentScreen = SCREEN_MAIN;
+static volatile Swipe g_swipe;
+static volatile AppContext g_appCtx = {false, true, (void*)0};
 
 static ScreenContainer g_sScreens[SCREEN_NUM_OF_SCREENS] =
 {
@@ -181,15 +226,18 @@ static ScreenContainer g_sScreens[SCREEN_NUM_OF_SCREENS] =
 };
 
 
+
 //*****************************************************************************
 //
 // Methods forward declarations.
 //
 //*****************************************************************************
 static void onKeyEvent(tWidget *psWidget, uint32_t ui32Key, uint32_t ui32Event);
-static void onCustomEnable(tWidget *psWidget);
-static void drawToggle(const tButtonToggle *psButton, bool bOn);
-static void onCustomEntry(tWidget *psWidget);
+static void onWifiEnable(tWidget *psWidget);
+static void drawToggleButton(const tButtonToggle *psButton, bool enable);
+static void onCityEntry(tWidget *psWidget);
+static int32_t touchScreenCallback(uint32_t msg, int32_t x, int32_t y);
+
 // Clears the main screens background.
 static void clearBackground(tContext *psContext)
 {
@@ -204,7 +252,7 @@ static void clearBackground(tContext *psContext)
     GrRectFill(psContext, &sRect);
 }
 
-
+static void handleMovement(void);
 
 //*****************************************************************************
 //
@@ -243,12 +291,7 @@ static bool performTouchScreenCalibration(tContext* ctx)
 	}
 	return ret;
 }
-//*****************************************************************************
-//
-// Forward reference to the button press handler.
-//
-//*****************************************************************************
-void OnButtonPress(tWidget *psWidget);
+
 
 //*****************************************************************************
 //
@@ -384,7 +427,7 @@ Canvas(g_sKeyboardBackground, WIDGET_ROOT, 0, &g_sKeyboardText,
 
 //*****************************************************************************
 //
-// // The canvas widget acting as Settings panel.
+// // The canvas widget acting as WIFI connection settings panel.
 //
 //*****************************************************************************
 
@@ -414,7 +457,7 @@ const tButtonToggle sCustomToggle =
 RectangularButton(g_sCustomEnable, &g_sSettingsPanel, 0, 0,
        &g_ILI9320, 14, 32, 40, 24,
        0, ClrLightGrey, ClrLightGrey, ClrLightGrey,
-       ClrBlack, 0, 0, 0, 0, 0 ,0 , onCustomEnable);
+       ClrBlack, 0, 0, 0, 0, 0 ,0 , onWifiEnable);
 
 //
 // The text entry button for the custom city.
@@ -423,7 +466,7 @@ RectangularButton(g_sCustomCity, &g_sSettingsPanel, &g_sCustomEnable, 0,
        &g_ILI9320, 118, 30, 190, 28,
        PB_STYLE_FILL | PB_STYLE_TEXT | PB_STYLE_RELEASE_NOTIFY, ClrLightGrey,
        ClrLightGrey, ClrWhite, ClrGray, g_psFontCmss14,
-       0, 0, 0, 0 ,0 , onCustomEntry);
+       0, 0, 0, 0 ,0 , onCityEntry);
 
 //
 // MAC Address display.
@@ -456,6 +499,75 @@ Canvas(g_sSettingsPanel, WIDGET_ROOT, 0, &g_sIPAddr,
        0, 0, 0);
 
 
+//*****************************************************************************
+//
+// Draws a toggle button.
+//
+//*****************************************************************************
+static void drawToggleButton(const tButtonToggle *psButton, bool enable)
+{
+    tRectangle sRect;
+    int16_t i16X, i16Y;
+
+    //
+    // Copy the data out of the bounds of the button.
+    //
+    sRect = psButton->sRectButton;
+
+    GrContextForegroundSet(&g_sContext, ClrLightGrey);
+    GrRectFill(&g_sContext, &psButton->sRectContainer);
+
+    //
+    // Copy the data out of the bounds of the button.
+    //
+    sRect = psButton->sRectButton;
+
+    GrContextForegroundSet(&g_sContext, ClrDarkGray);
+    GrRectFill(&g_sContext, &psButton->sRectButton);
+
+    if(enable)
+    {
+        sRect.i16XMin += 2;
+        sRect.i16YMin += 2;
+        sRect.i16XMax -= 15;
+        sRect.i16YMax -= 2;
+    }
+    else
+    {
+        sRect.i16XMin += 15;
+        sRect.i16YMin += 2;
+        sRect.i16XMax -= 2;
+        sRect.i16YMax -= 2;
+    }
+    GrContextForegroundSet(&g_sContext, ClrLightGrey);
+    GrRectFill(&g_sContext, &sRect);
+
+    GrContextFontSet(&g_sContext, &g_sFontCm16);
+    GrContextForegroundSet(&g_sContext, ClrBlack);
+    GrContextBackgroundSet(&g_sContext, ClrLightGrey);
+
+    i16X = sRect.i16XMin + ((sRect.i16XMax - sRect.i16XMin) / 2);
+    i16Y = sRect.i16YMin + ((sRect.i16YMax - sRect.i16YMin) / 2);
+
+    if(enable)
+    {
+        GrStringDrawCentered(&g_sContext, psButton->pcOn, -1, i16X, i16Y,
+                             true);
+    }
+    else
+    {
+        GrStringDrawCentered(&g_sContext, psButton->pcOff, -1, i16X, i16Y,
+                             true);
+    }
+
+    if(psButton->pcLabel)
+    {
+        GrStringDraw(&g_sContext, psButton->pcLabel, -1,
+                     psButton->sRectButton.i16XMax + 2,
+                     psButton->sRectButton.i16YMin + 6,
+                     true);
+    }
+}
 
 
 
@@ -557,8 +669,7 @@ static void onKeyEvent(tWidget *psWidget, uint32_t ui32Key, uint32_t ui32Event)
                 //
                 // Save the pixel width of the current string.
                 //
-                g_i32StringWidth = GrStringWidthGet(&g_sContext, g_pcKeyStr,
-                                                    40);
+                g_i32StringWidth = GrStringWidthGet(&g_sContext, g_pcKeyStr, 40);
             }
             break;
         }
@@ -567,19 +678,36 @@ static void onKeyEvent(tWidget *psWidget, uint32_t ui32Key, uint32_t ui32Event)
 
 
 
+static void onWifiEnable(tWidget *psWidget)
+{
+	if(g_appCtx.wifiEnabled)
+	{
+		g_appCtx.wifiEnabled = false;
+		PushButtonTextColorSet(&g_sCustomCity, ClrGray);
+	}
+	else
+	{
+		g_appCtx.wifiEnabled = true;
+		PushButtonTextColorSet(&g_sCustomCity, ClrBlack);
+	}
+    drawToggleButton(&sCustomToggle, g_appCtx.wifiEnabled);
+    WidgetPaint((tWidget *)&g_sCustomCity);
+
+
+}
+
+
 //*****************************************************************************
 //
 // Handles when the custom text area is pressed.
 //
 //*****************************************************************************
-static void onCustomEntry(tWidget *psWidget)
+static void onCityEntry(tWidget *psWidget)
 
 {
-    //
-    // Only respond if the custom has been enabled.
-    //
-    //if(g_sConfig.bCustomEnabled)
-    //{
+    // if wifi connection is enabled
+    if(g_appCtx.wifiEnabled)
+    {
         //
         // Disable swiping while the keyboard is active.
         //
@@ -617,58 +745,9 @@ static void onCustomEntry(tWidget *psWidget)
 
         GrContextFontSet(&g_sContext, g_psFontCmss24);
         WidgetPaint((tWidget *)&g_sKeyboardBackground);
-    //}
-}
-/*
-bool g_bHelloVisible = false;
-
-void OnButtonPress(tWidget *psWidget)
-{
-    g_bHelloVisible = !g_bHelloVisible;
-
-    if(g_bHelloVisible)
-    {
-        //
-        // Add the Hello widget to the tree as a child of the push
-        // button.  We could add it elsewhere but this seems as good a
-        // place as any.  It also means we can repaint from g_PushBtn and
-        // this will paint both the button and the welcome message.
-        //
-        WidgetAdd((tWidget *)&g_sPushBtn, (tWidget *)&g_Hello);
-
-        //
-        // Change the button text to indicate the new function.
-        //
-        PushButtonTextSet(&g_PushBtn, "Hide Welcome");
-
-        //
-        // Repaint the pushbutton and all widgets beneath it (in this case,
-        // the welcome message).
-        //
-        WidgetPaint((tWidget *)&g_PushBtn);
     }
-    else
-    {
-        //
-        // Remove the Hello widget from the tree.
-        //
-        WidgetRemove((tWidget *)&g_Hello);
+}
 
-        //
-        // Change the button text to indicate the new function.
-        //
-        PushButtonTextSet(&g_PushBtn, "Show Welcome");
-
-        //
-        // Repaint the widget tree to remove the Hello widget from the
-        // display.  This is rather inefficient but saves having to use
-        // additional widgets to overpaint the area of the Hello text (since
-        // disabling a widget does not automatically erase whatever it
-        // previously displayed on the screen).
-        //
-        WidgetPaint(W
-
-*/
 //*****************************************************************************
 //
 // The interrupt handler for the for Systick interrupt.
@@ -678,9 +757,145 @@ static int uartCounter = 0;
 void SysTickIntHandler(void) {
 	uartCounter++;
 
+	// keyboard cursor blinking
+    if((g_ui32CursorDelay != 0) &&
+       (g_ui32CursorDelay != (KEYBOARD_BLINK_RATE / 2)))
+    {
+        g_ui32CursorDelay--;
+    }
+
 }
 
 
+
+
+//*****************************************************************************
+//
+// The callback function that is called by the touch screen driver to indicate
+// activity on the touch screen.
+//
+//*****************************************************************************
+static int32_t touchScreenCallback(uint32_t msg, int32_t x, int32_t y)
+{
+	int32_t swipeDiffX, swipeDiffY;
+    if(g_appCtx.swipeEnabled)
+    {
+        switch(msg)
+        {
+            //
+            // The user has just touched the screen.
+            //
+            case WIDGET_MSG_PTR_DOWN:
+            {
+                //
+                // Save this press location.
+                //
+                g_swipe.initX = x;
+                g_swipe.initY = y;
+                g_swipe.swipeOnGoing = true;
+
+                break;
+            }
+
+            //
+            // The user has moved the touch location on the screen.
+            //
+            case WIDGET_MSG_PTR_MOVE:
+            {
+            	if(g_swipe.swipeOnGoing)
+            	{
+
+            	}
+                break;
+            }
+
+            // The user just stopped touching the screen.
+            case WIDGET_MSG_PTR_UP:
+            {
+            	if(g_swipe.swipeOnGoing)
+            	{
+            		bool xLessThanInit = x < g_swipe.initX;
+            		bool yLessThanInit = y < g_swipe.initY;
+            		swipeDiffX = x - g_swipe.initX ? x - g_swipe.initX : g_swipe.initX - x;
+            		swipeDiffY = y - g_swipe.initY ? y - g_swipe.initY : g_swipe.initY - y;
+            		// checks which difference is bigger
+            		if(swipeDiffX > swipeDiffY )
+            		{
+
+            			if(!xLessThanInit && (swipeDiffX > MIN_SWIPE_DIFFERENCE))
+						{
+							g_swipe.swipeDirecttion = SWIPE_RIGHT;
+						}
+						else if(xLessThanInit && (swipeDiffX > MIN_SWIPE_DIFFERENCE))
+						{
+							g_swipe.swipeDirecttion = SWIPE_LEFT;
+						}
+            		}
+            		else
+            		{
+						if(!yLessThanInit && (swipeDiffY > MIN_SWIPE_DIFFERENCE))
+						{
+							g_swipe.swipeDirecttion = SWIPE_UP;
+						}
+						else if(yLessThanInit && (swipeDiffY > MIN_SWIPE_DIFFERENCE))
+						{
+							g_swipe.swipeDirecttion = SWIPE_DOWN;
+						}
+            		}
+            		g_swipe.swipeOnGoing = false;
+            	}
+            }
+        }
+    }
+    WidgetPointerMessage(msg, x, y);
+
+    return(0);
+}
+
+
+static void handleMovement(void)
+{
+	uint16_t newScreenIdx = g_currentScreen;
+	if(g_appCtx.swipeEnabled)
+	{
+		if(g_swipe.swipeDirecttion != SWIPE_NONE )
+		{
+
+			if(g_swipe.swipeDirecttion == SWIPE_RIGHT)
+			{
+			    newScreenIdx = g_sScreens[g_currentScreen].right;
+			}
+			else if(g_swipe.swipeDirecttion == SWIPE_LEFT)
+			{
+			    newScreenIdx = g_sScreens[g_currentScreen].left;
+			}
+			else if(g_swipe.swipeDirecttion == SWIPE_UP)
+			{
+			    newScreenIdx = g_sScreens[g_currentScreen].up;
+			}
+			else if(g_swipe.swipeDirecttion == SWIPE_DOWN)
+			{
+			    newScreenIdx = g_sScreens[g_currentScreen].down;
+			}
+		}
+		if(newScreenIdx != g_currentScreen)
+		{
+            WidgetRemove(g_sScreens[g_currentScreen].widget);
+            WidgetAdd(WIDGET_ROOT, g_sScreens[newScreenIdx].widget);
+            WidgetPaint(WIDGET_ROOT);
+            g_currentScreen = newScreenIdx;
+
+		}
+	}
+	g_swipe.swipeDirecttion = SWIPE_NONE;
+
+}
+
+
+
+//
+// Main method of the application
+//
 int main(void) {
 	//FPUEnable();
 	//FPULazyStackingEnable();
@@ -731,10 +946,13 @@ int main(void) {
     // Put the application name in the middle of the banner.
     GrContextForegroundSet(&g_sContext, ClrYellowGreen);
     GrContextFontSet(&g_sContext, &g_sFontCm20);
-    GrStringDrawCentered(&g_sContext, "Meteo Stacja", -1,
+    GrStringDrawCentered(&g_sContext, "Meteo Ubiad Stacja", -1,
                          GrContextDpyWidthGet(&g_sContext) / 2, 8, 0);
 #endif
-    WidgetAdd(WIDGET_ROOT, (tWidget *)&g_sMainBackground);
+
+
+    g_currentScreen = SCREEN_MAIN;
+    WidgetAdd(WIDGET_ROOT, g_sScreens[g_currentScreen].widget);
     WidgetPaint(WIDGET_ROOT);
 
 	//touchScreenControler
@@ -744,7 +962,7 @@ int main(void) {
     //esp8266Init();
 
     // Set the touch screen event handler.
-	touchScreenSetTouchCallback(WidgetPointerMessage);
+	touchScreenSetTouchCallback(touchScreenCallback);
 
 	//Enable all interrupts
 	IntMasterEnable();
@@ -759,6 +977,7 @@ int main(void) {
 
 	while (1) {
 
+        handleMovement();
         // Process any messages in the widget message queue.
         WidgetMessageQueueProcess();
 #if 0

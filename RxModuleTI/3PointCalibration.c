@@ -25,8 +25,7 @@ uint8_t performThreePointCalibration(tContext* ctx, CalibCoefficients* coefs)
 	p2.y = (size_y * 25) / 100;
 	p3.x = (size_x * 75) / 100;
 	p3.y = (size_y * 75) / 100;
-	//ADS7843_INT_IRQ_CONFIG_FALLING(false); //disable ext interrupts //TODO
-	//ADS7843_INT_IRQ_CONFIG_RISING(false); //TODO
+
 	//1st point
     GrContextForegroundSet(ctx, ClrLightGoldenrodYellow);
     GrContextFontSet(ctx, &g_sFontCm16);
@@ -107,7 +106,6 @@ uint8_t performThreePointCalibration(tContext* ctx, CalibCoefficients* coefs)
                          GrContextDpyWidthGet(ctx) / 2, 50, 0);
 	delay_ms(delayMs);
 	ctx->psDisplay->pfnFlush((void *)0);
-	//ADS7843_INT_IRQ_CONFIG_FALLING(true); //TODO
 
 	return 0;
 }

@@ -4,6 +4,7 @@
  *  Created on: 20 lis 2016
  *      Author: igbt6
  */
+#include <stdint.h>
 
 #include "debugConsole.h"
 #include "utils/uartstdio.h"
@@ -14,7 +15,7 @@
 #include "driverlib/gpio.h"
 #include "driverlib/sysctl.h"
 
-
+static const uint8_t debugEnable = 1;
 
 void debugConsoleInit(void) {
 	// Enable GPIO port A which is used for UART0 pins.
@@ -31,5 +32,8 @@ void debugConsoleInit(void) {
 
 void debugConsolePrintf(const char *pcString, ...)
 {
-	UARTprintf(pcString);
+	if(debugEnable)
+	{
+		UARTprintf(pcString);
+	}
 }

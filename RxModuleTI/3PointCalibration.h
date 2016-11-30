@@ -15,7 +15,7 @@
 //*****************************************************************************
 uint8_t performThreePointCalibration(tContext* ctx, CalibCoefficients* coefs);
 
-void drawCalibrationPoint(const tContext* ctx, uint16_t x, uint16_t y, uint16_t radius);
+uint8_t confirmThreePointCalibration(tContext* ctx);
 
 
 #endif /* _3POINTCALIBRATION_H_ */

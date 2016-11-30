@@ -165,11 +165,13 @@ typedef struct
 	//
 	//
 	//
-	#define  MIN_SWIPE_DIFFERENCE 50
+	#define  MIN_SWIPE_DIFFERENCE 60
+	#define  LAST_VAL_BUF_SIZE 10
 	int32_t initX;
 	int32_t initY;
-	int32_t bufX[20];
-	int32_t bufY[20];
+	int32_t bufX[LAST_VAL_BUF_SIZE];
+	int32_t bufY[LAST_VAL_BUF_SIZE];
+	uint8_t sampleNum;
 	bool swipeOnGoing;
     enum
     {
@@ -266,23 +268,33 @@ static bool performTouchScreenCalibration(tContext* ctx)
 	tBoolean intsOff;
 	//disable all interrupts
 	intsOff = IntMasterDisable();
-	ConfigParameters* cfg = configGetCurrent();
-	if(cfg->touchScreenParams.isUpdated == 0)
+	//ConfigParameters* cfg = configGetCurrent(); //FLASH
+	ConfigEepromParameters* cfg = configEepromGetCurrent();
+	if(cfg->touchScreenParams.isUpdated == 0xFF || cfg->touchScreenParams.isUpdated == 0x00)
 	{
 		performThreePointCalibration(ctx, &coeffs);
 		ADS7843setCalibrationCoefficients(&coeffs);
-		cfg->touchScreenParams.calibCoeffs = coeffs;
-		cfg->touchScreenParams.isUpdated = 0xFF;
-		configSave();
+		if(confirmThreePointCalibration(ctx))
+		{
+			cfg->touchScreenParams.calibCoeffs = coeffs;
+			cfg->touchScreenParams.isUpdated = 0x1;
+			//configSave(); //FLASH
+			configEepromSave();
 
-		debugConsolePrintf("COEFFSa: a.x=%d, a.y=%d\n\r", coeffs.m_ax, coeffs.m_ay);
-		debugConsolePrintf("COEFFSb: b.x=%d, b.y=%d\n\r", coeffs.m_bx, coeffs.m_by);
-		debugConsolePrintf("COEFFSd: d.x=%d, d.y=%d\n\r", coeffs.m_dx, coeffs.m_dy);
+			debugConsolePrintf("COEFFSa: a.x=%d, a.y=%d\n\r", coeffs.m_ax, coeffs.m_ay);
+			debugConsolePrintf("COEFFSb: b.x=%d, b.y=%d\n\r", coeffs.m_bx, coeffs.m_by);
+			debugConsolePrintf("COEFFSd: d.x=%d, d.y=%d\n\r", coeffs.m_dx, coeffs.m_dy);
+		}
+		else
+		{
+			debugConsolePrintf("Touch Screen Calibration failed\n\r");
+		}
+
 		ret= true;
 	}
 	else
 	{
-		ADS7843setCalibrationCoefficients(&configGetCurrent()->touchScreenParams.calibCoeffs);
+		ADS7843setCalibrationCoefficients(&cfg->touchScreenParams.calibCoeffs);
 	}
 
 	if(!intsOff)
@@ -790,9 +802,17 @@ static int32_t touchScreenCallback(uint32_t msg, int32_t x, int32_t y)
                 //
                 // Save this press location.
                 //
-                g_swipe.initX = x;
-                g_swipe.initY = y;
-                g_swipe.swipeOnGoing = true;
+            	if(!g_swipe.swipeOnGoing)
+            	{
+					g_swipe.initX = x;
+					g_swipe.initY = y;
+					g_swipe.swipeOnGoing = true;
+            	}
+            	else
+            	{	++g_swipe.sampleNum;
+            		g_swipe.bufX[g_swipe.sampleNum % LAST_VAL_BUF_SIZE] = x;
+            		g_swipe.bufY[g_swipe.sampleNum % LAST_VAL_BUF_SIZE] = y;
+            	}
 
                 break;
             }
@@ -804,6 +824,9 @@ static int32_t touchScreenCallback(uint32_t msg, int32_t x, int32_t y)
             {
             	if(g_swipe.swipeOnGoing)
             	{
+            		++g_swipe.sampleNum;
+            		g_swipe.bufX[g_swipe.sampleNum % LAST_VAL_BUF_SIZE] = x;
+            		g_swipe.bufY[g_swipe.sampleNum % LAST_VAL_BUF_SIZE] = y;
 
             	}
                 break;
@@ -814,10 +837,13 @@ static int32_t touchScreenCallback(uint32_t msg, int32_t x, int32_t y)
             {
             	if(g_swipe.swipeOnGoing)
             	{
-            		bool xLessThanInit = x < g_swipe.initX;
-            		bool yLessThanInit = y < g_swipe.initY;
-            		swipeDiffX = x - g_swipe.initX ? x - g_swipe.initX : g_swipe.initX - x;
-            		swipeDiffY = y - g_swipe.initY ? y - g_swipe.initY : g_swipe.initY - y;
+            		//checks on last gathered data for now
+            		int32_t xLastVal = g_swipe.bufX[g_swipe.sampleNum % LAST_VAL_BUF_SIZE];
+            		int32_t yLastVal = g_swipe.bufY[g_swipe.sampleNum % LAST_VAL_BUF_SIZE];
+            		bool xLessThanInit = xLastVal < g_swipe.initX;
+            		bool yLessThanInit = yLastVal < g_swipe.initY;
+            		swipeDiffX = ((xLastVal - g_swipe.initX)>0) ? (xLastVal - g_swipe.initX) : (g_swipe.initX - xLastVal);
+            		swipeDiffY = ((yLastVal - g_swipe.initY)>0) ? (yLastVal - g_swipe.initY) : (g_swipe.initY - yLastVal);
             		// checks which difference is bigger
             		if(swipeDiffX > swipeDiffY )
             		{
@@ -835,15 +861,17 @@ static int32_t touchScreenCallback(uint32_t msg, int32_t x, int32_t y)
             		{
 						if(!yLessThanInit && (swipeDiffY > MIN_SWIPE_DIFFERENCE))
 						{
-							g_swipe.swipeDirecttion = SWIPE_UP;
+							g_swipe.swipeDirecttion = SWIPE_DOWN;
 						}
 						else if(yLessThanInit && (swipeDiffY > MIN_SWIPE_DIFFERENCE))
 						{
-							g_swipe.swipeDirecttion = SWIPE_DOWN;
+							g_swipe.swipeDirecttion = SWIPE_UP;
 						}
             		}
-            		g_swipe.swipeOnGoing = false;
             	}
+        		g_swipe.swipeOnGoing = false;
+        		g_swipe.sampleNum = 0;
+        		break;
             }
         }
     }
@@ -896,6 +924,7 @@ static void handleMovement(void)
 //
 // Main method of the application
 //
+
 int main(void) {
 	//FPUEnable();
 	//FPULazyStackingEnable();

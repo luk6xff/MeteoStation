@@ -18,26 +18,23 @@
 
 #define DEFAULT_VERSION 0xFF
 
-//*****************************************************************************
 //
 // Define the size of the flash program blocks for saving configuration data.
 //
-//*****************************************************************************
 #define FLASH_PB_START          0x3FF00
 #define FLASH_PB_END            FLASH_PB_START + 0xFF
 //#define FLASH_PB_START          0x20000
 //#define FLASH_PB_END            FLASH_PB_START + 0x4000
 
-//*****************************************************************************
 //
-//! The size of the parameter block to save.  This must be a power of 2,
-//! and should be large enough to contain the tConfigParameters structure.
+// The size of the parameter block to save.  This must be a power of 2,
+// and should be large enough to contain the tConfigParameters structure.
 //
-//*****************************************************************************
 #define FLASH_PB_SIZE           256
 
 #define ALL_PARAMS_SUPPORTEDx
 
+//FLASH stored
 typedef struct
 {
 	CalibCoefficients calibCoeffs;
@@ -61,7 +58,6 @@ typedef struct
 #endif
 	uint8_t paramsVersion;
 	uint8_t isModified;
-
 }ConfigParameters;
 
 
@@ -70,6 +66,23 @@ void configLoadFactory(void);
 void configLoad(void);
 void configSave(void);
 ConfigParameters* configGetCurrent(void);
+
+
+//EEPROM stored
+#define  EEPROM_START_ADDRESS 0x0000
+typedef struct
+{
+	TouchScreenConfigParameters touchScreenParams;
+	uint8_t paramsVersion;
+	uint8_t isModified;
+	uint8_t reserved; //just to provide correct alignment
+}ConfigEepromParameters;
+
+bool configEepromInit(void);
+void configEepromLoad(void);
+void configEepromSave(void);
+ConfigEepromParameters* configEepromGetCurrent(void);
+
 
 
 #endif /* CONFIG_H_ */

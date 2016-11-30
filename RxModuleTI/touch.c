@@ -25,7 +25,7 @@
 
 #include "debugConsole.h"  //FOR DEBUG ONLY
 
-#define TIMER_SCAN_PERIOD_MS 3 //
+#define TIMER_SCAN_PERIOD_MS 5 //
 //touch callback
 static int32_t (*touchCallback)(uint32_t message, int32_t x, int32_t y);
 static volatile uint32_t m_counter = 0; //increments every 1 [ms]
@@ -147,10 +147,11 @@ void TouchScreenTimer0AIntHandler(void)
 			m_WidgetPtrStatus = WIDGET_MSG_PTR_DOWN;
 			//debugConsolePrintf("Number of interrupts: %d\r", m_counter);
 			debugConsolePrintf("PEN_DOWN\r\n");
-			if(++m_MoveTouchStatus> 10)
+			if(++m_MoveTouchStatus> 20)
 			{
 				m_WidgetPtrStatus = WIDGET_MSG_PTR_MOVE;
 				debugConsolePrintf("PEN_MOVE\r\n");
+				//m_MoveTouchStatus = 0;
 			}
 		}
 		else
@@ -159,7 +160,7 @@ void TouchScreenTimer0AIntHandler(void)
 			m_WidgetPtrStatus = WIDGET_MSG_PTR_UP;
 			debugConsolePrintf("PEN_UP\r\n");
 		}
-		if(touchCallback && lastWidgetPtrStatus != m_WidgetPtrStatus)
+		if(touchCallback && ((m_WidgetPtrStatus == WIDGET_MSG_PTR_MOVE) || (lastWidgetPtrStatus != m_WidgetPtrStatus)))
 		{
 			ADS7843read();
 			touchCallback(m_WidgetPtrStatus, ADS7843getTouchedPoint().x, ADS7843getTouchedPoint().y);

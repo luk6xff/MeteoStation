@@ -5,11 +5,19 @@
  *      Author: igbt6
  */
 
-#include "config.h"
+
+#include "inc/hw_types.h"
+#include "inc/hw_memmap.h"
+#include "inc/hw_ints.h"
+
 #include "utils/flash_pb.h"
+
+#include "driverlib/sysctl.h"
 #include "driverlib/debug.h"
+#include "driverlib/eeprom.h"
 
-
+#include "config.h"
+// FLASH
 static const ConfigParameters defaultSettings =
 {
 		{
@@ -49,6 +57,9 @@ void configInit(void)
 
     configLoad();
 
+    configEepromInit();
+    configEepromLoad();
+
 }
 
 void configLoadFactory(void)
@@ -78,6 +89,37 @@ void configSave(void)
 ConfigParameters* configGetCurrent(void)
 {
 	return &m_currentParameters;
+}
+
+
+
+// EEPROM
+static ConfigEepromParameters m_currentEepromParameters;
+
+bool configEepromInit(void)
+{
+    SysCtlPeripheralEnable(SYSCTL_PERIPH_EEPROM0); // EEPROM activate
+	if(EEPROMInit() == EEPROM_INIT_OK)
+	{
+		return true;
+	}
+	return false;
+
+}
+
+void configEepromLoad(void)
+{
+	EEPROMRead((uint8_t*)&m_currentEepromParameters, EEPROM_START_ADDRESS, sizeof(ConfigEepromParameters));
+}
+void configEepromSave(void)
+{
+	EEPROMProgram((uint8_t*)&m_currentEepromParameters, EEPROM_START_ADDRESS, sizeof(ConfigEepromParameters));
+}
+
+
+ConfigEepromParameters* configEepromGetCurrent(void)
+{
+	return &m_currentEepromParameters;
 }
 
 

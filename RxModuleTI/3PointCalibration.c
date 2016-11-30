@@ -10,10 +10,15 @@
 #include "3PointCalibration.h"
 #include "delay.h"
 
+//privates
+static const uint16_t delayMs = 1000; //1s
+static void drawCalibrationPoint(const tContext* ctx, uint16_t x, uint16_t y, uint16_t radius);
+
+
 uint8_t performThreePointCalibration(tContext* ctx, CalibCoefficients* coefs)
 {
 
-	const uint16_t delayMs = 1000; //2s
+
 	TouchPoint p1, p2, p3;
 	TouchPoint t1, t2, t3;
 	// point 1 is at 25%,50%, 2 is at 75%,25% and 3 is at 75%,75%
@@ -107,10 +112,44 @@ uint8_t performThreePointCalibration(tContext* ctx, CalibCoefficients* coefs)
 	delay_ms(delayMs);
 	ctx->psDisplay->pfnFlush((void *)0);
 
-	return 0;
+	return 1;
 }
 
-void drawCalibrationPoint(const tContext* ctx, uint16_t x, uint16_t y,
+
+uint8_t confirmThreePointCalibration(tContext* ctx)
+{
+		//test point
+		const uint8_t successThreshold = 20;
+		TouchPoint testPoint;
+		TouchPoint result;
+		testPoint.x = ctx->psDisplay->ui16Width/2;
+		testPoint.y = ctx->psDisplay->ui16Height/2;
+	    GrContextForegroundSet(ctx, ClrRed);
+	    GrContextFontSet(ctx, &g_sFontCm16);
+	    GrStringDrawCentered(ctx, "Tap & hold the test point until become yellow", -1,
+	                         GrContextDpyWidthGet(ctx) / 2, 8, 0);
+		drawCalibrationPoint(ctx, testPoint.x, testPoint.y, 30);
+		while (ADS7843getIntPinState()); //wait till we pen down the touch screen
+		if(!ADS7843getIntPinState()) //if touch panel is being touched
+		{
+			ADS7843read();
+			result = ADS7843getTouchedPoint();
+		}
+		delay_ms(delayMs);
+	    GrContextForegroundSet(ctx, ClrYellow);
+		drawCalibrationPoint(ctx, testPoint.x, testPoint.y, 30);
+		if(((result.x) > (testPoint.x+successThreshold)) ||
+		   ((result.x) < (testPoint.x-successThreshold)) ||
+		   ((result.y) > (testPoint.y+successThreshold)) ||
+		   ((result.y) < (testPoint.y-successThreshold)))
+		{
+			return 0;
+		}
+		return 1;
+}
+
+
+static void drawCalibrationPoint(const tContext* ctx, uint16_t x, uint16_t y,
 		uint16_t radius) {
 	GrCircleDraw(ctx, x, y, radius);
 	GrCircleFill(ctx, x, y, radius - 20);

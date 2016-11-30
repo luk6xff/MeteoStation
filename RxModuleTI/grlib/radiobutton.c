@@ -281,7 +281,7 @@ RadioButtonClick(tWidget *psWidget, uint32_t ui32Msg, int32_t i32X,
         // See if the pointer was just raised and this radio button is not
         // selected.
         //
-        if((ui32Msg == WIDGET_MSG_PTR_UP) &&
+        if((ui32Msg == WIDGET_MSG_PTR_DOWN) &&
            !(pRadio->ui16Style & RB_STYLE_SELECTED))
         {
             //

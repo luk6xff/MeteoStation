@@ -32,11 +32,14 @@ extern const uint8_t g_pui8RainImage[];
 extern const uint8_t g_pui8ThuderStormImage[];
 extern const uint8_t g_pui8SnowImage[];
 extern const uint8_t g_pui8FogImage[];
-extern const uint8_t g_pui8UpTabImage[];
-extern const uint8_t g_pui8DownTabImage[];
-extern const uint8_t g_pui8LeftImage[];
-extern const uint8_t g_pui8RightImage[];
 extern uint8_t g_pui8TIImagePalette[];
 extern uint8_t g_pui8TIImage[];
+extern const uint8_t g_ui8Logo[];
+extern const uint8_t g_pui8LightOff[];
+extern const uint8_t g_pui8LightOn[];
+extern const uint8_t g_pui8Blue50x50[];
+extern const uint8_t g_pui8Blue50x50Press[];
+extern const uint8_t g_pui8RedSlider195x37[];
+extern const uint8_t g_pui8GreenSlider195x37[];
 
 #endif

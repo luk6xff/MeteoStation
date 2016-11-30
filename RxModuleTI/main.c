@@ -27,6 +27,7 @@
 #include "debugConsole.h"
 #include "esp8266.h"
 #include "touch.h"
+#include "images.h"
 
 #define RED_LED   GPIO_PIN_1
 #define BLUE_LED  GPIO_PIN_2
@@ -113,6 +114,8 @@ extern tCanvasWidget g_sMainBackground;
 extern tCanvasWidget g_sSettingsPanel;
 extern tCanvasWidget g_sKeyboardBackground;
 extern tPushButtonWidget g_sPushBtn;
+
+extern tCanvasWidget g_panels[];
 
 
 //*****************************************************************************
@@ -214,11 +217,11 @@ static volatile AppContext g_appCtx = {false, true, (void*)0};
 static ScreenContainer g_sScreens[SCREEN_NUM_OF_SCREENS] =
 {
     {
-        (tWidget *)&g_sMainBackground,
+        (tWidget *)&g_panels[0],//&g_sMainBackground,
         SCREEN_MAIN, SCREEN_CONN_SETTINGS, SCREEN_MAIN, SCREEN_MAIN
     },
     {
-        (tWidget *)&g_sSettingsPanel,
+        (tWidget *)&g_panels[0],//&g_sSettingsPanel,
         SCREEN_MAIN, SCREEN_CONN_SETTINGS, SCREEN_CONN_SETTINGS, SCREEN_CONN_SETTINGS
     },
     {
@@ -466,15 +469,24 @@ const tButtonToggle sCustomToggle =
 //
 // The actual button widget that receives the press events.
 //
-RectangularButton(g_sCustomEnable, &g_sSettingsPanel, 0, 0,
+/*
+RectangularButton(g_widgetWifiEnable, &g_sSettingsPanel, 0, 0,
        &g_ILI9320, 14, 32, 40, 24,
        0, ClrLightGrey, ClrLightGrey, ClrLightGrey,
        ClrBlack, 0, 0, 0, 0, 0 ,0 , onWifiEnable);
+       */
+//static const char* g_wifiEnableText = "Wifi Enable";
+/*
+char g_wifiEnableText[] = {"Wifi Enable"};
+RadioButton(g_widgetWifiEnable, &g_sSettingsPanel, 0, 0,
+       &g_ILI9320, 14, 32, 20, 10,
+	   RB_STYLE_OUTLINE | RB_STYLE_TEXT | RB_STYLE_SELECTED, 5, ClrBlue, ClrRed, ClrWhite,
+	   g_psFontCmss14, g_wifiEnableText, 0, onWifiEnable);
 
 //
 // The text entry button for the custom city.
 //
-RectangularButton(g_sCustomCity, &g_sSettingsPanel, &g_sCustomEnable, 0,
+RectangularButton(g_sCustomCity, &g_sSettingsPanel, &g_widgetWifiEnable, 0,
        &g_ILI9320, 118, 30, 190, 28,
        PB_STYLE_FILL | PB_STYLE_TEXT | PB_STYLE_RELEASE_NOTIFY, ClrLightGrey,
        ClrLightGrey, ClrWhite, ClrGray, g_psFontCmss14,
@@ -509,6 +521,79 @@ Canvas(g_sSettingsPanel, WIDGET_ROOT, 0, &g_sIPAddr,
        CANVAS_STYLE_FILL | CANVAS_STYLE_TEXT_RIGHT |
        CANVAS_STYLE_TEXT_TOP, ClrGray, ClrWhite, ClrBlack, 0,
        0, 0, 0);
+       */
+void onConnRadioButtonChange(tWidget *psWidget, uint32_t bSelected);
+tContainerWidget g_psRadioContainers[];
+tCanvasWidget g_psRadioButtonIndicators[] =
+{
+    CanvasStruct(g_psRadioContainers, g_psRadioButtonIndicators + 1, 0,
+                 &g_ILI9320, 95, 52, 20, 20,
+                 CANVAS_STYLE_IMG, 0, 0, 0, 0, 0, g_pui8LightOff, 0),
+    CanvasStruct(g_psRadioContainers, g_psRadioButtonIndicators + 2, 0,
+                 &g_ILI9320, 95, 97, 20, 20,
+                 CANVAS_STYLE_IMG, 0, 0, 0, 0, 0, g_pui8LightOff, 0),
+    CanvasStruct(g_psRadioContainers, 0, 0,
+                 &g_ILI9320, 95, 142, 20, 20,
+                 CANVAS_STYLE_IMG, 0, 0, 0, 0, 0, g_pui8LightOn, 0),
+};
+tRadioButtonWidget g_connRadioButtons[] =
+{
+    RadioButtonStruct(g_psRadioContainers, g_connRadioButtons + 1, 0,
+                      &g_ILI9320, 10, 40, 80, 45,
+                      RB_STYLE_TEXT, 20, 0, ClrSilver, ClrSilver, g_psFontCm16,
+                      "WIFI", 0, onConnRadioButtonChange),
+    RadioButtonStruct(g_psRadioContainers, g_connRadioButtons + 2, 0,
+                      &g_ILI9320, 10, 85, 80, 45,
+                      RB_STYLE_TEXT, 20, 0, ClrSilver, ClrSilver, g_psFontCm16,
+                      "Sensors", 0, onConnRadioButtonChange),
+    RadioButtonStruct(g_psRadioContainers, g_psRadioButtonIndicators, 0,
+                      &g_ILI9320, 10, 130, 80, 45,
+                      RB_STYLE_TEXT, 20, 0, ClrSilver, ClrSilver, g_psFontCm16,
+                      "SaveMode", 0, onConnRadioButtonChange)
+};
+#define NUM_CONN_RADIO_BUTTONS      (sizeof(g_connRadioButtons) / sizeof(g_connRadioButtons[0]))
+
+tContainerWidget g_psRadioContainers[] =
+{
+    ContainerStruct(WIDGET_ROOT, 0, g_connRadioButtons,
+                    &g_ILI9320, 8, 24, BG_MAX_X - 8, 200,
+                    CTR_STYLE_OUTLINE | CTR_STYLE_TEXT, 0, ClrGray, ClrSilver,
+                    g_psFontCm16, "Connection Setup"),
+};
+
+
+tCanvasWidget g_panels[] =
+{
+	    CanvasStruct(0, 0, g_psRadioContainers, &g_ILI9320,
+	    		BG_MIN_X, BG_MIN_Y,
+	    		       BG_MAX_X - BG_MIN_X, BG_MAX_Y - BG_MIN_Y,
+	                 CANVAS_STYLE_FILL, ClrBlack, 0, 0, 0, 0, 0, 0),
+};
+
+
+void onConnRadioButtonChange(tWidget *psWidget, uint32_t bSelected)
+{
+    uint32_t ui32Idx;
+
+    //
+    // Find the index of this radio button in the first group.
+    //
+    for(ui32Idx = 0; ui32Idx < NUM_CONN_RADIO_BUTTONS; ui32Idx++)
+    {
+        if(psWidget == (tWidget *)(g_connRadioButtons + ui32Idx))
+        {
+            break;
+        }
+    }
+    //
+    // Set the matching indicator based on the selected state of the radio
+    // button.
+    //
+    CanvasImageSet(g_psRadioButtonIndicators + ui32Idx,
+                   bSelected ? g_pui8LightOn : g_pui8LightOff);
+    WidgetPaint((tWidget *)(g_psRadioButtonIndicators + ui32Idx));
+
+}
 
 
 //*****************************************************************************
@@ -695,15 +780,15 @@ static void onWifiEnable(tWidget *psWidget)
 	if(g_appCtx.wifiEnabled)
 	{
 		g_appCtx.wifiEnabled = false;
-		PushButtonTextColorSet(&g_sCustomCity, ClrGray);
+		//PushButtonTextColorSet(&g_sCustomCity, ClrGray);
 	}
 	else
 	{
 		g_appCtx.wifiEnabled = true;
-		PushButtonTextColorSet(&g_sCustomCity, ClrBlack);
+		//PushButtonTextColorSet(&g_sCustomCity, ClrBlack);
 	}
     drawToggleButton(&sCustomToggle, g_appCtx.wifiEnabled);
-    WidgetPaint((tWidget *)&g_sCustomCity);
+   // WidgetPaint((tWidget *)&g_sCustomCity);
 
 
 }

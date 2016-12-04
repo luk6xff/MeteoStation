@@ -61,6 +61,7 @@ static uint32_t pui32Stack[4*128];
 extern void SysTickIntHandler(void);
 extern void UART5IntHandler(void);
 extern void TouchScreenTimer0AIntHandler(void);
+extern void ESP8266Timer1AIntHandler(void);
 //*****************************************************************************
 //
 // The vector table.  Note that the proper constructs must be placed on this to
@@ -107,9 +108,9 @@ void (* const g_pfnVectors[])(void) =
     IntDefaultHandler,                      // ADC Sequence 2
     IntDefaultHandler,                      // ADC Sequence 3
     IntDefaultHandler,                      // Watchdog timer
-	TouchScreenTimer0AIntHandler,                      // Timer 0 subtimer A
-	IntDefaultHandler,           // Timer 0 subtimer B
-    IntDefaultHandler,                      // Timer 1 subtimer A
+	TouchScreenTimer0AIntHandler,           // Timer 0 subtimer A
+	IntDefaultHandler,           			// Timer 0 subtimer B
+	ESP8266Timer1AIntHandler,               // Timer 1 subtimer A
     IntDefaultHandler,                      // Timer 1 subtimer B
     IntDefaultHandler,                      // Timer 2 subtimer A
     IntDefaultHandler,                      // Timer 2 subtimer B

@@ -533,10 +533,10 @@ tCanvasWidget g_connCheckBoxIndicators[] =
                  &g_ILI9320, 160, 52, 20, 20,
                  CANVAS_STYLE_IMG, 0, 0, 0, 0, 0, g_pui8LightOff, 0),
     CanvasStruct(&g_connContainers, g_connCheckBoxIndicators + 2, 0,
-                 &g_ILI9320, 160, 97, 20, 20,
+                 &g_ILI9320, 160, 92, 20, 20,
                  CANVAS_STYLE_IMG, 0, 0, 0, 0, 0, g_pui8LightOff, 0),
     CanvasStruct(&g_connContainers, 0, 0,
-                 &g_ILI9320, 160, 142, 20, 20,
+                 &g_ILI9320, 160, 132, 20, 20,
                  CANVAS_STYLE_IMG, 0, 0, 0, 0, 0, g_pui8LightOff, 0),
 };
 tCheckBoxWidget g_connCheckBoxes[] =
@@ -547,12 +547,12 @@ tCheckBoxWidget g_connCheckBoxes[] =
 					  0, ClrSilver, ClrSilver, g_psFontCm16,
                       "WIFI", 0, onConnCheckBoxChange),
 		CheckBoxStruct(g_connContainers, g_connCheckBoxes + 2, 0,
-                      &g_ILI9320, 10, 85, 110, 45,
+                      &g_ILI9320, 10, 80, 110, 45,
 					  CB_STYLE_FILL | CB_STYLE_TEXT, 20,
 					  0, ClrSilver, ClrSilver, g_psFontCm16,
                       "Sensors", 0, onConnCheckBoxChange),
 		CheckBoxStruct(g_connContainers, g_connCheckBoxIndicators, 0,
-                      &g_ILI9320, 10, 130, 120, 45,
+                      &g_ILI9320, 10, 120, 120, 45,
 					  CB_STYLE_FILL | CB_STYLE_TEXT, 20,
 					  0, ClrSilver, ClrSilver, g_psFontCm16,
                       "PowerSaving", 0, onConnCheckBoxChange)
@@ -561,18 +561,18 @@ tCheckBoxWidget g_connCheckBoxes[] =
 #define NUM_CONN_CHECKBOXES  (sizeof(g_connCheckBoxes) / sizeof(g_connCheckBoxes[0]))
 
 RectangularButton(g_connTestButton, g_connContainers+1, 0, 0,
-				  &g_ILI9320, 200, 52, 70, 28,
-				  PB_STYLE_FILL | PB_STYLE_TEXT | PB_STYLE_RELEASE_NOTIFY, ClrLightGrey,
-				  ClrLightGrey, ClrWhite, ClrGray, g_psFontCmss14,
+				  &g_ILI9320, 200, 52, 100, 28,
+				  PB_STYLE_FILL | PB_STYLE_TEXT | PB_STYLE_OUTLINE | PB_STYLE_RELEASE_NOTIFY,
+				  ClrGreen, ClrRed, ClrSilver, ClrWhite, g_psFontCmss14,
 				  "Test conn", 0, 0, 0 ,0 , onConnTest);
 
 tContainerWidget g_connContainers[] = {
 		ContainerStruct(WIDGET_ROOT, g_connContainers + 1, g_connCheckBoxes,
-						&g_ILI9320, 8, 24, 180, 155,
+						&g_ILI9320, 8, 24, 180, 148,
 						CTR_STYLE_OUTLINE | CTR_STYLE_TEXT, 0, ClrGray, ClrSilver,
 						g_psFontCm16, "Connection Setup"),
 		ContainerStruct(WIDGET_ROOT, 0, &g_connTestButton,
-						&g_ILI9320, 188, 24, 136-8-4, 155,
+						&g_ILI9320, 188, 24, 136-8-4, 148,
 						CTR_STYLE_OUTLINE | CTR_STYLE_TEXT, 0, ClrGray, ClrSilver,
 						g_psFontCm16, "Conn Test"),
 };

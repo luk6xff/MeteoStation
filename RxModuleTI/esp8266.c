@@ -7,6 +7,7 @@
 
 
 #include <stdint.h>
+#include <stdbool.h>
 
 #include "inc/hw_types.h"
 #include "inc/hw_memmap.h"
@@ -15,6 +16,7 @@
 #include "driverlib/gpio.h"
 #include "driverlib/sysctl.h"
 #include "driverlib/interrupt.h"
+#include "driverlib/timer.h"
 #include "driverlib/uart.h"
 
 #include "esp8266.h"
@@ -24,6 +26,10 @@
 //! - UART1RX - PE4
 //! - UART1TX - PE5
 
+
+static volatile uint32_t ms_counter= 0;
+
+//sets Timer for ESP8266
 static void esp8266UartSetup(void) {
 	//
 	// Enable the peripherals used by the UART5
@@ -45,7 +51,45 @@ static void esp8266UartSetup(void) {
 	IntMasterEnable();
 	IntEnable(INT_UART5);
 	UARTIntEnable(UART5_BASE, UART_INT_RX | UART_INT_RT);
+}
 
+
+//Fires up/down the timer
+static void esp8266TimerEnable(bool enable)
+{
+	if(enable)
+	{
+		TimerEnable(TIMER1_BASE, TIMER_A);
+		return;
+	}
+    TimerDisable(TIMER1_BASE, TIMER_A);
+}
+
+static uint32_t esp8266Milis(void)
+{
+	return ms_counter;
+}
+
+//Configures Timer1A as a 32-bit periodic timer
+static void esp8266TimerInit()
+{
+    SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER1);
+
+    TimerConfigure(TIMER1_BASE, TIMER_CFG_32_BIT_PER_UP);
+    // Set the Timer1A load value to 1ms.
+    TimerLoadSet(TIMER1_BASE, TIMER_A, SysCtlClockGet() / 1000); //1 [ms]
+    IntMasterEnable();
+
+    // Configure the Timer1A interrupt for timer timeout.
+    TimerIntEnable(TIMER1_BASE, TIMER_TIMA_TIMEOUT);
+
+    // Enable the Timer0A interrupt on the processor (NVIC).
+    IntEnable(INT_TIMER1A);
+
+    ms_counter = 0;
+
+    // Enable Timer1A.
+    esp8266TimerEnable(true);
 }
 
 
@@ -93,4 +137,11 @@ void UART5IntHandler(void) {
 		//UARTCharPutNonBlocking(UART5_BASE, UARTCharGetNonBlocking(UART5_BASE));
 		//UARTprintf("%c", UARTCharGetNonBlocking(UART5_BASE));
 	}
+}
+
+
+void ESP8266Timer1AIntHandler(void)
+{
+	TimerIntClear(TIMER1_BASE, TIMER_TIMA_TIMEOUT);
+	++ms_counter;
 }

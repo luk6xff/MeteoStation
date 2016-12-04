@@ -522,76 +522,94 @@ Canvas(g_sSettingsPanel, WIDGET_ROOT, 0, &g_sIPAddr,
        CANVAS_STYLE_TEXT_TOP, ClrGray, ClrWhite, ClrBlack, 0,
        0, 0, 0);
        */
-void onConnRadioButtonChange(tWidget *psWidget, uint32_t bSelected);
-tContainerWidget g_psRadioContainers[];
-tCanvasWidget g_psRadioButtonIndicators[] =
+//TODO
+void onConnCheckBoxChange(tWidget *psWidget, uint32_t bSelected);
+void onConnTest(tWidget *psWidget);
+tContainerWidget g_connContainers[];
+tPushButtonWidget g_connTestButton;
+tCanvasWidget g_connCheckBoxIndicators[] =
 {
-    CanvasStruct(g_psRadioContainers, g_psRadioButtonIndicators + 1, 0,
-                 &g_ILI9320, 95, 52, 20, 20,
+    CanvasStruct(&g_connContainers, g_connCheckBoxIndicators + 1, 0,
+                 &g_ILI9320, 160, 52, 20, 20,
                  CANVAS_STYLE_IMG, 0, 0, 0, 0, 0, g_pui8LightOff, 0),
-    CanvasStruct(g_psRadioContainers, g_psRadioButtonIndicators + 2, 0,
-                 &g_ILI9320, 95, 97, 20, 20,
+    CanvasStruct(&g_connContainers, g_connCheckBoxIndicators + 2, 0,
+                 &g_ILI9320, 160, 97, 20, 20,
                  CANVAS_STYLE_IMG, 0, 0, 0, 0, 0, g_pui8LightOff, 0),
-    CanvasStruct(g_psRadioContainers, 0, 0,
-                 &g_ILI9320, 95, 142, 20, 20,
-                 CANVAS_STYLE_IMG, 0, 0, 0, 0, 0, g_pui8LightOn, 0),
+    CanvasStruct(&g_connContainers, 0, 0,
+                 &g_ILI9320, 160, 142, 20, 20,
+                 CANVAS_STYLE_IMG, 0, 0, 0, 0, 0, g_pui8LightOff, 0),
 };
-tRadioButtonWidget g_connRadioButtons[] =
+tCheckBoxWidget g_connCheckBoxes[] =
 {
-    RadioButtonStruct(g_psRadioContainers, g_connRadioButtons + 1, 0,
-                      &g_ILI9320, 10, 40, 80, 45,
-                      RB_STYLE_TEXT, 20, 0, ClrSilver, ClrSilver, g_psFontCm16,
-                      "WIFI", 0, onConnRadioButtonChange),
-    RadioButtonStruct(g_psRadioContainers, g_connRadioButtons + 2, 0,
-                      &g_ILI9320, 10, 85, 80, 45,
-                      RB_STYLE_TEXT, 20, 0, ClrSilver, ClrSilver, g_psFontCm16,
-                      "Sensors", 0, onConnRadioButtonChange),
-    RadioButtonStruct(g_psRadioContainers, g_psRadioButtonIndicators, 0,
-                      &g_ILI9320, 10, 130, 80, 45,
-                      RB_STYLE_TEXT, 20, 0, ClrSilver, ClrSilver, g_psFontCm16,
-                      "SaveMode", 0, onConnRadioButtonChange)
+		CheckBoxStruct(g_connContainers, g_connCheckBoxes + 1, 0,
+                      &g_ILI9320, 10, 40, 110, 45,
+					  CB_STYLE_FILL | CB_STYLE_TEXT, 20,
+					  0, ClrSilver, ClrSilver, g_psFontCm16,
+                      "WIFI", 0, onConnCheckBoxChange),
+		CheckBoxStruct(g_connContainers, g_connCheckBoxes + 2, 0,
+                      &g_ILI9320, 10, 85, 110, 45,
+					  CB_STYLE_FILL | CB_STYLE_TEXT, 20,
+					  0, ClrSilver, ClrSilver, g_psFontCm16,
+                      "Sensors", 0, onConnCheckBoxChange),
+		CheckBoxStruct(g_connContainers, g_connCheckBoxIndicators, 0,
+                      &g_ILI9320, 10, 130, 120, 45,
+					  CB_STYLE_FILL | CB_STYLE_TEXT, 20,
+					  0, ClrSilver, ClrSilver, g_psFontCm16,
+                      "PowerSaving", 0, onConnCheckBoxChange)
 };
-#define NUM_CONN_RADIO_BUTTONS      (sizeof(g_connRadioButtons) / sizeof(g_connRadioButtons[0]))
 
-tContainerWidget g_psRadioContainers[] =
-{
-    ContainerStruct(WIDGET_ROOT, 0, g_connRadioButtons,
-                    &g_ILI9320, 8, 24, BG_MAX_X - 8, 200,
-                    CTR_STYLE_OUTLINE | CTR_STYLE_TEXT, 0, ClrGray, ClrSilver,
-                    g_psFontCm16, "Connection Setup"),
+#define NUM_CONN_CHECKBOXES  (sizeof(g_connCheckBoxes) / sizeof(g_connCheckBoxes[0]))
+
+RectangularButton(g_connTestButton, g_connContainers+1, 0, 0,
+				  &g_ILI9320, 200, 52, 70, 28,
+				  PB_STYLE_FILL | PB_STYLE_TEXT | PB_STYLE_RELEASE_NOTIFY, ClrLightGrey,
+				  ClrLightGrey, ClrWhite, ClrGray, g_psFontCmss14,
+				  "Test conn", 0, 0, 0 ,0 , onConnTest);
+
+tContainerWidget g_connContainers[] = {
+		ContainerStruct(WIDGET_ROOT, g_connContainers + 1, g_connCheckBoxes,
+						&g_ILI9320, 8, 24, 180, 155,
+						CTR_STYLE_OUTLINE | CTR_STYLE_TEXT, 0, ClrGray, ClrSilver,
+						g_psFontCm16, "Connection Setup"),
+		ContainerStruct(WIDGET_ROOT, 0, &g_connTestButton,
+						&g_ILI9320, 188, 24, 136-8-4, 155,
+						CTR_STYLE_OUTLINE | CTR_STYLE_TEXT, 0, ClrGray, ClrSilver,
+						g_psFontCm16, "Conn Test"),
 };
 
 
 tCanvasWidget g_panels[] =
 {
-	    CanvasStruct(0, 0, g_psRadioContainers, &g_ILI9320,
-	    		BG_MIN_X, BG_MIN_Y,
-	    		       BG_MAX_X - BG_MIN_X, BG_MAX_Y - BG_MIN_Y,
-	                 CANVAS_STYLE_FILL, ClrBlack, 0, 0, 0, 0, 0, 0),
+	CanvasStruct(WIDGET_ROOT, 0, g_connContainers, &g_ILI9320,
+				BG_MIN_X, BG_MIN_Y, BG_MAX_X - BG_MIN_X, BG_MAX_Y - BG_MIN_Y,
+				CANVAS_STYLE_FILL, ClrBlack, 0, 0, 0, 0, 0, 0),
 };
 
 
-void onConnRadioButtonChange(tWidget *psWidget, uint32_t bSelected)
+void onConnCheckBoxChange(tWidget *widget, uint32_t bSelected)
 {
-    uint32_t ui32Idx;
+    uint32_t idx;
 
-    //
-    // Find the index of this radio button in the first group.
-    //
-    for(ui32Idx = 0; ui32Idx < NUM_CONN_RADIO_BUTTONS; ui32Idx++)
+    for(idx = 0; idx < NUM_CONN_CHECKBOXES; ++idx)
     {
-        if(psWidget == (tWidget *)(g_connRadioButtons + ui32Idx))
-        {
-            break;
-        }
+    	if(widget == &g_connCheckBoxes[idx].sBase)
+    	{
+    		break;
+    	}
     }
-    //
-    // Set the matching indicator based on the selected state of the radio
-    // button.
-    //
-    CanvasImageSet(g_psRadioButtonIndicators + ui32Idx,
+    //not found
+    if(idx == NUM_CONN_CHECKBOXES)
+    {
+    	return;
+    }
+    CanvasImageSet(g_connCheckBoxIndicators + idx,
                    bSelected ? g_pui8LightOn : g_pui8LightOff);
-    WidgetPaint((tWidget *)(g_psRadioButtonIndicators + ui32Idx));
+    WidgetPaint((tWidget *)(g_connCheckBoxIndicators + idx));
+
+}
+
+void onConnTest(tWidget *psWidget)
+{
 
 }
 

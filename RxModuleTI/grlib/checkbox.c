@@ -280,7 +280,7 @@ CheckBoxClick(tWidget *psWidget, uint32_t ui32Msg, int32_t i32X, int32_t i32Y)
         //
         // See if the pointer was just raised.
         //
-        if(ui32Msg == WIDGET_MSG_PTR_UP)
+        if(ui32Msg == WIDGET_MSG_PTR_DOWN)
         {
             //
             // Toggle the selected state of this check box.

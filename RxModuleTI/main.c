@@ -217,7 +217,7 @@ static volatile AppContext g_appCtx = {false, true, (void*)0};
 static ScreenContainer g_sScreens[SCREEN_NUM_OF_SCREENS] =
 {
     {
-        (tWidget *)&g_panels[0],//&g_sMainBackground,
+        (tWidget *)&g_sMainBackground,
         SCREEN_MAIN, SCREEN_CONN_SETTINGS, SCREEN_MAIN, SCREEN_MAIN
     },
     {
@@ -1053,6 +1053,8 @@ int main(void) {
 	//Configuration
 	configInit();
 
+	//ESP8266
+	esp8266Init();
 
 
     tRectangle sRect;
@@ -1090,9 +1092,6 @@ int main(void) {
 	//touchScreenControler
 	touchScreenInit();
 
-	//wifi module
-    //esp8266Init();
-
     // Set the touch screen event handler.
 	touchScreenSetTouchCallback(touchScreenCallback);
 
@@ -1107,6 +1106,10 @@ int main(void) {
 	//do touch screen calibration if needed
 	performTouchScreenCalibration(&g_sContext);
 
+	if(esp8266CommandAT())
+	{
+		debugConsolePrintf("AT succesfully sent\n\r");
+	}
 	while (1) {
 
         handleMovement();

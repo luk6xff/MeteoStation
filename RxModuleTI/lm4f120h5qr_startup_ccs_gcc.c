@@ -59,9 +59,9 @@ static uint32_t pui32Stack[4*128];
 //*****************************************************************************
 // To be added by user
 extern void SysTickIntHandler(void);
-extern void UART5IntHandler(void);
+extern void Esp8266Uart5IntHandler(void);
 extern void TouchScreenTimer0AIntHandler(void);
-extern void ESP8266Timer1AIntHandler(void);
+extern void Esp8266Timer1AIntHandler(void);
 //*****************************************************************************
 //
 // The vector table.  Note that the proper constructs must be placed on this to
@@ -110,7 +110,7 @@ void (* const g_pfnVectors[])(void) =
     IntDefaultHandler,                      // Watchdog timer
 	TouchScreenTimer0AIntHandler,           // Timer 0 subtimer A
 	IntDefaultHandler,           			// Timer 0 subtimer B
-	ESP8266Timer1AIntHandler,               // Timer 1 subtimer A
+	Esp8266Timer1AIntHandler,               // Timer 1 subtimer A
     IntDefaultHandler,                      // Timer 1 subtimer B
     IntDefaultHandler,                      // Timer 2 subtimer A
     IntDefaultHandler,                      // Timer 2 subtimer B
@@ -150,7 +150,7 @@ void (* const g_pfnVectors[])(void) =
     IntDefaultHandler,                      // SSI3 Rx and Tx
     IntDefaultHandler,                      // UART3 Rx and Tx
     IntDefaultHandler,                      // UART4 Rx and Tx
-	UART5IntHandler,                        // UART5 Rx and Tx
+	Esp8266Uart5IntHandler,                 // UART5 Rx and Tx
     IntDefaultHandler,                      // UART6 Rx and Tx
     IntDefaultHandler,                      // UART7 Rx and Tx
     0,                                      // Reserved

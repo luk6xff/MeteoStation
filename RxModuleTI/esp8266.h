@@ -11,4 +11,8 @@
 
 void esp8266Init();
 
+bool esp8266CommandAT(void);
+
+bool esp8266CommandRST(void);
+
 #endif /* ESP8266_H_ */

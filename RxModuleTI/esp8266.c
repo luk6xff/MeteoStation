@@ -8,6 +8,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <string.h>
 
 #include "inc/hw_types.h"
 #include "inc/hw_memmap.h"
@@ -20,14 +21,21 @@
 #include "driverlib/uart.h"
 
 #include "esp8266.h"
+#include "debugConsole.h"
 
 //! - UART5 peripheral
 //! - GPIO Port E peripheral (for UART5 pins)
 //! - UART1RX - PE4
 //! - UART1TX - PE5
 
+#define TX_BUF_SIZE 64
+#define RX_BUF_SIZE 256
 
 static volatile uint32_t ms_counter= 0;
+static volatile uint16_t rxBufferCounter= 0;
+static volatile bool rxDataAvailable = false;
+static uint8_t rxBuffer[RX_BUF_SIZE];
+static uint8_t txBuffer[TX_BUF_SIZE];
 
 //sets Timer for ESP8266
 static void esp8266UartSetup(void) {
@@ -96,15 +104,97 @@ static void esp8266TimerInit()
 void esp8266Init()
 {
 	esp8266UartSetup();
+	esp8266TimerInit();
 }
 
+
+//*****************************************************************************
+//
+//Buffer helpers
+//
+//*****************************************************************************
+static void esp8266ResetUartRxBuffer(void)
+{
+	rxBufferCounter = 0;
+	memset((void*)rxBuffer, '\0', RX_BUF_SIZE);
+}
+
+static bool esp8266isDataInRxBufferAvaialble(void)
+{
+	return (rxBufferCounter > 0) && rxDataAvailable;
+}
+
+static void esp8266ResetUartTxBuffer(void)
+{
+	memset((void*)txBuffer, '\0', TX_BUF_SIZE);
+}
+
+static void esp8266SetUartTxBuffer(const char* strToCopy)
+{
+	memcpy((void*)txBuffer, (void*)strToCopy, TX_BUF_SIZE);
+}
+
+static bool esp8266SearchForResponseString(const char* resp)
+{
+	bool res = false;
+	bool charFound = false;
+	uint16_t length = 0;
+	uint16_t expectedLength = strlen(resp);
+	for(uint16_t i = 0; i<RX_BUF_SIZE && rxBuffer[i] != '\0' ; ++i)
+	{
+
+		if(rxBuffer[i] == *resp)
+		{
+			resp++;
+			if(charFound)
+			{
+				length++;
+			}
+			charFound = true;
+		}
+		else
+		{
+			resp-=length;
+			length=0;
+			charFound = false;
+		}
+
+		if(expectedLength == length)
+		{
+			res = true;
+			break;
+		}
+
+	}
+	return res;
+}
+
+static bool esp8266WaitForResponse(const char* resp, uint16_t msTimeout)
+{
+	bool res = false;
+	uint32_t startTime = esp8266Milis();
+
+	while((esp8266Milis() - startTime) < msTimeout)
+	{
+		if(rxDataAvailable)
+		{
+			if(esp8266SearchForResponseString(resp))
+			{
+				res = true;
+				break;
+			}
+		}
+	}
+	rxDataAvailable = false;
+	return res;
+}
 
 //*****************************************************************************
 //
 // Send a string to the UART.
 //
 //*****************************************************************************
-static void esp8266UartSend(const uint8_t* dataBuffer)
+static void esp8266UartSend(const char* dataBuffer)
 {
 
 	while (UARTBusy(UART5_BASE));
@@ -114,33 +204,56 @@ static void esp8266UartSend(const uint8_t* dataBuffer)
 	}
 }
 
-void esp8266SendATCommand(const uint8_t* cmd)
+static void esp8266SendATCommand(const char* cmd)
 {
 	esp8266UartSend(cmd);
-	esp8266UartSend((const uint8_t*)"\r\n"); //CR LF
+	esp8266UartSend((const char*)"\r\n"); //CR LF
 }
 
 
-void UART5IntHandler(void) {
+//AT Commands implementation
+bool esp8266CommandAT(void)
+{
+	esp8266SendATCommand("AT");
+	return esp8266WaitForResponse("OK", 2000);
+}
 
-	unsigned long ulStatus;
+bool esp8266CommandRST(void)
+{
+	esp8266SendATCommand("AT");
+	return true;
+}
 
+
+
+// Uart5 interrupt handler
+void Esp8266Uart5IntHandler(void)
+{
+	unsigned long status;
+	char recvChr;
 	// Get the interrrupt status.
-	ulStatus = UARTIntStatus(UART5_BASE, true);
-
-	// Clear the asserted interrupts.
-	UARTIntClear(UART5_BASE, ulStatus);
-
-	// Loop while there are characters in the receive FIFO.
-	while (UARTCharsAvail(UART5_BASE)) {
-		// Read the next character from the UART and write it to the console.
-		//UARTCharPutNonBlocking(UART5_BASE, UARTCharGetNonBlocking(UART5_BASE));
-		//UARTprintf("%c", UARTCharGetNonBlocking(UART5_BASE));
+	status = UARTIntStatus(UART5_BASE, true);
+	UARTIntClear(UART5_BASE, status);
+	esp8266ResetUartRxBuffer();
+	//loop through all data in the fifo
+	while (UARTCharsAvail(UART5_BASE))
+	{
+		recvChr = UARTCharGetNonBlocking(UART5_BASE);
+		if(recvChr == '\0')
+		{
+			continue;
+		}
+		else
+		{
+			rxBuffer[rxBufferCounter++ % RX_BUF_SIZE] = recvChr;
+		}
+		//debugConsolePrintf("%c", UARTCharGetNonBlocking(UART5_BASE));
 	}
+	rxDataAvailable = true;
 }
 
-
-void ESP8266Timer1AIntHandler(void)
+//Timer1A interrupt handler
+void Esp8266Timer1AIntHandler(void)
 {
 	TimerIntClear(TIMER1_BASE, TIMER_TIMA_TIMEOUT);
 	++ms_counter;

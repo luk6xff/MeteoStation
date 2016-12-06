@@ -25,6 +25,14 @@
 
 #include "debugConsole.h"  //FOR DEBUG ONLY
 
+#define TOUCH_DEBUG_ENABLE 0
+#define TOUCH_DEBUG(str) \
+		do \
+		{  \
+			if (TOUCH_DEBUG_ENABLE) \
+				debugConsolePrintf(str); \
+		}while(0);
+
 #define TIMER_SCAN_PERIOD_MS 5 //
 //touch callback
 static int32_t (*touchCallback)(uint32_t message, int32_t x, int32_t y);
@@ -124,8 +132,7 @@ void TouchScreenIntHandler(void)
 		{
 		    // Enable Timer
 		    touchScreenTimerEnable(true);
-
-		    debugConsolePrintf("PEN_DOWN\r\n");
+		    TOUCH_DEBUG("PEN_DOWN\r\n");
 		}
 		else
 		{
@@ -145,20 +152,19 @@ void TouchScreenTimer0AIntHandler(void)
 		if(ADS7843dataAvailable())
 		{
 			m_WidgetPtrStatus = WIDGET_MSG_PTR_DOWN;
-			//debugConsolePrintf("Number of interrupts: %d\r", m_counter);
-			debugConsolePrintf("PEN_DOWN\r\n");
+			//TOUCH_DEBUG("Number of interrupts: %d\r", m_counter);
+			TOUCH_DEBUG("PEN_DOWN\r\n");
 			if(++m_MoveTouchStatus> 20)
 			{
 				m_WidgetPtrStatus = WIDGET_MSG_PTR_MOVE;
-				debugConsolePrintf("PEN_MOVE\r\n");
-				//m_MoveTouchStatus = 0;
+				TOUCH_DEBUG("PEN_MOVE\r\n");
 			}
 		}
 		else
 		{
 			m_MoveTouchStatus = 0;
 			m_WidgetPtrStatus = WIDGET_MSG_PTR_UP;
-			debugConsolePrintf("PEN_UP\r\n");
+			TOUCH_DEBUG("PEN_UP\r\n");
 		}
 		if(touchCallback && ((m_WidgetPtrStatus == WIDGET_MSG_PTR_MOVE) || (lastWidgetPtrStatus != m_WidgetPtrStatus)))
 		{

@@ -9,6 +9,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
+#include <stdio.h>
 
 #include "inc/hw_types.h"
 #include "inc/hw_memmap.h"
@@ -21,7 +22,19 @@
 #include "driverlib/uart.h"
 
 #include "esp8266.h"
-#include "debugConsole.h"
+
+
+#define ESP8266_DEBUG_ENABLE 1
+#if TOUCH_DEBUG_ENABLE
+	#include "debugConsole.h"
+#endif
+#define ESP8266_DEBUG(str) \
+		do \
+		{  \
+			if (ESP8266_DEBUG_ENABLE) \
+				debugConsolePrintf(str); \
+		}while(0);
+
 
 //! - UART5 peripheral
 //! - GPIO Port E peripheral (for UART5 pins)
@@ -29,7 +42,9 @@
 //! - UART1TX - PE5
 
 #define TX_BUF_SIZE 64
-#define RX_BUF_SIZE 256
+#define RX_BUF_SIZE 512
+
+//data types
 
 static volatile uint32_t ms_counter= 0;
 static volatile uint16_t rxBufferCounter= 0;
@@ -78,6 +93,15 @@ static uint32_t esp8266Milis(void)
 	return ms_counter;
 }
 
+static void esp8266Delay(uint32_t msDelay)
+{
+	uint32_t start = esp8266Milis();
+	while((esp8266Milis() - start) < msDelay)
+	{
+
+	}
+}
+
 //Configures Timer1A as a 32-bit periodic timer
 static void esp8266TimerInit()
 {
@@ -105,6 +129,46 @@ void esp8266Init()
 {
 	esp8266UartSetup();
 	esp8266TimerInit();
+
+	if(esp8266CommandRST())
+	{
+		ESP8266_DEBUG("esp8266CommandRST succesfully sent\n\r");
+	}
+
+	if(esp8266CommandCWMODE(ESP8266_MODE_CLIENT))
+	{
+		ESP8266_DEBUG("esp8266CommandCWMODE ESP8266_MODE_CLIENT succesfully set");
+	}
+#if 0
+	if(esp8266CommandCWLAP())
+	{
+		ESP8266_DEBUG("esp8266CommandCWLAP sent ok");
+	}
+#endif
+	if(esp8266CommandCWJAP("INTEHNET", "Faza------"))
+	{
+		ESP8266_DEBUG("esp8266CommandCWJAP sent ok");
+	}
+
+	if(esp8266CommandCIPSTART("http://httpbin.org"))
+	{
+		ESP8266_DEBUG("esp8266CommandCIPSTART sent ok");
+	}
+
+	if(esp8266CommandCIFSR())
+	{
+		ESP8266_DEBUG("esp8266CommandCIFSR sent ok");
+	}
+
+	if(esp8266CommandCIPSEND("http://httpbin.org/get"))
+	{
+		ESP8266_DEBUG("esp8266CommandCIPSEND sent ok");
+	}
+
+	if(esp8266CommandCIPCLOSE())
+	{
+		ESP8266_DEBUG("esp8266CommandCIPCLOSE sent ok");
+	}
 }
 
 
@@ -131,13 +195,13 @@ static void esp8266ResetUartTxBuffer(void)
 
 static void esp8266SetUartTxBuffer(const char* strToCopy)
 {
-	memcpy((void*)txBuffer, (void*)strToCopy, TX_BUF_SIZE);
+	esp8266ResetUartTxBuffer();
+	memcpy((void*)txBuffer, (void*)strToCopy, strlen(strToCopy));
 }
 
 static bool esp8266SearchForResponseString(const char* resp)
 {
 	bool res = false;
-	bool charFound = false;
 	uint16_t length = 0;
 	uint16_t expectedLength = strlen(resp);
 	for(uint16_t i = 0; i<RX_BUF_SIZE && rxBuffer[i] != '\0' ; ++i)
@@ -146,17 +210,12 @@ static bool esp8266SearchForResponseString(const char* resp)
 		if(rxBuffer[i] == *resp)
 		{
 			resp++;
-			if(charFound)
-			{
-				length++;
-			}
-			charFound = true;
+			length++;
 		}
 		else
 		{
 			resp-=length;
 			length=0;
-			charFound = false;
 		}
 
 		if(expectedLength == length)
@@ -206,25 +265,122 @@ static void esp8266UartSend(const char* dataBuffer)
 
 static void esp8266SendATCommand(const char* cmd)
 {
+	esp8266ResetUartRxBuffer();
 	esp8266UartSend(cmd);
 	esp8266UartSend((const char*)"\r\n"); //CR LF
 }
 
 
 //AT Commands implementation
+
 bool esp8266CommandAT(void)
 {
 	esp8266SendATCommand("AT");
 	return esp8266WaitForResponse("OK", 2000);
 }
 
+
 bool esp8266CommandRST(void)
 {
-	esp8266SendATCommand("AT");
-	return true;
+	esp8266SendATCommand("AT+RST");
+	return esp8266WaitForResponse("OK", 2000);
 }
 
 
+bool esp8266CommandCWMODE(Esp8266WifiMode mode)
+{
+	if(mode >=ESP8266_MODE_INVALID)
+	{
+		return false;
+	}
+	esp8266ResetUartTxBuffer();
+	sprintf((char*)txBuffer, "AT+CWMODE=%d", mode);
+	esp8266SendATCommand((char*)txBuffer);
+	return esp8266WaitForResponse("OK", 2000);
+}
+
+
+bool esp8266CommandCIPMUX(uint8_t enable)
+{
+	if(enable > 1)
+	{
+		return false;
+	}
+	esp8266ResetUartTxBuffer();
+	sprintf((char*)txBuffer, "AT+CIPMUX=%d", enable);
+	esp8266SendATCommand((char*)txBuffer);
+	return esp8266WaitForResponse("OK", 2000);
+}
+
+
+bool esp8266CommandCWLAP()
+{
+	esp8266SendATCommand("AT+CWLAP");
+	return esp8266WaitForResponse("OK", 9000);
+}
+
+
+bool esp8266CommandCWJAP(const char* ssid, const char* pass)
+{
+	esp8266ResetUartTxBuffer();
+	sprintf((char*)txBuffer, "AT+CWJAP=\"%s\",\"%s\"", ssid, pass);
+	esp8266SendATCommand((char*)txBuffer);
+	return esp8266WaitForResponse("OK", 12000);
+}
+
+
+bool esp8266CommandCWQAP(void)
+{
+	esp8266SendATCommand("AT+CWQAP");
+	return esp8266WaitForResponse("OK", 8000);
+}
+
+
+bool esp8266CommandCWSAP(const char* ssid, const char* password, uint8_t channel, uint8_t encryptMode)
+{
+	esp8266ResetUartTxBuffer();
+	sprintf((char*)txBuffer, "AT+CWSAP=\"%s\",\"%s\",%d,%d\r\n", ssid, password, channel, encryptMode);
+	esp8266SendATCommand((char*)txBuffer);
+	return esp8266WaitForResponse("OK", 5000);
+}
+
+
+bool esp8266CommandCIFSR(void)
+{
+	esp8266SendATCommand("AT+CIFSR");
+	return esp8266WaitForResponse("OK", 5000);
+}
+
+
+bool esp8266CommandCIPSTART(const char* ipAddr)
+{
+	esp8266ResetUartTxBuffer();
+	sprintf((char*)txBuffer, "AT+CIPSTART=\"TCP\",\"%s\",80\r\n", ipAddr);
+	esp8266SendATCommand((char*)txBuffer);
+	return esp8266WaitForResponse("OK", 8000);
+}
+
+
+bool esp8266CommandCIPCLOSE()
+{
+	esp8266SendATCommand("AT+CIPCLOSE");
+	return esp8266WaitForResponse("OK", 5000);
+}
+
+
+bool esp8266CommandCIPSEND(const char* packet)
+{
+	esp8266ResetUartTxBuffer();
+	sprintf((char*)txBuffer, "AT+CIPSEND=%d\r\n", strlen(packet));
+	esp8266SendATCommand((char*)txBuffer);
+	esp8266Delay(100);
+	esp8266SendATCommand(packet);
+	return esp8266WaitForResponse("OK", 8000);
+}
+
+//
+//interrupt handlers
+//
 
 // Uart5 interrupt handler
 void Esp8266Uart5IntHandler(void)
@@ -234,7 +390,6 @@ void Esp8266Uart5IntHandler(void)
 	// Get the interrrupt status.
 	status = UARTIntStatus(UART5_BASE, true);
 	UARTIntClear(UART5_BASE, status);
-	esp8266ResetUartRxBuffer();
 	//loop through all data in the fifo
 	while (UARTCharsAvail(UART5_BASE))
 	{
@@ -247,7 +402,6 @@ void Esp8266Uart5IntHandler(void)
 		{
 			rxBuffer[rxBufferCounter++ % RX_BUF_SIZE] = recvChr;
 		}
-		//debugConsolePrintf("%c", UARTCharGetNonBlocking(UART5_BASE));
 	}
 	rxDataAvailable = true;
 }

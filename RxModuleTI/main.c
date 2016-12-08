@@ -1106,10 +1106,7 @@ int main(void) {
 	//do touch screen calibration if needed
 	performTouchScreenCalibration(&g_sContext);
 
-	if(esp8266CommandAT())
-	{
-		debugConsolePrintf("AT succesfully sent\n\r");
-	}
+
 	while (1) {
 
         handleMovement();

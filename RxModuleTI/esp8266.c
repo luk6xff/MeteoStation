@@ -140,26 +140,31 @@ void esp8266Init()
 	esp8266UartSetup();
 	esp8266TimerInit();
 
+	esp8266SendATCommand("AT+RESTORE");
+	esp8266WaitForResponse("OK", 9000);
+#if 1
 	if(esp8266CommandRST())
 	{
 		ESP8266_DEBUG("esp8266CommandRST succesfully sent\n\r");
 	}
+
+	//esp8266SendATCommand("AT+CIPSTA_DEF=\"192.168.0.130\",\"192.168.0.1\",\"255.255.255.0\"");
+	//esp8266WaitForResponse("OK", 6000);
 
 	if(esp8266CommandCWMODE(ESP8266_MODE_CLIENT))
 	{
 		ESP8266_DEBUG("esp8266CommandCWMODE ESP8266_MODE_CLIENT succesfully set \n\r");
 	}
 
-	esp8266SendATCommand("AT+CWDHCP=1,1");
-	esp8266WaitForResponse("OK", 9000);
+	//esp8266SendATCommand("AT+CWDHCP=1,1");
+	//esp8266WaitForResponse("OK", 9000);
 
 	if(esp8266CommandGMR())
 	{
 		ESP8266_DEBUG("esp8266CommandGMR: \n\r");
 	}
-
+#endif
 	if(esp8266CommandCWJAP("INTEHNET", "Faza939290"))
-	//if(esp8266CommandCWJAP("LUHuawei", "bed986ae"))
 	{
 		ESP8266_DEBUG("esp8266CommandCWJAP sent ok\n\r");
 	}
@@ -167,7 +172,7 @@ void esp8266Init()
 	{
 		ESP8266_DEBUG("esp8266CommandCWJAP -- connect to AP failed");
 	}
-#if 0
+#if 1
 	if(esp8266CommandCWLAP())
 	{
 		ESP8266_DEBUG("esp8266CommandCWLAP sent ok\n\r");
@@ -282,7 +287,7 @@ static void esp8266UartSend(const char* dataBuffer)
 	while (UARTBusy(UART5_BASE));
 	while (*dataBuffer != '\0')
 	{
-		UARTCharPutNonBlocking(UART5_BASE, *dataBuffer++);
+		UARTCharPut(UART5_BASE, *dataBuffer++);
 	}
 }
 
@@ -355,9 +360,9 @@ bool esp8266CommandCWLAP()
 bool esp8266CommandCWJAP(const char* ssid, const char* pass)
 {
 	esp8266ResetUartTxBuffer();
-	sprintf((char*)txBuffer, "AT+CWJAP=\"%s\", \"%s\"", ssid, pass);
+	sprintf((char*)txBuffer, "AT+CWJAP=\"%s\",\"%s\"", ssid, pass);
 	esp8266SendATCommand((char*)txBuffer);
-	return esp8266WaitForResponse("OK", 10000);
+	return esp8266WaitForResponse("OK", 15000);
 }
 
 

@@ -27,11 +27,16 @@ bool esp8266CommandAT(void);
 
 
 //
-//@brief restet module
+//@brief reset module
 //@return false-failed, true-success
 //
 bool esp8266CommandRST(void);
 
+//
+//@brief get module version
+//@return false-failed, true-success
+//
+bool esp8266CommandGMR(void);
 
 //
 //@brief sets Wifi mode

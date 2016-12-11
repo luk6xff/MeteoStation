@@ -44,6 +44,16 @@
 #define TX_BUF_SIZE 64
 #define RX_BUF_SIZE 512
 
+//Critical section
+//Enable Disable all interrupts
+#define ESP8266_ENABLE_ALL_INTERRUPTS() IntMasterEnable();
+#define ESP8266_DISABLE_ALL_INTERRUPTS() IntMasterDisable();
+
+//Function prototypes
+static bool esp8266WaitForResponse(const char* resp, uint16_t msTimeout);
+static void esp8266UartSend(const char* dataBuffer);
+static void esp8266SendATCommand(const char* cmd);
+
 //data types
 
 static volatile uint32_t ms_counter= 0;
@@ -110,7 +120,7 @@ static void esp8266TimerInit()
     TimerConfigure(TIMER1_BASE, TIMER_CFG_32_BIT_PER_UP);
     // Set the Timer1A load value to 1ms.
     TimerLoadSet(TIMER1_BASE, TIMER_A, SysCtlClockGet() / 1000); //1 [ms]
-    IntMasterEnable();
+    ESP8266_ENABLE_ALL_INTERRUPTS();
 
     // Configure the Timer1A interrupt for timer timeout.
     TimerIntEnable(TIMER1_BASE, TIMER_TIMA_TIMEOUT);
@@ -137,38 +147,51 @@ void esp8266Init()
 
 	if(esp8266CommandCWMODE(ESP8266_MODE_CLIENT))
 	{
-		ESP8266_DEBUG("esp8266CommandCWMODE ESP8266_MODE_CLIENT succesfully set");
+		ESP8266_DEBUG("esp8266CommandCWMODE ESP8266_MODE_CLIENT succesfully set \n\r");
+	}
+
+	esp8266SendATCommand("AT+CWDHCP=1,1");
+	esp8266WaitForResponse("OK", 9000);
+
+	if(esp8266CommandGMR())
+	{
+		ESP8266_DEBUG("esp8266CommandGMR: \n\r");
+	}
+
+	if(esp8266CommandCWJAP("INTEHNET", "Faza939290"))
+	//if(esp8266CommandCWJAP("LUHuawei", "bed986ae"))
+	{
+		ESP8266_DEBUG("esp8266CommandCWJAP sent ok\n\r");
+	}
+	else
+	{
+		ESP8266_DEBUG("esp8266CommandCWJAP -- connect to AP failed");
 	}
 #if 0
 	if(esp8266CommandCWLAP())
 	{
-		ESP8266_DEBUG("esp8266CommandCWLAP sent ok");
-	}
-#endif
-	if(esp8266CommandCWJAP("INTEHNET", "Faza------"))
-	{
-		ESP8266_DEBUG("esp8266CommandCWJAP sent ok");
+		ESP8266_DEBUG("esp8266CommandCWLAP sent ok\n\r");
 	}
 
 	if(esp8266CommandCIPSTART("http://httpbin.org"))
 	{
-		ESP8266_DEBUG("esp8266CommandCIPSTART sent ok");
+		ESP8266_DEBUG("esp8266CommandCIPSTART sent ok\n\r");
 	}
 
 	if(esp8266CommandCIFSR())
 	{
-		ESP8266_DEBUG("esp8266CommandCIFSR sent ok");
+		ESP8266_DEBUG("esp8266CommandCIFSR sent ok\n\r");
 	}
 
 	if(esp8266CommandCIPSEND("http://httpbin.org/get"))
 	{
-		ESP8266_DEBUG("esp8266CommandCIPSEND sent ok");
+		ESP8266_DEBUG("esp8266CommandCIPSEND sent ok\n\r");
 	}
-
 	if(esp8266CommandCIPCLOSE())
 	{
-		ESP8266_DEBUG("esp8266CommandCIPCLOSE sent ok");
+		ESP8266_DEBUG("esp8266CommandCIPCLOSE sent ok\n\r");
 	}
+#endif
 }
 
 
@@ -265,9 +288,11 @@ static void esp8266UartSend(const char* dataBuffer)
 
 static void esp8266SendATCommand(const char* cmd)
 {
+	ESP8266_DISABLE_ALL_INTERRUPTS();
 	esp8266ResetUartRxBuffer();
 	esp8266UartSend(cmd);
 	esp8266UartSend((const char*)"\r\n"); //CR LF
+	ESP8266_ENABLE_ALL_INTERRUPTS();
 }
 
 
@@ -283,6 +308,13 @@ bool esp8266CommandAT(void)
 bool esp8266CommandRST(void)
 {
 	esp8266SendATCommand("AT+RST");
+	return esp8266WaitForResponse("OK", 2000);
+}
+
+
+bool esp8266CommandGMR(void)
+{
+	esp8266SendATCommand("AT+GMR");
 	return esp8266WaitForResponse("OK", 2000);
 }
 
@@ -323,9 +355,9 @@ bool esp8266CommandCWLAP()
 bool esp8266CommandCWJAP(const char* ssid, const char* pass)
 {
 	esp8266ResetUartTxBuffer();
-	sprintf((char*)txBuffer, "AT+CWJAP=\"%s\",\"%s\"", ssid, pass);
+	sprintf((char*)txBuffer, "AT+CWJAP=\"%s\", \"%s\"", ssid, pass);
 	esp8266SendATCommand((char*)txBuffer);
-	return esp8266WaitForResponse("OK", 12000);
+	return esp8266WaitForResponse("OK", 10000);
 }
 
 

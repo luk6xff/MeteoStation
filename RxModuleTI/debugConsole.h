@@ -8,9 +8,13 @@
 #ifndef DEBUGCONSOLE_H_
 #define DEBUGCONSOLE_H_
 
+#include <stdbool.h>
 
 void debugConsoleInit(void);
 
 void debugConsolePrintf(const char *pcString, ...);
+
+bool debugCommandReceived();
+
 
 #endif /* DEBUGCONSOLE_H_ */

@@ -36,18 +36,22 @@ extern "C"
 {
 #endif
 
+#include "inc/hw_types.h"
+#include "inc/hw_memmap.h"
+#include "inc/hw_ints.h"
 //*****************************************************************************
 //
 // If built for buffered operation, the following labels define the sizes of
 // the transmit and receive buffers respectively.
 //
 //*****************************************************************************
+#define UART_BUFFERED 1
 #ifdef UART_BUFFERED
 #ifndef UART_RX_BUFFER_SIZE
 #define UART_RX_BUFFER_SIZE     128
 #endif
 #ifndef UART_TX_BUFFER_SIZE
-#define UART_TX_BUFFER_SIZE     1024
+#define UART_TX_BUFFER_SIZE     128
 #endif
 #endif
 

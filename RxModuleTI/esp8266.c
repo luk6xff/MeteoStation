@@ -170,7 +170,7 @@ void esp8266Init()
 	}
 	else
 	{
-		ESP8266_DEBUG("esp8266CommandCWJAP -- connect to AP failed");
+		ESP8266_DEBUG("esp8266CommandCWJAP -- connect to AP failed\n\r");
 	}
 #if 1
 	if(esp8266CommandCWLAP())

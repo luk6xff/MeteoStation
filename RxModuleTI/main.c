@@ -221,7 +221,7 @@ static ScreenContainer g_sScreens[SCREEN_NUM_OF_SCREENS] =
         SCREEN_MAIN, SCREEN_CONN_SETTINGS, SCREEN_MAIN, SCREEN_MAIN
     },
     {
-        (tWidget *)&g_panels[0],//&g_sSettingsPanel,
+        (tWidget *)&g_panels[1],//&g_sSettingsPanel,
         SCREEN_MAIN, SCREEN_CONN_SETTINGS, SCREEN_CONN_SETTINGS, SCREEN_CONN_SETTINGS
     },
     {
@@ -564,7 +564,7 @@ RectangularButton(g_connTestButton, g_connContainers+1, 0, 0,
 				  &g_ILI9320, 200, 52, 100, 28,
 				  PB_STYLE_FILL | PB_STYLE_TEXT | PB_STYLE_OUTLINE | PB_STYLE_RELEASE_NOTIFY,
 				  ClrGreen, ClrRed, ClrSilver, ClrWhite, g_psFontCmss14,
-				  "Test conn", 0, 0, 0 ,0 , onConnTest);
+				  "Connect", 0, 0, 0 ,0 , onConnTest);
 
 tContainerWidget g_connContainers[] = {
 		ContainerStruct(WIDGET_ROOT, g_connContainers + 1, g_connCheckBoxes,
@@ -580,6 +580,9 @@ tContainerWidget g_connContainers[] = {
 
 tCanvasWidget g_panels[] =
 {
+	CanvasStruct(WIDGET_ROOT, 0, &g_sMainBackground, &g_ILI9320,
+						BG_MIN_X, BG_MIN_Y, BG_MAX_X - BG_MIN_X, BG_MAX_Y - BG_MIN_Y,
+						CANVAS_STYLE_FILL, ClrBlack, 0, 0, 0, 0, 0, 0),
 	CanvasStruct(WIDGET_ROOT, 0, g_connContainers, &g_ILI9320,
 				BG_MIN_X, BG_MIN_Y, BG_MAX_X - BG_MIN_X, BG_MAX_Y - BG_MIN_Y,
 				CANVAS_STYLE_FILL, ClrBlack, 0, 0, 0, 0, 0, 0),
@@ -610,6 +613,7 @@ void onConnCheckBoxChange(tWidget *widget, uint32_t bSelected)
 
 void onConnTest(tWidget *psWidget)
 {
+
 
 }
 
@@ -714,8 +718,7 @@ static void onKeyEvent(tWidget *psWidget, uint32_t ui32Key, uint32_t ui32Event)
                 //
                 // Save the pixel width of the current string.
                 //
-                g_i32StringWidth = GrStringWidthGet(&g_sContext, g_pcKeyStr,
-                                                    40);
+                g_i32StringWidth = GrStringWidthGet(&g_sContext, g_pcKeyStr, 40);
             }
             break;
         }
@@ -807,8 +810,6 @@ static void onWifiEnable(tWidget *psWidget)
 	}
     drawToggleButton(&sCustomToggle, g_appCtx.wifiEnabled);
    // WidgetPaint((tWidget *)&g_sCustomCity);
-
-
 }
 
 
@@ -1124,6 +1125,7 @@ int main(void) {
 		}
 
 #endif
+		debugCommandReceived();
 	}
 
 }

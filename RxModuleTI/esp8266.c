@@ -140,9 +140,10 @@ void esp8266Init()
 	esp8266UartSetup();
 	esp8266TimerInit();
 
+#if 0
 	esp8266SendATCommand("AT+RESTORE");
 	esp8266WaitForResponse("OK", 9000);
-#if 1
+
 	if(esp8266CommandRST())
 	{
 		ESP8266_DEBUG("esp8266CommandRST succesfully sent\n\r");
@@ -163,7 +164,7 @@ void esp8266Init()
 	{
 		ESP8266_DEBUG("esp8266CommandGMR: \n\r");
 	}
-#endif
+
 	if(esp8266CommandCWJAP("INTEHNET", "Faza939290"))
 	{
 		ESP8266_DEBUG("esp8266CommandCWJAP sent ok\n\r");
@@ -172,7 +173,7 @@ void esp8266Init()
 	{
 		ESP8266_DEBUG("esp8266CommandCWJAP -- connect to AP failed\n\r");
 	}
-#if 1
+
 	if(esp8266CommandCWLAP())
 	{
 		ESP8266_DEBUG("esp8266CommandCWLAP sent ok\n\r");

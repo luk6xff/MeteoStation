@@ -1419,6 +1419,45 @@ UARTPeek(unsigned char ucChar)
 }
 #endif
 
+
+//*****************************************************************************
+//
+//! Peeks whole receive buffer.
+//!
+//! \param pcBuf is the buffer where data from RX buffer will be copied into.
+//!
+//! This function, available only when the module is built to operate in
+//! buffered mode using \b UART_BUFFERED, may be used to peek a copy
+//!	of the whole receive buffer
+//! \return Returns length of chars in the receive buffer
+//
+//*****************************************************************************
+#if defined(UART_BUFFERED) || defined(DOXYGEN)
+int UARTPeekBufferRX(char *pcBuf)
+{
+    int iCount;
+    int iAvail;
+    unsigned long ulReadIndex;
+
+    //
+    // How many characters are there in the receive buffer?
+    //
+    iAvail = (int)RX_BUFFER_USED;
+    ulReadIndex = g_ulUARTRxReadIndex;
+
+    //
+    // Check all the unread characters looking for the one passed.
+    //
+    for(iCount = 0; iCount < iAvail; iCount++)
+    {
+        pcBuf[iCount] = g_pcUARTRxBuffer[ulReadIndex];
+        ADVANCE_RX_BUFFER_INDEX(ulReadIndex);
+    }
+    return iAvail;
+}
+#endif
+
+
 //*****************************************************************************
 //
 //! Flushes the receive buffer.

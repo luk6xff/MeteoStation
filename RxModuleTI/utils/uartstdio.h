@@ -70,6 +70,7 @@ extern void UARTprintf(const char *pcString, ...);
 extern int UARTwrite(const char *pcBuf, unsigned long ulLen);
 #ifdef UART_BUFFERED
 extern int UARTPeek(unsigned char ucChar);
+extern int UARTPeekBufferRX(char *pcBuf);
 extern void UARTFlushTx(tBoolean bDiscard);
 extern void UARTFlushRx(void);
 extern int UARTRxBytesAvail(void);

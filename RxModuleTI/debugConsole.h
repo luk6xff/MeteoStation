@@ -14,7 +14,7 @@ void debugConsoleInit(void);
 
 void debugConsolePrintf(const char *pcString, ...);
 
-bool debugCommandReceived();
+void debugCommandReceived();
 
 
 #endif /* DEBUGCONSOLE_H_ */

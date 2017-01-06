@@ -139,65 +139,6 @@ void esp8266Init()
 {
 	esp8266UartSetup();
 	esp8266TimerInit();
-
-#if 0
-	esp8266SendATCommand("AT+RESTORE");
-	esp8266WaitForResponse("OK", 9000);
-
-	if(esp8266CommandRST())
-	{
-		ESP8266_DEBUG("esp8266CommandRST succesfully sent\n\r");
-	}
-
-	//esp8266SendATCommand("AT+CIPSTA_DEF=\"192.168.0.130\",\"192.168.0.1\",\"255.255.255.0\"");
-	//esp8266WaitForResponse("OK", 6000);
-
-	if(esp8266CommandCWMODE(ESP8266_MODE_CLIENT))
-	{
-		ESP8266_DEBUG("esp8266CommandCWMODE ESP8266_MODE_CLIENT succesfully set \n\r");
-	}
-
-	//esp8266SendATCommand("AT+CWDHCP=1,1");
-	//esp8266WaitForResponse("OK", 9000);
-
-	if(esp8266CommandGMR())
-	{
-		ESP8266_DEBUG("esp8266CommandGMR: \n\r");
-	}
-
-	if(esp8266CommandCWJAP("INTEHNET", "Faza939290"))
-	{
-		ESP8266_DEBUG("esp8266CommandCWJAP sent ok\n\r");
-	}
-	else
-	{
-		ESP8266_DEBUG("esp8266CommandCWJAP -- connect to AP failed\n\r");
-	}
-
-	if(esp8266CommandCWLAP())
-	{
-		ESP8266_DEBUG("esp8266CommandCWLAP sent ok\n\r");
-	}
-
-	if(esp8266CommandCIPSTART("http://httpbin.org"))
-	{
-		ESP8266_DEBUG("esp8266CommandCIPSTART sent ok\n\r");
-	}
-
-	if(esp8266CommandCIFSR())
-	{
-		ESP8266_DEBUG("esp8266CommandCIFSR sent ok\n\r");
-	}
-
-	if(esp8266CommandCIPSEND("http://httpbin.org/get"))
-	{
-		ESP8266_DEBUG("esp8266CommandCIPSEND sent ok\n\r");
-	}
-	if(esp8266CommandCIPCLOSE())
-	{
-		ESP8266_DEBUG("esp8266CommandCIPCLOSE sent ok\n\r");
-	}
-#endif
 }
 
 
@@ -303,6 +244,11 @@ static void esp8266SendATCommand(const char* cmd)
 
 
 //AT Commands implementation
+bool esp8266CommandRAW(const char* rawCmd, const char*respStr)
+{
+	esp8266SendATCommand(rawCmd);
+	return esp8266WaitForResponse(respStr, 8000);
+}
 
 bool esp8266CommandAT(void)
 {

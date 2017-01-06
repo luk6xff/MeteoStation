@@ -20,6 +20,13 @@ typedef enum
 void esp8266Init();
 
 //
+//@brief send raw command
+//@param  rawCmd - raw command to be sent
+//@param  respStr - string sent by esp8266 on response of rawCmd
+//@return false-failed, true-success
+//
+bool esp8266CommandRAW(const char* rawCmd, const char*respStr);
+//
 //@brief send test command
 //@return false-failed, true-success
 //

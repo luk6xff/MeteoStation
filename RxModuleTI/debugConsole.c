@@ -90,7 +90,7 @@ const DebugCmdObject debugCommands[DBG_CMDS_NUM] = {
 static bool debugCommandDispatcherESP8266(const char* cmdAttrs, int cmdAttrsLen)
 {
 	const char* cmds[] = {
-			"RAW"
+			"RAW",
 			"AT",
 			"RST",
 			"GMR",
@@ -409,7 +409,7 @@ static bool debugCommandDispatcher(const char* msg, int msgLen)
 			{
 				if(strncmp(cmd, debugCommands[i].cmd, cmdLength) == 0)
 				{
-					int cmdAttrsLen = delimIdx - headerIdx - headerLength - cmdLength - delimLength + endDelimLength;
+					int cmdAttrsLen = delimIdx - headerIdx - headerLength - cmdLength - delimLength;
 					ret = (*debugCommands[i].cmdDispatcher)(msg + (headerIdx + headerLength + cmdLength + delimLength), cmdAttrsLen);
 				}
 			}

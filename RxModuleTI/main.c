@@ -70,14 +70,17 @@ typedef enum
 //*****************************************************************************
 typedef enum
 {
-	CONN_STATE_NOT_CONECTED,
-	CONN_STATE_NOT_CONNECTED_TO_ESP8266,
-	CONN_STATE_CONNECTED_TO_ESP8266,
-	CONN_STATE_NOT_CONNECTED_TO_SENSOR,
-	CONN_STATE_CONNECTED_TO_SENSOR,
-	CONN_STATE_WAIT_DATA_FROM_ESP8266,
-	CONN_STATE_WAIT_DATA_FROM_SENSOR
-}ConnectionState;
+	WIFI_NOT_CONNECTED,
+	WIFI_CONNECTED,
+	WIFI_WAIT_FOR_DATA,
+}WifiConnectionState;
+
+typedef enum
+{
+	SENSOR_NOT_CONNECTED,
+	SENSOR_CONNECTED,
+	SENSOR_WAIT_FOR_DATA,
+}SensorConnectionState;
 
 //*****************************************************************************
 //
@@ -107,12 +110,12 @@ typedef struct
 
 //*****************************************************************************
 //
-// Forward reference to various widget structures.
+// Forward reference to all used widget structures.
 //
 //*****************************************************************************
-extern tCanvasWidget g_sMainBackground;
-extern tCanvasWidget g_sSettingsPanel;
+extern tCanvasWidget g_screenMainBackground;
 extern tCanvasWidget g_sKeyboardBackground;
+extern tCanvasWidget g_settingsPanel;
 extern tPushButtonWidget g_sPushBtn;
 
 extern tCanvasWidget g_panels[];
@@ -196,7 +199,12 @@ typedef struct
 typedef struct
 {
 	bool wifiEnabled;
+	bool sensorEnabled;
+	bool powerSaveModeEnabled;
 	bool swipeEnabled;
+	WifiConnectionState wifiState;
+	SensorConnectionState sensorState;
+	Screens currentScreen;
 	char* currentCity;
 
 }AppContext;
@@ -207,21 +215,19 @@ typedef struct
 // Application globals
 //
 //*****************************************************************************
-static tContext g_sContext;
+static tContext g_context;
 static volatile State g_mainState = STATE_RESET;
-static volatile ConnectionState g_connState = CONN_STATE_NOT_CONECTED;
-static volatile Screens g_currentScreen = SCREEN_MAIN;
 static volatile Swipe g_swipe;
-static volatile AppContext g_appCtx = {false, true, (void*)0};
+static volatile AppContext g_appCtx = {false, false, false, true, WIFI_NOT_CONNECTED, SENSOR_NOT_CONNECTED, SCREEN_MAIN, (void*)0};
 
-static ScreenContainer g_sScreens[SCREEN_NUM_OF_SCREENS] =
+static ScreenContainer g_screens[SCREEN_NUM_OF_SCREENS] =
 {
     {
-        (tWidget *)&g_sMainBackground,
+        (tWidget *)&g_screenMainBackground,
         SCREEN_MAIN, SCREEN_CONN_SETTINGS, SCREEN_MAIN, SCREEN_MAIN
     },
     {
-        (tWidget *)&g_panels[1],//&g_sSettingsPanel,
+        (tWidget *)&g_settingsPanel,
         SCREEN_MAIN, SCREEN_CONN_SETTINGS, SCREEN_CONN_SETTINGS, SCREEN_CONN_SETTINGS
     },
     {
@@ -242,6 +248,14 @@ static void onWifiEnable(tWidget *psWidget);
 static void drawToggleButton(const tButtonToggle *psButton, bool enable);
 static void onCityEntry(tWidget *psWidget);
 static int32_t touchScreenCallback(uint32_t msg, int32_t x, int32_t y);
+
+//*****************************************************************************
+//
+// Setters for App Context params
+//
+//*****************************************************************************
+static void updateWifiConnectionStatus(WifiConnectionState state);
+static void updateSensorConnectionStatus(SensorConnectionState state);
 
 // Clears the main screens background.
 static void clearBackground(tContext *psContext)
@@ -308,65 +322,43 @@ static bool performTouchScreenCalibration(tContext* ctx)
 }
 
 
-//*****************************************************************************
-//
-// The canvas widget acting as the main widget of the device
-//
-//*****************************************************************************
-/*
-Canvas(g_Background, WIDGET_ROOT, 0, &g_PushBtn,
-	   &g_ILI9320, 10, 25, 300, (240 - 25 -10),
-       CANVAS_STYLE_FILL, ClrAzure, 0, 0, 0, 0, 0, 0);
-
-RectangularButton(g_PushBtn, &g_Background, 0, 0,
-		 	 	  &g_ILI9320, 60, 60, 200, 40,
-                  (PB_STYLE_OUTLINE | PB_STYLE_TEXT_OPAQUE | PB_STYLE_TEXT |
-                  PB_STYLE_FILL | PB_STYLE_PRESSED),
-                  ClrDarkBlue, ClrBlue, ClrWhite, ClrWhite,
-                  g_psFontCm20b, "Show Welcome", 0, 0, 0, 0, OnButtonPress);
-
-Canvas(g_Hello, &g_PushBtn, 0, 0,
-	   &g_ILI9320, 10, 150, 300, 40,
-       (CANVAS_STYLE_FILL | CANVAS_STYLE_TEXT),
-       ClrBlack, 0, ClrWhite, g_psFontCm20, "Hello World!", 0, 0);
-*/
 // Main page widgets
 char g_pcTempHighLow[40]="--/--C";
-Canvas(g_sTempHighLow, &g_sMainBackground, 0, 0,
+Canvas(g_sTempHighLow, &g_screenMainBackground, 0, 0,
        &g_ILI9320, 120, 195, 70, 30,
        CANVAS_STYLE_FILL | CANVAS_STYLE_TEXT | CANVAS_STYLE_TEXT_LEFT |
        CANVAS_STYLE_TEXT_TOP | CANVAS_STYLE_TEXT_OPAQUE, BG_COLOR_MAIN,
        ClrWhite, ClrWhite, g_psFontCmss20, g_pcTempHighLow, 0, 0);
 
 char g_pcTemp[40]="--C";
-Canvas(g_sTemp, &g_sMainBackground, &g_sTempHighLow, 0,
+Canvas(g_sTemp, &g_screenMainBackground, &g_sTempHighLow, 0,
        &g_ILI9320, 20, 175, 100, 50,
        CANVAS_STYLE_FILL | CANVAS_STYLE_TEXT | CANVAS_STYLE_TEXT_RIGHT |
        CANVAS_STYLE_TEXT_TOP | CANVAS_STYLE_TEXT_OPAQUE, BG_COLOR_MAIN,
        ClrWhite, ClrWhite, g_psFontCmss48, g_pcTemp, 0, 0);
 
 char g_pcHumidity[40]="Cisnienie: ----hPa";
-Canvas(g_sHumidity, &g_sMainBackground, &g_sTemp, 0,
+Canvas(g_sHumidity, &g_screenMainBackground, &g_sTemp, 0,
        &g_ILI9320, 20, 140, 160, 25,
        CANVAS_STYLE_FILL | CANVAS_STYLE_TEXT | CANVAS_STYLE_TEXT_LEFT |
        CANVAS_STYLE_TEXT_OPAQUE, BG_COLOR_MAIN, ClrWhite, ClrWhite,
        g_psFontCmss20, g_pcHumidity, 0, 0);
 
 char g_pcStatus[40];
-Canvas(g_sStatus, &g_sMainBackground, &g_sHumidity, 0,
+Canvas(g_sStatus, &g_screenMainBackground, &g_sHumidity, 0,
        &g_ILI9320, 20, 110, 160, 25,
        CANVAS_STYLE_FILL | CANVAS_STYLE_TEXT | CANVAS_STYLE_TEXT_LEFT |
        CANVAS_STYLE_TEXT_OPAQUE, BG_COLOR_MAIN, ClrWhite, ClrWhite,
        g_psFontCmss20, g_pcStatus, 0, 0);
 
 char g_pcCity[40];
-Canvas(g_sCityName, &g_sMainBackground, &g_sStatus, 0,
+Canvas(g_sCityName, &g_screenMainBackground, &g_sStatus, 0,
        &g_ILI9320, 20, 40, 240, 25,
        CANVAS_STYLE_FILL | CANVAS_STYLE_TEXT | CANVAS_STYLE_TEXT_LEFT |
        CANVAS_STYLE_TEXT_OPAQUE, BG_COLOR_MAIN, ClrWhite, ClrWhite,
        g_psFontCmss20, g_pcCity, 0, 0);
 
-Canvas(g_sMainBackground, WIDGET_ROOT, 0, &g_sCityName,
+Canvas(g_screenMainBackground, WIDGET_ROOT, 0, &g_sCityName,
        &g_ILI9320, BG_MIN_X, BG_MIN_Y,
        BG_MAX_X - BG_MIN_X,
        BG_MAX_Y - BG_MIN_Y, CANVAS_STYLE_FILL,
@@ -524,34 +516,34 @@ Canvas(g_sSettingsPanel, WIDGET_ROOT, 0, &g_sIPAddr,
        */
 //TODO
 void onConnCheckBoxChange(tWidget *psWidget, uint32_t bSelected);
-void onConnTest(tWidget *psWidget);
-tContainerWidget g_connContainers[];
+void onConnToAP(tWidget *psWidget);
+tContainerWidget g_panelConnContainers[];
 tPushButtonWidget g_connTestButton;
 tCanvasWidget g_connCheckBoxIndicators[] =
 {
-    CanvasStruct(&g_connContainers, g_connCheckBoxIndicators + 1, 0,
+    CanvasStruct(&g_panelConnContainers, g_connCheckBoxIndicators + 1, 0,
                  &g_ILI9320, 160, 52, 20, 20,
                  CANVAS_STYLE_IMG, 0, 0, 0, 0, 0, g_pui8LightOff, 0),
-    CanvasStruct(&g_connContainers, g_connCheckBoxIndicators + 2, 0,
+    CanvasStruct(&g_panelConnContainers, g_connCheckBoxIndicators + 2, 0,
                  &g_ILI9320, 160, 92, 20, 20,
                  CANVAS_STYLE_IMG, 0, 0, 0, 0, 0, g_pui8LightOff, 0),
-    CanvasStruct(&g_connContainers, 0, 0,
+    CanvasStruct(&g_panelConnContainers, 0, 0,
                  &g_ILI9320, 160, 132, 20, 20,
                  CANVAS_STYLE_IMG, 0, 0, 0, 0, 0, g_pui8LightOff, 0),
 };
 tCheckBoxWidget g_connCheckBoxes[] =
 {
-		CheckBoxStruct(g_connContainers, g_connCheckBoxes + 1, 0,
+		CheckBoxStruct(g_panelConnContainers, g_connCheckBoxes + 1, 0,
                       &g_ILI9320, 10, 40, 110, 45,
 					  CB_STYLE_FILL | CB_STYLE_TEXT, 20,
 					  0, ClrSilver, ClrSilver, g_psFontCm16,
                       "WIFI", 0, onConnCheckBoxChange),
-		CheckBoxStruct(g_connContainers, g_connCheckBoxes + 2, 0,
+		CheckBoxStruct(g_panelConnContainers, g_connCheckBoxes + 2, 0,
                       &g_ILI9320, 10, 80, 110, 45,
 					  CB_STYLE_FILL | CB_STYLE_TEXT, 20,
 					  0, ClrSilver, ClrSilver, g_psFontCm16,
                       "Sensors", 0, onConnCheckBoxChange),
-		CheckBoxStruct(g_connContainers, g_connCheckBoxIndicators, 0,
+		CheckBoxStruct(g_panelConnContainers, g_connCheckBoxIndicators, 0,
                       &g_ILI9320, 10, 120, 120, 45,
 					  CB_STYLE_FILL | CB_STYLE_TEXT, 20,
 					  0, ClrSilver, ClrSilver, g_psFontCm16,
@@ -560,34 +552,27 @@ tCheckBoxWidget g_connCheckBoxes[] =
 
 #define NUM_CONN_CHECKBOXES  (sizeof(g_connCheckBoxes) / sizeof(g_connCheckBoxes[0]))
 
-RectangularButton(g_connTestButton, g_connContainers+1, 0, 0,
+RectangularButton(g_connToApButton, g_panelConnContainers+1, 0, 0,
 				  &g_ILI9320, 200, 52, 100, 28,
 				  PB_STYLE_FILL | PB_STYLE_TEXT | PB_STYLE_OUTLINE | PB_STYLE_RELEASE_NOTIFY,
 				  ClrGreen, ClrRed, ClrSilver, ClrWhite, g_psFontCmss14,
-				  "Connect", 0, 0, 0 ,0 , onConnTest);
+				  "Connect", 0, 0, 0 ,0 , onConnToAP);
 
-tContainerWidget g_connContainers[] = {
-		ContainerStruct(WIDGET_ROOT, g_connContainers + 1, g_connCheckBoxes,
+tContainerWidget g_panelConnContainers[] = {
+		ContainerStruct(WIDGET_ROOT, g_panelConnContainers + 1, g_connCheckBoxes,
 						&g_ILI9320, 8, 24, 180, 148,
 						CTR_STYLE_OUTLINE | CTR_STYLE_TEXT, 0, ClrGray, ClrSilver,
 						g_psFontCm16, "Connection Setup"),
-		ContainerStruct(WIDGET_ROOT, 0, &g_connTestButton,
+		ContainerStruct(WIDGET_ROOT, 0, &g_connToApButton,
 						&g_ILI9320, 188, 24, 136-8-4, 148,
 						CTR_STYLE_OUTLINE | CTR_STYLE_TEXT, 0, ClrGray, ClrSilver,
-						g_psFontCm16, "Conn Test"),
+						g_psFontCm16, "Connect to AP")
 };
 
-
-tCanvasWidget g_panels[] =
-{
-	CanvasStruct(WIDGET_ROOT, 0, &g_sMainBackground, &g_ILI9320,
-						BG_MIN_X, BG_MIN_Y, BG_MAX_X - BG_MIN_X, BG_MAX_Y - BG_MIN_Y,
-						CANVAS_STYLE_FILL, ClrBlack, 0, 0, 0, 0, 0, 0),
-	CanvasStruct(WIDGET_ROOT, 0, g_connContainers, &g_ILI9320,
-				BG_MIN_X, BG_MIN_Y, BG_MAX_X - BG_MIN_X, BG_MAX_Y - BG_MIN_Y,
-				CANVAS_STYLE_FILL, ClrBlack, 0, 0, 0, 0, 0, 0),
-};
-
+tCanvasWidget g_settingsPanel =
+		CanvasStruct(WIDGET_ROOT, 0, g_panelConnContainers, &g_ILI9320,
+		BG_MIN_X, BG_MIN_Y, BG_MAX_X - BG_MIN_X, BG_MAX_Y - BG_MIN_Y,
+		CANVAS_STYLE_FILL, ClrBlack, 0, 0, 0, 0, 0, 0);
 
 void onConnCheckBoxChange(tWidget *widget, uint32_t bSelected)
 {
@@ -608,15 +593,56 @@ void onConnCheckBoxChange(tWidget *widget, uint32_t bSelected)
     CanvasImageSet(g_connCheckBoxIndicators + idx,
                    bSelected ? g_pui8LightOn : g_pui8LightOff);
     WidgetPaint((tWidget *)(g_connCheckBoxIndicators + idx));
-
 }
 
-void onConnTest(tWidget *psWidget)
+void onConnToAP(tWidget *psWidget)
+{
+	WifiConnectionState state = g_appCtx.wifiState;
+	//esp8266CommandCIPSTART();
+	//updateWifiConnectionStatus(WifiConnectionState state);
+	updateWifiConnectionStatus(WIFI_NOT_CONNECTED); //TODO
+}
+
+static void updateWifiConnectionStatus(WifiConnectionState state)
+{
+	if(state == g_appCtx.wifiState)
+	{
+		return;
+	}
+	switch (state) {
+		case WIFI_NOT_CONNECTED:
+			if(g_appCtx.currentScreen == SCREEN_CONN_SETTINGS)
+			{
+			    GrContextFontSet(&g_context, &g_sFontCm16);
+			    GrContextForegroundSet(&g_context, ClrWhite);
+			    GrStringDrawCentered(&g_context, "NOT_CONNECTED", -1, 200, 95, true);
+			}
+			break;
+		case WIFI_CONNECTED:
+			if(g_appCtx.currentScreen == SCREEN_CONN_SETTINGS)
+			{
+			    GrContextFontSet(&g_context, &g_sFontCm16);
+			    GrContextForegroundSet(&g_context, ClrWhite);
+			    GrStringDrawCentered(&g_context, "CONNECTED", -1, 200, 95, true);
+			}
+			break;
+		case WIFI_WAIT_FOR_DATA:
+			if(g_appCtx.currentScreen == SCREEN_CONN_SETTINGS)
+			{
+			    GrContextFontSet(&g_context, &g_sFontCm16);
+			    GrContextForegroundSet(&g_context, ClrWhite);
+			    GrStringDrawCentered(&g_context, "WAIT_FOR_DATA", -1, 200, 95, true);
+			}
+			break;
+		default:
+			break;
+	}
+	g_appCtx.wifiState = state;
+}
+static void updateSensorConnectionStatus(SensorConnectionState state)
 {
 
-
 }
-
 
 //*****************************************************************************
 //
@@ -633,16 +659,16 @@ static void drawToggleButton(const tButtonToggle *psButton, bool enable)
     //
     sRect = psButton->sRectButton;
 
-    GrContextForegroundSet(&g_sContext, ClrLightGrey);
-    GrRectFill(&g_sContext, &psButton->sRectContainer);
+    GrContextForegroundSet(&g_context, ClrLightGrey);
+    GrRectFill(&g_context, &psButton->sRectContainer);
 
     //
     // Copy the data out of the bounds of the button.
     //
     sRect = psButton->sRectButton;
 
-    GrContextForegroundSet(&g_sContext, ClrDarkGray);
-    GrRectFill(&g_sContext, &psButton->sRectButton);
+    GrContextForegroundSet(&g_context, ClrDarkGray);
+    GrRectFill(&g_context, &psButton->sRectButton);
 
     if(enable)
     {
@@ -658,30 +684,30 @@ static void drawToggleButton(const tButtonToggle *psButton, bool enable)
         sRect.i16XMax -= 2;
         sRect.i16YMax -= 2;
     }
-    GrContextForegroundSet(&g_sContext, ClrLightGrey);
-    GrRectFill(&g_sContext, &sRect);
+    GrContextForegroundSet(&g_context, ClrLightGrey);
+    GrRectFill(&g_context, &sRect);
 
-    GrContextFontSet(&g_sContext, &g_sFontCm16);
-    GrContextForegroundSet(&g_sContext, ClrBlack);
-    GrContextBackgroundSet(&g_sContext, ClrLightGrey);
+    GrContextFontSet(&g_context, &g_sFontCm16);
+    GrContextForegroundSet(&g_context, ClrBlack);
+    GrContextBackgroundSet(&g_context, ClrLightGrey);
 
     i16X = sRect.i16XMin + ((sRect.i16XMax - sRect.i16XMin) / 2);
     i16Y = sRect.i16YMin + ((sRect.i16YMax - sRect.i16YMin) / 2);
 
     if(enable)
     {
-        GrStringDrawCentered(&g_sContext, psButton->pcOn, -1, i16X, i16Y,
+        GrStringDrawCentered(&g_context, psButton->pcOn, -1, i16X, i16Y,
                              true);
     }
     else
     {
-        GrStringDrawCentered(&g_sContext, psButton->pcOff, -1, i16X, i16Y,
+        GrStringDrawCentered(&g_context, psButton->pcOff, -1, i16X, i16Y,
                              true);
     }
 
     if(psButton->pcLabel)
     {
-        GrStringDraw(&g_sContext, psButton->pcLabel, -1,
+        GrStringDraw(&g_context, psButton->pcLabel, -1,
                      psButton->sRectButton.i16XMax + 2,
                      psButton->sRectButton.i16YMin + 6,
                      true);
@@ -718,7 +744,7 @@ static void onKeyEvent(tWidget *psWidget, uint32_t ui32Key, uint32_t ui32Event)
                 //
                 // Save the pixel width of the current string.
                 //
-                g_i32StringWidth = GrStringWidthGet(&g_sContext, g_pcKeyStr, 40);
+                g_i32StringWidth = GrStringWidthGet(&g_context, g_pcKeyStr, 40);
             }
             break;
         }
@@ -733,30 +759,30 @@ static void onKeyEvent(tWidget *psWidget, uint32_t ui32Key, uint32_t ui32Event)
                 //
                 // Get rid of the keyboard widget.
                 //
-                WidgetRemove(g_sScreens[g_currentScreen].widget);
+                WidgetRemove(g_screens[g_appCtx.currentScreen].widget);
 
                 //
                 // Switch back to the previous screen and add its widget back.
                 //
-                g_currentScreen = SCREEN_CONN_SETTINGS;
-                WidgetAdd(WIDGET_ROOT, g_sScreens[g_currentScreen].widget);
+                g_appCtx.currentScreen = SCREEN_CONN_SETTINGS;
+                WidgetAdd(WIDGET_ROOT, g_screens[g_appCtx.currentScreen].widget);
 
 
                 //
                 // If returning to the main screen then re-draw the frame to
                 // indicate the main screen.
                 //
-                if(g_currentScreen  == SCREEN_MAIN)
+                if(g_appCtx.currentScreen  == SCREEN_MAIN)
                 {
-                    WidgetPaint(g_sScreens[g_currentScreen].widget);
+                    WidgetPaint(g_screens[g_appCtx.currentScreen].widget);
                 }
                 else
                 {
                     //
                     // Returning to the settings screen.
                     //
-                    //FrameDraw(&g_g_sContext, "Settings");
-                    WidgetPaint(g_sScreens[g_currentScreen].widget);
+                    //FrameDraw(&g_g_context, "Settings");
+                    WidgetPaint(g_screens[g_appCtx.currentScreen].widget);
                     //AnimateButtons(true);
                     WidgetMessageQueueProcess();
 
@@ -787,7 +813,7 @@ static void onKeyEvent(tWidget *psWidget, uint32_t ui32Key, uint32_t ui32Event)
                 //
                 // Save the pixel width of the current string.
                 //
-                g_i32StringWidth = GrStringWidthGet(&g_sContext, g_pcKeyStr, 40);
+                g_i32StringWidth = GrStringWidthGet(&g_context, g_pcKeyStr, 40);
             }
             break;
         }
@@ -845,24 +871,25 @@ static void onCityEntry(tWidget *psWidget)
         // Remove the current widget so that it is not used while keyboard
         // is active.
         //
-        WidgetRemove(g_sScreens[g_currentScreen].widget);
+        WidgetRemove(g_screens[g_appCtx.currentScreen].widget);
 
         //
         // Activate the keyboard.
         //
-        g_currentScreen = SCREEN_KEYBOARD;
-        WidgetAdd(WIDGET_ROOT, g_sScreens[g_currentScreen].widget);
+        g_appCtx.currentScreen = SCREEN_KEYBOARD;
+        WidgetAdd(WIDGET_ROOT, g_screens[g_appCtx.currentScreen].widget);
 
         //
         // Clear the main screen area with the settings background color.
         //
-        GrContextForegroundSet(&g_sContext, BG_COLOR_SETTINGS);
-        clearBackground(&g_sContext);
+        GrContextForegroundSet(&g_context, BG_COLOR_SETTINGS);
+        clearBackground(&g_context);
 
-        GrContextFontSet(&g_sContext, g_psFontCmss24);
+        GrContextFontSet(&g_context, g_psFontCmss24);
         WidgetPaint((tWidget *)&g_sKeyboardBackground);
     }
 }
+
 
 //*****************************************************************************
 //
@@ -987,7 +1014,7 @@ static int32_t touchScreenCallback(uint32_t msg, int32_t x, int32_t y)
 
 static void handleMovement(void)
 {
-	uint16_t newScreenIdx = g_currentScreen;
+	uint16_t newScreenIdx = g_appCtx.currentScreen;
 	if(g_appCtx.swipeEnabled)
 	{
 		if(g_swipe.swipeDirecttion != SWIPE_NONE )
@@ -995,27 +1022,27 @@ static void handleMovement(void)
 
 			if(g_swipe.swipeDirecttion == SWIPE_RIGHT)
 			{
-			    newScreenIdx = g_sScreens[g_currentScreen].right;
+			    newScreenIdx = g_screens[g_appCtx.currentScreen].right;
 			}
 			else if(g_swipe.swipeDirecttion == SWIPE_LEFT)
 			{
-			    newScreenIdx = g_sScreens[g_currentScreen].left;
+			    newScreenIdx = g_screens[g_appCtx.currentScreen].left;
 			}
 			else if(g_swipe.swipeDirecttion == SWIPE_UP)
 			{
-			    newScreenIdx = g_sScreens[g_currentScreen].up;
+			    newScreenIdx = g_screens[g_appCtx.currentScreen].up;
 			}
 			else if(g_swipe.swipeDirecttion == SWIPE_DOWN)
 			{
-			    newScreenIdx = g_sScreens[g_currentScreen].down;
+			    newScreenIdx = g_screens[g_appCtx.currentScreen].down;
 			}
 		}
-		if(newScreenIdx != g_currentScreen)
+		if(newScreenIdx != g_appCtx.currentScreen)
 		{
-            WidgetRemove(g_sScreens[g_currentScreen].widget);
-            WidgetAdd(WIDGET_ROOT, g_sScreens[newScreenIdx].widget);
+            WidgetRemove(g_screens[g_appCtx.currentScreen].widget);
+            WidgetAdd(WIDGET_ROOT, g_screens[newScreenIdx].widget);
             WidgetPaint(WIDGET_ROOT);
-            g_currentScreen = newScreenIdx;
+            g_appCtx.currentScreen = newScreenIdx;
 
 		}
 	}
@@ -1059,35 +1086,35 @@ int main(void) {
 
 
     tRectangle sRect;
-    GrContextInit(&g_sContext, &g_ILI9320);
-    //FrameDraw(&g_sContext, "hello-widget");
+    GrContextInit(&g_context, &g_ILI9320);
+    //FrameDraw(&g_context, "hello-widget");
 #if 1
     //
     // Fill the top 24 rows of the screen with blue to create the banner.
     //
     sRect.i16XMin = 0;
     sRect.i16YMin = 0;
-    sRect.i16XMax = GrContextDpyWidthGet(&g_sContext) - 1;
+    sRect.i16XMax = GrContextDpyWidthGet(&g_context) - 1;
     sRect.i16YMax = 23;
-    GrContextForegroundSet(&g_sContext, ClrDarkBlue);
-    GrRectFill(&g_sContext, &sRect);
+    GrContextForegroundSet(&g_context, ClrDarkBlue);
+    GrRectFill(&g_context, &sRect);
 
     //
     // Put a Red box around the banner.
     //
-    GrContextForegroundSet(&g_sContext, ClrRed);
-    GrRectDraw(&g_sContext, &sRect);
+    GrContextForegroundSet(&g_context, ClrRed);
+    GrRectDraw(&g_context, &sRect);
 
     // Put the application name in the middle of the banner.
-    GrContextForegroundSet(&g_sContext, ClrYellowGreen);
-    GrContextFontSet(&g_sContext, &g_sFontCm20);
-    GrStringDrawCentered(&g_sContext, "Meteo Ubiad Stacja", -1,
-                         GrContextDpyWidthGet(&g_sContext) / 2, 8, 0);
+    GrContextForegroundSet(&g_context, ClrYellowGreen);
+    GrContextFontSet(&g_context, &g_sFontCm20);
+    GrStringDrawCentered(&g_context, "Meteo Ubiad Stacja", -1,
+                         GrContextDpyWidthGet(&g_context) / 2, 8, 0);
 #endif
 
 
-    g_currentScreen = SCREEN_MAIN;
-    WidgetAdd(WIDGET_ROOT, g_sScreens[g_currentScreen].widget);
+    g_appCtx.currentScreen = SCREEN_MAIN;
+    WidgetAdd(WIDGET_ROOT, g_screens[g_appCtx.currentScreen].widget);
     WidgetPaint(WIDGET_ROOT);
 
 	//touchScreenControler
@@ -1105,7 +1132,7 @@ int main(void) {
 	SysTickEnable();
 
 	//do touch screen calibration if needed
-	performTouchScreenCalibration(&g_sContext);
+	performTouchScreenCalibration(&g_context);
 
 
 	while (1) {
@@ -1120,8 +1147,8 @@ int main(void) {
 			TouchPoint a;
 			a = ADS7843getTouchedPoint();
 			//debugConsolePrintf("RESULTS: x=%d, y=%d\n\r", a.x, a.y);
-			GrContextForegroundSet(&g_sContext, ClrRed);
-			GrCircleFill(&g_sContext, a.x, a.y, 3);
+			GrContextForegroundSet(&g_context, ClrRed);
+			GrCircleFill(&g_context, a.x, a.y, 3);
 		}
 
 #endif

@@ -25,7 +25,7 @@
 
 
 #define ESP8266_DEBUG_ENABLE 1
-#if TOUCH_DEBUG_ENABLE
+#if ESP8266_DEBUG_ENABLE
 	#include "debugConsole.h"
 #endif
 #define ESP8266_DEBUG(str) \
@@ -357,9 +357,12 @@ bool esp8266CommandCIPSEND(const char* packet)
 	esp8266ResetUartTxBuffer();
 	sprintf((char*)txBuffer, "AT+CIPSEND=%d\r\n", strlen(packet));
 	esp8266SendATCommand((char*)txBuffer);
-	esp8266Delay(100);
+	if(!esp8266WaitForResponse("OK", 1000))
+	{
+		return false;
+	}
 	esp8266SendATCommand(packet);
-	return esp8266WaitForResponse("OK", 8000);
+	return esp8266WaitForResponse("+IPD", 5000);
 }
 
 //

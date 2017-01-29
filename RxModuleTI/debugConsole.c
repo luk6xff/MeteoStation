@@ -323,11 +323,11 @@ static bool debugCommandDispatcherESP8266(const char* cmdAttrs, int cmdAttrsLen)
 		{
 			if(esp8266CommandCIPSEND(tokens[1]))
 			{
-				debugConsolePrintf("esp8266CommandCIPSTART %s success \n\r", tokens[1]);
+				debugConsolePrintf("esp8266CommandCIPSEND %s success \n\r", tokens[1]);
 			}
 			else
 			{
-				debugConsolePrintf("esp8266CommandCIPSTART %s fail \n\r", tokens[1]);
+				debugConsolePrintf("esp8266CommandCIPSEND %s fail \n\r", tokens[1]);
 			}
 		}
 	}

@@ -1,3 +1,5 @@
+#include <string.h>
+
 #include "inc/hw_types.h"
 #include "inc/hw_memmap.h"
 #include "inc/hw_ints.h"
@@ -24,10 +26,29 @@
 #include "ILI9320_driver.h"
 #include "3PointCalibration.h"
 #include "config.h"
-#include "debugConsole.h"
 #include "esp8266.h"
 #include "touch.h"
 #include "images.h"
+
+#define MAIN_DEBUG_ENABLE 1
+#if MAIN_DEBUG_ENABLE
+	#include "debugConsole.h"
+#endif
+static inline void MAIN_DEBUG(const char* fmt, ...)
+{
+		do
+		{
+			if (MAIN_DEBUG_ENABLE)
+			{
+			    va_list args;
+				va_start(args, fmt);
+				debugConsolePrintf("Main:");
+				debugConsolePrintf(fmt, args);
+				va_end(args);
+				debugConsolePrintf("\n");
+			}
+		}while(0);
+}
 
 #define RED_LED   GPIO_PIN_1
 #define BLUE_LED  GPIO_PIN_2
@@ -82,6 +103,14 @@ typedef enum
 	SENSOR_WAIT_FOR_DATA,
 }SensorConnectionState;
 
+static const char* connStateDescs[] = {
+		"NOT_CONNECTED",
+		"CONNECTED",
+		"WAIT_FOR_DATA",
+		"Connect",
+		"Disconnect"
+};
+
 //*****************************************************************************
 //
 // Screens
@@ -117,8 +146,6 @@ extern tCanvasWidget g_screenMainBackground;
 extern tCanvasWidget g_sKeyboardBackground;
 extern tCanvasWidget g_settingsPanel;
 extern tPushButtonWidget g_sPushBtn;
-
-extern tCanvasWidget g_panels[];
 
 
 //*****************************************************************************
@@ -206,6 +233,8 @@ typedef struct
 	SensorConnectionState sensorState;
 	Screens currentScreen;
 	char* currentCity;
+	char* apSsid;
+	char* apPass;
 
 }AppContext;
 
@@ -218,7 +247,7 @@ typedef struct
 static tContext g_context;
 static volatile State g_mainState = STATE_RESET;
 static volatile Swipe g_swipe;
-static volatile AppContext g_appCtx = {false, false, false, true, WIFI_NOT_CONNECTED, SENSOR_NOT_CONNECTED, SCREEN_MAIN, (void*)0};
+static volatile AppContext g_appCtx = {false, false, false, true, WIFI_NOT_CONNECTED, SENSOR_NOT_CONNECTED, SCREEN_MAIN, (void*)0, (void*)0, (void*)0};
 
 static ScreenContainer g_screens[SCREEN_NUM_OF_SCREENS] =
 {
@@ -554,9 +583,9 @@ tCheckBoxWidget g_connCheckBoxes[] =
 
 RectangularButton(g_connToApButton, g_panelConnContainers+1, 0, 0,
 				  &g_ILI9320, 200, 52, 100, 28,
-				  PB_STYLE_FILL | PB_STYLE_TEXT | PB_STYLE_OUTLINE | PB_STYLE_RELEASE_NOTIFY,
+				  PB_STYLE_FILL | PB_STYLE_TEXT | PB_STYLE_OUTLINE,// | PB_STYLE_RELEASE_NOTIFY,
 				  ClrGreen, ClrRed, ClrSilver, ClrWhite, g_psFontCmss14,
-				  "Connect", 0, 0, 0 ,0 , onConnToAP);
+				  &connStateDescs[WIFI_WAIT_FOR_DATA+1], 0, 0, 0 ,0 , onConnToAP);
 
 tContainerWidget g_panelConnContainers[] = {
 		ContainerStruct(WIDGET_ROOT, g_panelConnContainers + 1, g_connCheckBoxes,
@@ -574,7 +603,7 @@ tCanvasWidget g_settingsPanel =
 		BG_MIN_X, BG_MIN_Y, BG_MAX_X - BG_MIN_X, BG_MAX_Y - BG_MIN_Y,
 		CANVAS_STYLE_FILL, ClrBlack, 0, 0, 0, 0, 0, 0);
 
-void onConnCheckBoxChange(tWidget *widget, uint32_t bSelected)
+void onConnCheckBoxChange(tWidget *widget, uint32_t enabled)
 {
     uint32_t idx;
 
@@ -591,16 +620,60 @@ void onConnCheckBoxChange(tWidget *widget, uint32_t bSelected)
     	return;
     }
     CanvasImageSet(g_connCheckBoxIndicators + idx,
-                   bSelected ? g_pui8LightOn : g_pui8LightOff);
+    			   enabled ? g_pui8LightOn : g_pui8LightOff);
     WidgetPaint((tWidget *)(g_connCheckBoxIndicators + idx));
+    if(strcmp(g_connCheckBoxes[idx].pcText, "WIFI") == 0)
+    {
+    		g_appCtx.wifiEnabled = enabled;
+    }
+    else if(strcmp(g_connCheckBoxes[idx].pcText, "Sensors") == 0)
+    {
+    		g_appCtx.sensorEnabled = enabled;
+    }
+    else if(strcmp(g_connCheckBoxes[idx].pcText, "PowerSaving") == 0)
+    {
+    		g_appCtx.powerSaveModeEnabled = enabled;
+    }
 }
 
 void onConnToAP(tWidget *psWidget)
 {
+	if(!g_appCtx.wifiEnabled)
+		return;
 	WifiConnectionState state = g_appCtx.wifiState;
-	//esp8266CommandCIPSTART();
-	//updateWifiConnectionStatus(WifiConnectionState state);
-	updateWifiConnectionStatus(WIFI_NOT_CONNECTED); //TODO
+	if(state == WIFI_NOT_CONNECTED)
+	{
+		if(!esp8266CommandAT())
+		{
+			MAIN_DEBUG("ESP8266 not responding, check hardware!");
+		}
+		else
+		{
+			esp8266CommandCWMODE(ESP8266_MODE_CLIENT);
+			if(esp8266CommandCWJAP(g_appCtx.apSsid, g_appCtx.apPass))
+			{
+				MAIN_DEBUG("Connected to AP: %s", g_appCtx.apSsid);
+				state = WIFI_CONNECTED;
+			}
+			else
+			{
+				MAIN_DEBUG("Cannot connect to AP: %s", g_appCtx.apSsid);
+			}
+		}
+	}
+	else if(state == WIFI_CONNECTED)
+	{
+		if(esp8266CommandCWQAP())
+		{
+			MAIN_DEBUG("Disconnected from AP: %s", g_appCtx.apSsid);
+			state = WIFI_NOT_CONNECTED;
+		}
+		else
+		{
+			MAIN_DEBUG("ESP8266 not responding, check hardware!");
+		}
+	}
+	updateWifiConnectionStatus(state);
 }
 
 static void updateWifiConnectionStatus(WifiConnectionState state)
@@ -615,7 +688,8 @@ static void updateWifiConnectionStatus(WifiConnectionState state)
 			{
 			    GrContextFontSet(&g_context, &g_sFontCm16);
 			    GrContextForegroundSet(&g_context, ClrWhite);
-			    GrStringDrawCentered(&g_context, "NOT_CONNECTED", -1, 200, 95, true);
+			    GrStringDrawCentered(&g_context, &connStateDescs[WIFI_NOT_CONNECTED], -1, 200, 95, true);
+			    g_connToApButton.pcText = &connStateDescs[WIFI_WAIT_FOR_DATA+1];
 			}
 			break;
 		case WIFI_CONNECTED:
@@ -623,7 +697,8 @@ static void updateWifiConnectionStatus(WifiConnectionState state)
 			{
 			    GrContextFontSet(&g_context, &g_sFontCm16);
 			    GrContextForegroundSet(&g_context, ClrWhite);
-			    GrStringDrawCentered(&g_context, "CONNECTED", -1, 200, 95, true);
+			    GrStringDrawCentered(&g_context, &connStateDescs[WIFI_CONNECTED], -1, 200, 95, true);
+			    g_connToApButton.pcText = &connStateDescs[WIFI_WAIT_FOR_DATA+2];
 			}
 			break;
 		case WIFI_WAIT_FOR_DATA:
@@ -631,7 +706,7 @@ static void updateWifiConnectionStatus(WifiConnectionState state)
 			{
 			    GrContextFontSet(&g_context, &g_sFontCm16);
 			    GrContextForegroundSet(&g_context, ClrWhite);
-			    GrStringDrawCentered(&g_context, "WAIT_FOR_DATA", -1, 200, 95, true);
+			    GrStringDrawCentered(&g_context, &connStateDescs[WIFI_WAIT_FOR_DATA], -1, 200, 95, true);
 			}
 			break;
 		default:

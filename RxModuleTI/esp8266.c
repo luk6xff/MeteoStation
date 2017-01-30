@@ -41,7 +41,7 @@
 //! - UART1RX - PE4
 //! - UART1TX - PE5
 
-#define TX_BUF_SIZE 64
+#define TX_BUF_SIZE 256
 #define RX_BUF_SIZE 512
 
 //Critical section
@@ -309,7 +309,7 @@ bool esp8266CommandCWJAP(const char* ssid, const char* pass)
 	esp8266ResetUartTxBuffer();
 	sprintf((char*)txBuffer, "AT+CWJAP=\"%s\",\"%s\"", ssid, pass);
 	esp8266SendATCommand((char*)txBuffer);
-	return esp8266WaitForResponse("OK", 15000);
+	return esp8266WaitForResponse("OK", 10000);
 }
 
 

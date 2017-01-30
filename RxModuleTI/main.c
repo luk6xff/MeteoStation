@@ -42,10 +42,10 @@ static inline void MAIN_DEBUG(const char* fmt, ...)
 			{
 			    va_list args;
 				va_start(args, fmt);
-				debugConsolePrintf("Main:");
-				debugConsolePrintf(fmt, args);
+				MAIN_DEBUG("Main:");
+				MAIN_DEBUG(fmt, args);
 				va_end(args);
-				debugConsolePrintf("\n");
+				MAIN_DEBUG("\n");
 			}
 		}while(0);
 }
@@ -103,7 +103,7 @@ typedef enum
 	SENSOR_WAIT_FOR_DATA,
 }SensorConnectionState;
 
-static const char* connStateDescs[] = {
+static const char* const connStateDesc[] = {
 		"NOT_CONNECTED",
 		"CONNECTED",
 		"WAIT_FOR_DATA",
@@ -327,13 +327,13 @@ static bool performTouchScreenCalibration(tContext* ctx)
 			//configSave(); //FLASH
 			configEepromSave();
 
-			debugConsolePrintf("COEFFSa: a.x=%d, a.y=%d\n\r", coeffs.m_ax, coeffs.m_ay);
-			debugConsolePrintf("COEFFSb: b.x=%d, b.y=%d\n\r", coeffs.m_bx, coeffs.m_by);
-			debugConsolePrintf("COEFFSd: d.x=%d, d.y=%d\n\r", coeffs.m_dx, coeffs.m_dy);
+			MAIN_DEBUG("COEFFSa: a.x=%d, a.y=%d\n\r", coeffs.m_ax, coeffs.m_ay);
+			MAIN_DEBUG("COEFFSb: b.x=%d, b.y=%d\n\r", coeffs.m_bx, coeffs.m_by);
+			MAIN_DEBUG("COEFFSd: d.x=%d, d.y=%d\n\r", coeffs.m_dx, coeffs.m_dy);
 		}
 		else
 		{
-			debugConsolePrintf("Touch Screen Calibration failed\n\r");
+			MAIN_DEBUG("Touch Screen Calibration failed\n\r");
 		}
 
 		ret= true;
@@ -585,7 +585,7 @@ RectangularButton(g_connToApButton, g_panelConnContainers+1, 0, 0,
 				  &g_ILI9320, 200, 52, 100, 28,
 				  PB_STYLE_FILL | PB_STYLE_TEXT | PB_STYLE_OUTLINE,// | PB_STYLE_RELEASE_NOTIFY,
 				  ClrGreen, ClrRed, ClrSilver, ClrWhite, g_psFontCmss14,
-				  &connStateDescs[WIFI_WAIT_FOR_DATA+1], 0, 0, 0 ,0 , onConnToAP);
+				  "State", 0, 0, 0 ,0 , onConnToAP);
 
 tContainerWidget g_panelConnContainers[] = {
 		ContainerStruct(WIDGET_ROOT, g_panelConnContainers + 1, g_connCheckBoxes,
@@ -649,6 +649,8 @@ void onConnToAP(tWidget *psWidget)
 		}
 		else
 		{
+			g_appCtx.apSsid = "testSsid";
+			g_appCtx.apPass = "testPass";
 			esp8266CommandCWMODE(ESP8266_MODE_CLIENT);
 			if(esp8266CommandCWJAP(g_appCtx.apSsid, g_appCtx.apPass))
 			{
@@ -688,8 +690,8 @@ static void updateWifiConnectionStatus(WifiConnectionState state)
 			{
 			    GrContextFontSet(&g_context, &g_sFontCm16);
 			    GrContextForegroundSet(&g_context, ClrWhite);
-			    GrStringDrawCentered(&g_context, &connStateDescs[WIFI_NOT_CONNECTED], -1, 200, 95, true);
-			    g_connToApButton.pcText = &connStateDescs[WIFI_WAIT_FOR_DATA+1];
+			    GrStringDrawCentered(&g_context, connStateDesc[WIFI_NOT_CONNECTED], -1, 200, 95, true);
+			    g_connToApButton.pcText = connStateDesc[WIFI_WAIT_FOR_DATA+1];
 			}
 			break;
 		case WIFI_CONNECTED:
@@ -697,8 +699,8 @@ static void updateWifiConnectionStatus(WifiConnectionState state)
 			{
 			    GrContextFontSet(&g_context, &g_sFontCm16);
 			    GrContextForegroundSet(&g_context, ClrWhite);
-			    GrStringDrawCentered(&g_context, &connStateDescs[WIFI_CONNECTED], -1, 200, 95, true);
-			    g_connToApButton.pcText = &connStateDescs[WIFI_WAIT_FOR_DATA+2];
+			    GrStringDrawCentered(&g_context, connStateDesc[WIFI_CONNECTED], -1, 200, 95, true);
+			    g_connToApButton.pcText = connStateDesc[WIFI_WAIT_FOR_DATA+2];
 			}
 			break;
 		case WIFI_WAIT_FOR_DATA:
@@ -706,7 +708,7 @@ static void updateWifiConnectionStatus(WifiConnectionState state)
 			{
 			    GrContextFontSet(&g_context, &g_sFontCm16);
 			    GrContextForegroundSet(&g_context, ClrWhite);
-			    GrStringDrawCentered(&g_context, &connStateDescs[WIFI_WAIT_FOR_DATA], -1, 200, 95, true);
+			    GrStringDrawCentered(&g_context, connStateDesc[WIFI_WAIT_FOR_DATA], -1, 200, 95, true);
 			}
 			break;
 		default:
@@ -1221,7 +1223,7 @@ int main(void) {
 			ADS7843read();
 			TouchPoint a;
 			a = ADS7843getTouchedPoint();
-			//debugConsolePrintf("RESULTS: x=%d, y=%d\n\r", a.x, a.y);
+			//MAIN_DEBUG("RESULTS: x=%d, y=%d\n\r", a.x, a.y);
 			GrContextForegroundSet(&g_context, ClrRed);
 			GrCircleFill(&g_context, a.x, a.y, 3);
 		}

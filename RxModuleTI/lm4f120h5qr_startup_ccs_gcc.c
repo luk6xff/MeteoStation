@@ -292,6 +292,10 @@ ResetISR(void)
     //
     HWREG(0xE000ED88) = ((HWREG(0xE000ED88) & ~0x00F00000) | 0x00F00000);
     
+//    for(uint16_t i = 0; i < sizeof(pui32Stack)/sizeof(pui32Stack[0]); i++ )
+//    {
+//    	pui32Stack[i] = 0xaaaaaaaa;
+//    }
     //
     // Call the application's entry point.
     //

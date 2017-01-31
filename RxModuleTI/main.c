@@ -42,10 +42,10 @@ static inline void MAIN_DEBUG(const char* fmt, ...)
 			{
 			    va_list args;
 				va_start(args, fmt);
-				MAIN_DEBUG("Main:");
-				MAIN_DEBUG(fmt, args);
+				debugConsolePrintf("Main: ");
+				debugConsolePrintf(fmt, args);
 				va_end(args);
-				MAIN_DEBUG("\n");
+				debugConsolePrintf("\n");
 			}
 		}while(0);
 }
@@ -120,6 +120,8 @@ typedef enum
 {
 	SCREEN_MAIN,
 	SCREEN_CONN_SETTINGS,
+	SCREEN_WIFI_SETTINGS,
+	SCREEN_SENSOR_SETTINGS,
 	SCREEN_KEYBOARD,
 	SCREEN_NUM_OF_SCREENS
 }Screens;
@@ -143,6 +145,8 @@ typedef struct
 //
 //*****************************************************************************
 extern tCanvasWidget g_screenMainBackground;
+extern tCanvasWidget g_screenWifiSetupBackground;
+extern tCanvasWidget g_screenSensorSetupBackground;
 extern tCanvasWidget g_sKeyboardBackground;
 extern tCanvasWidget g_settingsPanel;
 extern tPushButtonWidget g_sPushBtn;
@@ -258,6 +262,14 @@ static ScreenContainer g_screens[SCREEN_NUM_OF_SCREENS] =
     {
         (tWidget *)&g_settingsPanel,
         SCREEN_MAIN, SCREEN_CONN_SETTINGS, SCREEN_CONN_SETTINGS, SCREEN_CONN_SETTINGS
+    },
+    {
+        (tWidget *)&g_screenWifiSetupBackground,
+		SCREEN_CONN_SETTINGS, SCREEN_CONN_SETTINGS, SCREEN_CONN_SETTINGS, SCREEN_CONN_SETTINGS
+    },
+    {
+        (tWidget *)&g_screenSensorSetupBackground,
+		SCREEN_CONN_SETTINGS, SCREEN_CONN_SETTINGS, SCREEN_CONN_SETTINGS, SCREEN_CONN_SETTINGS
     },
     {
         (tWidget *)&g_sKeyboardBackground,
@@ -467,9 +479,7 @@ Canvas(g_sKeyboardBackground, WIDGET_ROOT, 0, &g_sKeyboardText,
 //
 //*****************************************************************************
 
-//
 // The custom city toggle button.
-//
 const tButtonToggle sCustomToggle =
 {
     //
@@ -488,26 +498,9 @@ const tButtonToggle sCustomToggle =
 };
 
 //
-// The actual button widget that receives the press events.
-//
-/*
-RectangularButton(g_widgetWifiEnable, &g_sSettingsPanel, 0, 0,
-       &g_ILI9320, 14, 32, 40, 24,
-       0, ClrLightGrey, ClrLightGrey, ClrLightGrey,
-       ClrBlack, 0, 0, 0, 0, 0 ,0 , onWifiEnable);
-       */
-//static const char* g_wifiEnableText = "Wifi Enable";
-/*
-char g_wifiEnableText[] = {"Wifi Enable"};
-RadioButton(g_widgetWifiEnable, &g_sSettingsPanel, 0, 0,
-       &g_ILI9320, 14, 32, 20, 10,
-	   RB_STYLE_OUTLINE | RB_STYLE_TEXT | RB_STYLE_SELECTED, 5, ClrBlue, ClrRed, ClrWhite,
-	   g_psFontCmss14, g_wifiEnableText, 0, onWifiEnable);
-
-//
 // The text entry button for the custom city.
 //
-RectangularButton(g_sCustomCity, &g_sSettingsPanel, &g_widgetWifiEnable, 0,
+RectangularButton(g_sCustomCity, &g_screenWifiSetupBackground, 0, 0,
        &g_ILI9320, 118, 30, 190, 28,
        PB_STYLE_FILL | PB_STYLE_TEXT | PB_STYLE_RELEASE_NOTIFY, ClrLightGrey,
        ClrLightGrey, ClrWhite, ClrGray, g_psFontCmss14,
@@ -517,7 +510,7 @@ RectangularButton(g_sCustomCity, &g_sSettingsPanel, &g_widgetWifiEnable, 0,
 // MAC Address display.
 //
 char g_pcMACAddr[40];
-Canvas(g_sMACAddr, &g_sSettingsPanel, &g_sCustomCity, 0,
+Canvas(g_sMACAddr, &g_screenWifiSetupBackground, &g_sCustomCity, 0,
        &g_ILI9320, 12, 180, 147, 20,
        CANVAS_STYLE_FILL | CANVAS_STYLE_TEXT | CANVAS_STYLE_TEXT_LEFT,
        ClrGray, ClrDarkGray, ClrBlack, g_psFontCmss14,
@@ -527,25 +520,48 @@ Canvas(g_sMACAddr, &g_sSettingsPanel, &g_sCustomCity, 0,
 // IP Address display.
 //
 char g_pcIPAddr[20];
-Canvas(g_sIPAddr, &g_sSettingsPanel, &g_sMACAddr, 0,
+Canvas(g_sIPAddr, &g_screenWifiSetupBackground, &g_sMACAddr, 0,
        &g_ILI9320, 12, 200, 147, 20,
        CANVAS_STYLE_FILL | CANVAS_STYLE_TEXT | CANVAS_STYLE_TEXT_LEFT,
        ClrGray, ClrDarkGray, ClrBlack, g_psFontCmss14,
        g_pcIPAddr, 0, 0);
 
-//
-// Background of the settings panel.
-//
-Canvas(g_sSettingsPanel, WIDGET_ROOT, 0, &g_sIPAddr,
+
+/* the WIFIsettings panel. */
+//TODO
+Canvas(g_screenWifiSetupBackground, WIDGET_ROOT, 0, &g_sIPAddr,
        &g_ILI9320, BG_MIN_X, BG_MIN_Y,
        BG_MAX_X - BG_MIN_X, BG_MAX_Y - BG_MIN_Y,
        CANVAS_STYLE_FILL | CANVAS_STYLE_TEXT_RIGHT |
        CANVAS_STYLE_TEXT_TOP, ClrGray, ClrWhite, ClrBlack, 0,
        0, 0, 0);
-       */
+
+//*****************************************************************************
+//
+// // The canvas widget acting as Sensor settings panel.
+//
+//*****************************************************************************
+/* the Sensor settings panel. */
 //TODO
+Canvas(g_screenSensorSetupBackground, WIDGET_ROOT, 0, 0,
+       &g_ILI9320, BG_MIN_X, BG_MIN_Y,
+       BG_MAX_X - BG_MIN_X, BG_MAX_Y - BG_MIN_Y,
+       CANVAS_STYLE_FILL | CANVAS_STYLE_TEXT_RIGHT |
+       CANVAS_STYLE_TEXT_TOP, ClrGray, ClrWhite, ClrBlack, 0,
+       0, 0, 0);
+
+
+//*****************************************************************************
+//
+// Widget acting as all settings panel.
+//
+//*****************************************************************************
 void onConnCheckBoxChange(tWidget *psWidget, uint32_t bSelected);
 void onConnToAP(tWidget *psWidget);
+void onWifiSetup(tWidget *psWidget);
+void onSensorSetup(tWidget *psWidget);
+void onOthersSetup(tWidget *psWidget);
+
 tContainerWidget g_panelConnContainers[];
 tPushButtonWidget g_connTestButton;
 tCanvasWidget g_connCheckBoxIndicators[] =
@@ -581,21 +597,48 @@ tCheckBoxWidget g_connCheckBoxes[] =
 
 #define NUM_CONN_CHECKBOXES  (sizeof(g_connCheckBoxes) / sizeof(g_connCheckBoxes[0]))
 
+/* Connect Button*/
 RectangularButton(g_connToApButton, g_panelConnContainers+1, 0, 0,
 				  &g_ILI9320, 200, 52, 100, 28,
-				  PB_STYLE_FILL | PB_STYLE_TEXT | PB_STYLE_OUTLINE,// | PB_STYLE_RELEASE_NOTIFY,
+				  PB_STYLE_FILL | PB_STYLE_TEXT | PB_STYLE_OUTLINE,
 				  ClrGreen, ClrRed, ClrSilver, ClrWhite, g_psFontCmss14,
 				  "State", 0, 0, 0 ,0 , onConnToAP);
+
+
+/* Setup Buttons*/
+extern tPushButtonWidget g_sensorSettingsButton;
+extern tPushButtonWidget g_othersSettingsButton;
+RectangularButton(g_wifiSettingsButton, g_panelConnContainers+2, &g_sensorSettingsButton, 0,
+				  &g_ILI9320, 20, 185, 80, 35,
+				  PB_STYLE_FILL | PB_STYLE_TEXT | PB_STYLE_OUTLINE,
+				  ClrGreen, ClrRed, ClrSilver, ClrWhite, g_psFontCm12,
+				  "WIFI setup", 0, 0, 0 ,0 , onWifiSetup);
+
+RectangularButton(g_sensorSettingsButton, g_panelConnContainers+2, &g_othersSettingsButton, 0,
+				  &g_ILI9320, 115, 185, 80, 35,
+				  PB_STYLE_FILL | PB_STYLE_TEXT | PB_STYLE_OUTLINE,
+				  ClrGreen, ClrRed, ClrSilver, ClrWhite, g_psFontCm12,
+				  "Sensor setup", 0, 0, 0 ,0 , onSensorSetup);
+
+RectangularButton(g_othersSettingsButton, g_panelConnContainers+2, 0, 0,
+				  &g_ILI9320, 210, 185, 80, 35,
+				  PB_STYLE_FILL | PB_STYLE_TEXT | PB_STYLE_OUTLINE,
+				  ClrGreen, ClrRed, ClrSilver, ClrWhite, g_psFontCm12,
+				  "Others setup", 0, 0, 0 ,0 , onOthersSetup);
 
 tContainerWidget g_panelConnContainers[] = {
 		ContainerStruct(WIDGET_ROOT, g_panelConnContainers + 1, g_connCheckBoxes,
 						&g_ILI9320, 8, 24, 180, 148,
 						CTR_STYLE_OUTLINE | CTR_STYLE_TEXT, 0, ClrGray, ClrSilver,
 						g_psFontCm16, "Connection Setup"),
-		ContainerStruct(WIDGET_ROOT, 0, &g_connToApButton,
+		ContainerStruct(WIDGET_ROOT, g_panelConnContainers + 2, &g_connToApButton,
 						&g_ILI9320, 188, 24, 136-8-4, 148,
 						CTR_STYLE_OUTLINE | CTR_STYLE_TEXT, 0, ClrGray, ClrSilver,
-						g_psFontCm16, "Connect to AP")
+						g_psFontCm16, "Connect to AP"),
+		ContainerStruct(WIDGET_ROOT, 0, &g_wifiSettingsButton,
+						&g_ILI9320, 8, 173, 320-8-4, 55,
+						CTR_STYLE_OUTLINE, 0, ClrGray, ClrSilver,
+						g_psFontCm12, NULL),
 };
 
 tCanvasWidget g_settingsPanel =
@@ -678,19 +721,44 @@ void onConnToAP(tWidget *psWidget)
 	updateWifiConnectionStatus(state);
 }
 
+
+//TODO
+void onWifiSetup(tWidget *psWidget)
+{
+	if(g_appCtx.wifiEnabled)
+	{
+        WidgetRemove(g_screens[g_appCtx.currentScreen].widget);
+        g_appCtx.currentScreen = SCREEN_WIFI_SETTINGS;
+        WidgetAdd(WIDGET_ROOT, g_screens[g_appCtx.currentScreen].widget);
+        WidgetPaint(WIDGET_ROOT);
+       // WidgetMessageQueueProcess();
+	}
+	MAIN_DEBUG("onWifiSetup pressed");
+}
+
+void onSensorSetup(tWidget *psWidget)
+{
+	MAIN_DEBUG("onSensorSetup pressed");
+}
+
+void onOthersSetup(tWidget *psWidget)
+{
+	MAIN_DEBUG("onOthersSetup pressed");
+}
+
 static void updateWifiConnectionStatus(WifiConnectionState state)
 {
-	if(state == g_appCtx.wifiState)
-	{
-		return;
-	}
+	//if(state == g_appCtx.wifiState)
+	//{
+	//	return;
+	//}
 	switch (state) {
 		case WIFI_NOT_CONNECTED:
 			if(g_appCtx.currentScreen == SCREEN_CONN_SETTINGS)
 			{
-			    GrContextFontSet(&g_context, &g_sFontCm16);
+			    GrContextFontSet(&g_context, &g_sFontCm12);
 			    GrContextForegroundSet(&g_context, ClrWhite);
-			    GrStringDrawCentered(&g_context, connStateDesc[WIFI_NOT_CONNECTED], -1, 200, 95, true);
+			    GrStringDrawCentered(&g_context, connStateDesc[WIFI_NOT_CONNECTED], -1, 250, 130, true);
 			    g_connToApButton.pcText = connStateDesc[WIFI_WAIT_FOR_DATA+1];
 			}
 			break;
@@ -699,7 +767,7 @@ static void updateWifiConnectionStatus(WifiConnectionState state)
 			{
 			    GrContextFontSet(&g_context, &g_sFontCm16);
 			    GrContextForegroundSet(&g_context, ClrWhite);
-			    GrStringDrawCentered(&g_context, connStateDesc[WIFI_CONNECTED], -1, 200, 95, true);
+			    GrStringDrawCentered(&g_context, connStateDesc[WIFI_CONNECTED], -1, 250, 130, true);
 			    g_connToApButton.pcText = connStateDesc[WIFI_WAIT_FOR_DATA+2];
 			}
 			break;
@@ -708,7 +776,7 @@ static void updateWifiConnectionStatus(WifiConnectionState state)
 			{
 			    GrContextFontSet(&g_context, &g_sFontCm16);
 			    GrContextForegroundSet(&g_context, ClrWhite);
-			    GrStringDrawCentered(&g_context, connStateDesc[WIFI_WAIT_FOR_DATA], -1, 200, 95, true);
+			    GrStringDrawCentered(&g_context, connStateDesc[WIFI_WAIT_FOR_DATA], -1, 250, 130, true);
 			}
 			break;
 		default:
@@ -925,8 +993,8 @@ static void onCityEntry(tWidget *psWidget)
 
 {
     // if wifi connection is enabled
-    if(g_appCtx.wifiEnabled)
-    {
+    //if(g_appCtx.wifiEnabled)
+    //{
         //
         // Disable swiping while the keyboard is active.
         //
@@ -964,7 +1032,7 @@ static void onCityEntry(tWidget *psWidget)
 
         GrContextFontSet(&g_context, g_psFontCmss24);
         WidgetPaint((tWidget *)&g_sKeyboardBackground);
-    }
+    //}
 }
 
 

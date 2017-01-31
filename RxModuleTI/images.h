@@ -31,7 +31,6 @@ extern const uint8_t g_pui8CloudyImage[];
 extern const uint8_t g_pui8RainImage[];
 extern const uint8_t g_pui8ThuderStormImage[];
 extern const uint8_t g_pui8SnowImage[];
-extern const uint8_t g_pui8FogImage[];
 extern uint8_t g_pui8TIImagePalette[];
 extern uint8_t g_pui8TIImage[];
 extern const uint8_t g_ui8Logo[];

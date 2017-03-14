@@ -1,0 +1,26 @@
+#ESP8266
+C-ESP_AT|
+C-ESP_RST|
+C-ESP_CWMODE_1|
+C-ESP_CWJAP_INTEHNET_Faza939290|                    //connect(join) to a WIFI AP using ssid and password
+C-ESP_CWQAP|                                        //disconnect from a currently connected WIFI AP
+
+C-ESP_CIPSTART_23.22.14.18|                         //create TCP connection to http://httpbin.org server
+C-ESP_CIPSEND_GET /get HTTP/1.1\r\nHost: 23.22.14.18\r\nAccept: text/html|
+C-ESP_CIPSEND_GET /get HTTP/1.1\r\nHost: 23.22.14.18\r\nConnection: keep-alive|
+C-ESP_CIPSEND_GET /get HTTP/1.1|
+C-ESP_CIPSEND_?|
+C-ESP_CIPCLOSE|                                     //close the TCP connection
+
+
+/******api.openweathermap.org*****/
+##Openweather igbt6 API Key: e95bbbe9f7314ea2a5ca1f60ee138eef
+1. Weather
+api.openweathermap.org/data/2.5/weather?q=Nowy Sacz&units=metric&APPID=e95bbbe9f7314ea2a5ca1f60ee138eef
+2. Forecast
+api.openweathermap.org/data/2.5/forecast/city?q=Nowy Sacz&units=metric&APPID=e95bbbe9f7314ea2a5ca1f60ee138eef 
+
+C-ESP_CIPSTART_api.openweathermap.org|
+C-ESP_CIPSEND_GET http://api.openweathermap.org/data/2.5/forecast/daily?q=
+C-ESP_CIPSEND_http://api.openweathermap.org/data/2.5/weather?q=Nowy%20Sacz&mode=json&units=metric&APPID=e95bbbe9f7314ea2a5ca1f60ee138eef\r\nHost: api.openweathermap.org\r\nConnection: keep-alive\r\nHTTP/1.0\r\n\r\n|
+C-ESP_CIPSEND_GET http://api.openweathermap.org/data/2.5/weather?q=Nowy%20Sacz&mode=json&units=metric&APPID=e95bbbe9f7314ea2a5ca1f60ee138eef|

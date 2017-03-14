@@ -248,7 +248,7 @@ typedef struct
 // Application globals
 //
 //*****************************************************************************
-static tContext g_context;
+static tContext g_drawingContext;
 static volatile State g_mainState = STATE_RESET;
 static volatile Swipe g_swipe;
 static volatile AppContext g_appCtx = {false, false, false, true, WIFI_NOT_CONNECTED, SENSOR_NOT_CONNECTED, SCREEN_MAIN, (void*)0, (void*)0, (void*)0};
@@ -479,61 +479,45 @@ Canvas(g_sKeyboardBackground, WIDGET_ROOT, 0, &g_sKeyboardText,
 //
 //*****************************************************************************
 
-// The custom city toggle button.
-const tButtonToggle sCustomToggle =
-{
-    //
-    // Outer border of button.
-    //
-    {12, 30, 116, 57},
-
-    //
-    // Button border.
-    //
-    {14, 32, 54, 55},
-
-    "On",
-    "Off",
-    "City"
-};
-
 //
 // The text entry button for the custom city.
 //
-RectangularButton(g_sCustomCity, &g_screenWifiSetupBackground, 0, 0,
+RectangularButton(g_customCity, &g_screenWifiSetupBackground, 0, 0,
        &g_ILI9320, 118, 30, 190, 28,
-       PB_STYLE_FILL | PB_STYLE_TEXT | PB_STYLE_RELEASE_NOTIFY, ClrLightGrey,
+       PB_STYLE_FILL | PB_STYLE_TEXT, ClrLightGrey,
        ClrLightGrey, ClrWhite, ClrGray, g_psFontCmss14,
        0, 0, 0, 0 ,0 , onCityEntry);
 
 //
 // MAC Address display.
 //
-char g_pcMACAddr[40];
-Canvas(g_sMACAddr, &g_screenWifiSetupBackground, &g_sCustomCity, 0,
+//GrContextForegroundSet(g_drawingContext, ClrSilver);
+//GrContextFontSet(g_drawingContext, g_psFontCm14);
+//GrStringDraw(g_drawingContext, "Strings", -1, 120, 104, 0);
+char g_wifiMACAddr[40];
+Canvas(g_screenWifiSetupMACAddr, &g_screenWifiSetupBackground, &g_customCity, 0,
        &g_ILI9320, 12, 180, 147, 20,
        CANVAS_STYLE_FILL | CANVAS_STYLE_TEXT | CANVAS_STYLE_TEXT_LEFT,
        ClrGray, ClrDarkGray, ClrBlack, g_psFontCmss14,
-       g_pcMACAddr, 0, 0);
+       g_wifiMACAddr, 0, 0);
 
 //
 // IP Address display.
 //
-char g_pcIPAddr[20];
-Canvas(g_sIPAddr, &g_screenWifiSetupBackground, &g_sMACAddr, 0,
+char g_wifiIPAddr[20];
+Canvas(g_screenWifiSetupIPAddr, &g_screenWifiSetupBackground, &g_screenWifiSetupMACAddr, 0,
        &g_ILI9320, 12, 200, 147, 20,
        CANVAS_STYLE_FILL | CANVAS_STYLE_TEXT | CANVAS_STYLE_TEXT_LEFT,
        ClrGray, ClrDarkGray, ClrBlack, g_psFontCmss14,
-       g_pcIPAddr, 0, 0);
+       g_wifiIPAddr, 0, 0);
 
 
 /* the WIFIsettings panel. */
-//TODO
-Canvas(g_screenWifiSetupBackground, WIDGET_ROOT, 0, &g_sIPAddr,
+Canvas(g_screenWifiSetupBackground, WIDGET_ROOT, 0, &g_screenWifiSetupIPAddr,
        &g_ILI9320, BG_MIN_X, BG_MIN_Y,
        BG_MAX_X - BG_MIN_X, BG_MAX_Y - BG_MIN_Y,
        CANVAS_STYLE_FILL | CANVAS_STYLE_TEXT_RIGHT |
-       CANVAS_STYLE_TEXT_TOP, ClrGray, ClrWhite, ClrBlack, 0,
+       CANVAS_STYLE_TEXT_TOP, BG_COLOR_MAIN, ClrWhite, ClrBlueViolet, 0,
        0, 0, 0);
 
 //*****************************************************************************
@@ -547,7 +531,7 @@ Canvas(g_screenSensorSetupBackground, WIDGET_ROOT, 0, 0,
        &g_ILI9320, BG_MIN_X, BG_MIN_Y,
        BG_MAX_X - BG_MIN_X, BG_MAX_Y - BG_MIN_Y,
        CANVAS_STYLE_FILL | CANVAS_STYLE_TEXT_RIGHT |
-       CANVAS_STYLE_TEXT_TOP, ClrGray, ClrWhite, ClrBlack, 0,
+       CANVAS_STYLE_TEXT_TOP, BG_COLOR_MAIN, ClrWhite, ClrBlueViolet, 0,
        0, 0, 0);
 
 
@@ -627,24 +611,25 @@ RectangularButton(g_othersSettingsButton, g_panelConnContainers+2, 0, 0,
 				  "Others setup", 0, 0, 0 ,0 , onOthersSetup);
 
 tContainerWidget g_panelConnContainers[] = {
-		ContainerStruct(WIDGET_ROOT, g_panelConnContainers + 1, g_connCheckBoxes,
+		ContainerStruct(&g_settingsPanel, g_panelConnContainers + 1, g_connCheckBoxes,
 						&g_ILI9320, 8, 24, 180, 148,
 						CTR_STYLE_OUTLINE | CTR_STYLE_TEXT, 0, ClrGray, ClrSilver,
 						g_psFontCm16, "Connection Setup"),
-		ContainerStruct(WIDGET_ROOT, g_panelConnContainers + 2, &g_connToApButton,
+		ContainerStruct(&g_settingsPanel, g_panelConnContainers + 2, &g_connToApButton,
 						&g_ILI9320, 188, 24, 136-8-4, 148,
 						CTR_STYLE_OUTLINE | CTR_STYLE_TEXT, 0, ClrGray, ClrSilver,
 						g_psFontCm16, "Connect to AP"),
-		ContainerStruct(WIDGET_ROOT, 0, &g_wifiSettingsButton,
+		ContainerStruct(&g_settingsPanel, 0, &g_wifiSettingsButton,
 						&g_ILI9320, 8, 173, 320-8-4, 55,
 						CTR_STYLE_OUTLINE, 0, ClrGray, ClrSilver,
 						g_psFontCm12, NULL),
 };
 
-tCanvasWidget g_settingsPanel =
-		CanvasStruct(WIDGET_ROOT, 0, g_panelConnContainers, &g_ILI9320,
-		BG_MIN_X, BG_MIN_Y, BG_MAX_X - BG_MIN_X, BG_MAX_Y - BG_MIN_Y,
-		CANVAS_STYLE_FILL, ClrBlack, 0, 0, 0, 0, 0, 0);
+Canvas(g_settingsPanel, WIDGET_ROOT, 0, g_panelConnContainers,
+       &g_ILI9320, BG_MIN_X, BG_MIN_Y,
+       BG_MAX_X - BG_MIN_X,
+       BG_MAX_Y - BG_MIN_Y, CANVAS_STYLE_FILL,
+	   ClrBlack, 0, 0, 0, 0, 0, 0);
 
 void onConnCheckBoxChange(tWidget *widget, uint32_t enabled)
 {
@@ -692,7 +677,7 @@ void onConnToAP(tWidget *psWidget)
 		}
 		else
 		{
-			g_appCtx.apSsid = "testSsid";
+			g_appCtx.apSsid = "testSsid"; //TODO !!
 			g_appCtx.apPass = "testPass";
 			esp8266CommandCWMODE(ESP8266_MODE_CLIENT);
 			if(esp8266CommandCWJAP(g_appCtx.apSsid, g_appCtx.apPass))
@@ -725,15 +710,14 @@ void onConnToAP(tWidget *psWidget)
 //TODO
 void onWifiSetup(tWidget *psWidget)
 {
+	MAIN_DEBUG("onWifiSetup pressed");
 	if(g_appCtx.wifiEnabled)
 	{
         WidgetRemove(g_screens[g_appCtx.currentScreen].widget);
         g_appCtx.currentScreen = SCREEN_WIFI_SETTINGS;
         WidgetAdd(WIDGET_ROOT, g_screens[g_appCtx.currentScreen].widget);
-        WidgetPaint(WIDGET_ROOT);
-       // WidgetMessageQueueProcess();
+        WidgetPaint((tWidget *)(g_screens[g_appCtx.currentScreen].widget));
 	}
-	MAIN_DEBUG("onWifiSetup pressed");
 }
 
 void onSensorSetup(tWidget *psWidget)
@@ -756,27 +740,27 @@ static void updateWifiConnectionStatus(WifiConnectionState state)
 		case WIFI_NOT_CONNECTED:
 			if(g_appCtx.currentScreen == SCREEN_CONN_SETTINGS)
 			{
-			    GrContextFontSet(&g_context, &g_sFontCm12);
-			    GrContextForegroundSet(&g_context, ClrWhite);
-			    GrStringDrawCentered(&g_context, connStateDesc[WIFI_NOT_CONNECTED], -1, 250, 130, true);
+			    GrContextFontSet(&g_drawingContext, &g_sFontCm12);
+			    GrContextForegroundSet(&g_drawingContext, ClrWhite);
+			    GrStringDrawCentered(&g_drawingContext, connStateDesc[WIFI_NOT_CONNECTED], -1, 250, 130, true);
 			    g_connToApButton.pcText = connStateDesc[WIFI_WAIT_FOR_DATA+1];
 			}
 			break;
 		case WIFI_CONNECTED:
 			if(g_appCtx.currentScreen == SCREEN_CONN_SETTINGS)
 			{
-			    GrContextFontSet(&g_context, &g_sFontCm16);
-			    GrContextForegroundSet(&g_context, ClrWhite);
-			    GrStringDrawCentered(&g_context, connStateDesc[WIFI_CONNECTED], -1, 250, 130, true);
+			    GrContextFontSet(&g_drawingContext, &g_sFontCm16);
+			    GrContextForegroundSet(&g_drawingContext, ClrWhite);
+			    GrStringDrawCentered(&g_drawingContext, connStateDesc[WIFI_CONNECTED], -1, 250, 130, true);
 			    g_connToApButton.pcText = connStateDesc[WIFI_WAIT_FOR_DATA+2];
 			}
 			break;
 		case WIFI_WAIT_FOR_DATA:
 			if(g_appCtx.currentScreen == SCREEN_CONN_SETTINGS)
 			{
-			    GrContextFontSet(&g_context, &g_sFontCm16);
-			    GrContextForegroundSet(&g_context, ClrWhite);
-			    GrStringDrawCentered(&g_context, connStateDesc[WIFI_WAIT_FOR_DATA], -1, 250, 130, true);
+			    GrContextFontSet(&g_drawingContext, &g_sFontCm16);
+			    GrContextForegroundSet(&g_drawingContext, ClrWhite);
+			    GrStringDrawCentered(&g_drawingContext, connStateDesc[WIFI_WAIT_FOR_DATA], -1, 250, 130, true);
 			}
 			break;
 		default:
@@ -804,16 +788,16 @@ static void drawToggleButton(const tButtonToggle *psButton, bool enable)
     //
     sRect = psButton->sRectButton;
 
-    GrContextForegroundSet(&g_context, ClrLightGrey);
-    GrRectFill(&g_context, &psButton->sRectContainer);
+    GrContextForegroundSet(&g_drawingContext, ClrLightGrey);
+    GrRectFill(&g_drawingContext, &psButton->sRectContainer);
 
     //
     // Copy the data out of the bounds of the button.
     //
     sRect = psButton->sRectButton;
 
-    GrContextForegroundSet(&g_context, ClrDarkGray);
-    GrRectFill(&g_context, &psButton->sRectButton);
+    GrContextForegroundSet(&g_drawingContext, ClrDarkGray);
+    GrRectFill(&g_drawingContext, &psButton->sRectButton);
 
     if(enable)
     {
@@ -829,30 +813,30 @@ static void drawToggleButton(const tButtonToggle *psButton, bool enable)
         sRect.i16XMax -= 2;
         sRect.i16YMax -= 2;
     }
-    GrContextForegroundSet(&g_context, ClrLightGrey);
-    GrRectFill(&g_context, &sRect);
+    GrContextForegroundSet(&g_drawingContext, ClrLightGrey);
+    GrRectFill(&g_drawingContext, &sRect);
 
-    GrContextFontSet(&g_context, &g_sFontCm16);
-    GrContextForegroundSet(&g_context, ClrBlack);
-    GrContextBackgroundSet(&g_context, ClrLightGrey);
+    GrContextFontSet(&g_drawingContext, &g_sFontCm16);
+    GrContextForegroundSet(&g_drawingContext, ClrBlack);
+    GrContextBackgroundSet(&g_drawingContext, ClrLightGrey);
 
     i16X = sRect.i16XMin + ((sRect.i16XMax - sRect.i16XMin) / 2);
     i16Y = sRect.i16YMin + ((sRect.i16YMax - sRect.i16YMin) / 2);
 
     if(enable)
     {
-        GrStringDrawCentered(&g_context, psButton->pcOn, -1, i16X, i16Y,
+        GrStringDrawCentered(&g_drawingContext, psButton->pcOn, -1, i16X, i16Y,
                              true);
     }
     else
     {
-        GrStringDrawCentered(&g_context, psButton->pcOff, -1, i16X, i16Y,
+        GrStringDrawCentered(&g_drawingContext, psButton->pcOff, -1, i16X, i16Y,
                              true);
     }
 
     if(psButton->pcLabel)
     {
-        GrStringDraw(&g_context, psButton->pcLabel, -1,
+        GrStringDraw(&g_drawingContext, psButton->pcLabel, -1,
                      psButton->sRectButton.i16XMax + 2,
                      psButton->sRectButton.i16YMin + 6,
                      true);
@@ -889,7 +873,7 @@ static void onKeyEvent(tWidget *psWidget, uint32_t ui32Key, uint32_t ui32Event)
                 //
                 // Save the pixel width of the current string.
                 //
-                g_i32StringWidth = GrStringWidthGet(&g_context, g_pcKeyStr, 40);
+                g_i32StringWidth = GrStringWidthGet(&g_drawingContext, g_pcKeyStr, 40);
             }
             break;
         }
@@ -926,7 +910,7 @@ static void onKeyEvent(tWidget *psWidget, uint32_t ui32Key, uint32_t ui32Event)
                     //
                     // Returning to the settings screen.
                     //
-                    //FrameDraw(&g_g_context, "Settings");
+                    //FrameDraw(&g_g_drawingContext, "Settings");
                     WidgetPaint(g_screens[g_appCtx.currentScreen].widget);
                     //AnimateButtons(true);
                     WidgetMessageQueueProcess();
@@ -958,7 +942,7 @@ static void onKeyEvent(tWidget *psWidget, uint32_t ui32Key, uint32_t ui32Event)
                 //
                 // Save the pixel width of the current string.
                 //
-                g_i32StringWidth = GrStringWidthGet(&g_context, g_pcKeyStr, 40);
+                g_i32StringWidth = GrStringWidthGet(&g_drawingContext, g_pcKeyStr, 40);
             }
             break;
         }
@@ -972,15 +956,13 @@ static void onWifiEnable(tWidget *psWidget)
 	if(g_appCtx.wifiEnabled)
 	{
 		g_appCtx.wifiEnabled = false;
-		//PushButtonTextColorSet(&g_sCustomCity, ClrGray);
+		PushButtonTextColorSet(&g_customCity, ClrGray);
 	}
 	else
 	{
 		g_appCtx.wifiEnabled = true;
-		//PushButtonTextColorSet(&g_sCustomCity, ClrBlack);
+		PushButtonTextColorSet(&g_customCity, ClrBlack);
 	}
-    drawToggleButton(&sCustomToggle, g_appCtx.wifiEnabled);
-   // WidgetPaint((tWidget *)&g_sCustomCity);
 }
 
 
@@ -998,7 +980,7 @@ static void onCityEntry(tWidget *psWidget)
         //
         // Disable swiping while the keyboard is active.
         //
-        //g_sSwipe.bEnable = false;
+        g_appCtx.swipeEnabled = false;
         //
         // The keyboard string is now the custom city so set the string,
         // reset the string index and width to 0.
@@ -1027,10 +1009,10 @@ static void onCityEntry(tWidget *psWidget)
         //
         // Clear the main screen area with the settings background color.
         //
-        GrContextForegroundSet(&g_context, BG_COLOR_SETTINGS);
-        clearBackground(&g_context);
+        GrContextForegroundSet(&g_drawingContext, BG_COLOR_SETTINGS);
+        clearBackground(&g_drawingContext);
 
-        GrContextFontSet(&g_context, g_psFontCmss24);
+        GrContextFontSet(&g_drawingContext, g_psFontCmss24);
         WidgetPaint((tWidget *)&g_sKeyboardBackground);
     //}
 }
@@ -1186,7 +1168,8 @@ static void handleMovement(void)
 		{
             WidgetRemove(g_screens[g_appCtx.currentScreen].widget);
             WidgetAdd(WIDGET_ROOT, g_screens[newScreenIdx].widget);
-            WidgetPaint(WIDGET_ROOT);
+            WidgetPaint((tWidget *)(g_screens[newScreenIdx].widget));
+            //WidgetPaint(WIDGET_ROOT);
             g_appCtx.currentScreen = newScreenIdx;
 
 		}
@@ -1201,14 +1184,12 @@ static void handleMovement(void)
 // Main method of the application
 //
 
+
 int main(void) {
-	//FPUEnable();
-	//FPULazyStackingEnable();
-	//
+	FPUEnable();
+	FPULazyStackingEnable();
 	// Setup the system clock to run at 80 Mhz from PLL with crystal reference
-	//
 	SysCtlClockSet(SYSCTL_SYSDIV_2_5 | SYSCTL_USE_PLL | SYSCTL_OSC_MAIN | SYSCTL_XTAL_16MHZ);
-	//SysCtlClockSet(SYSCTL_SYSDIV_4 | SYSCTL_USE_OSC | SYSCTL_OSC_MAIN | SYSCTL_XTAL_16MHZ);
 	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF);
 	GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, RED_LED | BLUE_LED | GREEN_LED);
 	GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, GREEN_LED);
@@ -1231,30 +1212,30 @@ int main(void) {
 
 
     tRectangle sRect;
-    GrContextInit(&g_context, &g_ILI9320);
-    //FrameDraw(&g_context, "hello-widget");
+    GrContextInit(&g_drawingContext, &g_ILI9320);
+    //FrameDraw(&g_drawingContext, "hello-widget");
 #if 1
     //
     // Fill the top 24 rows of the screen with blue to create the banner.
     //
     sRect.i16XMin = 0;
     sRect.i16YMin = 0;
-    sRect.i16XMax = GrContextDpyWidthGet(&g_context) - 1;
+    sRect.i16XMax = GrContextDpyWidthGet(&g_drawingContext) - 1;
     sRect.i16YMax = 23;
-    GrContextForegroundSet(&g_context, ClrDarkBlue);
-    GrRectFill(&g_context, &sRect);
+    GrContextForegroundSet(&g_drawingContext, ClrDarkBlue);
+    GrRectFill(&g_drawingContext, &sRect);
 
     //
     // Put a Red box around the banner.
     //
-    GrContextForegroundSet(&g_context, ClrRed);
-    GrRectDraw(&g_context, &sRect);
+    GrContextForegroundSet(&g_drawingContext, ClrRed);
+    GrRectDraw(&g_drawingContext, &sRect);
 
     // Put the application name in the middle of the banner.
-    GrContextForegroundSet(&g_context, ClrYellowGreen);
-    GrContextFontSet(&g_context, &g_sFontCm20);
-    GrStringDrawCentered(&g_context, "Meteo Ubiad Stacja", -1,
-                         GrContextDpyWidthGet(&g_context) / 2, 8, 0);
+    GrContextForegroundSet(&g_drawingContext, ClrYellowGreen);
+    GrContextFontSet(&g_drawingContext, &g_sFontCm20);
+    GrStringDrawCentered(&g_drawingContext, "Meteo Ubiad Stacja", -1,
+                         GrContextDpyWidthGet(&g_drawingContext) / 2, 8, 0);
 #endif
 
 
@@ -1277,7 +1258,7 @@ int main(void) {
 	SysTickEnable();
 
 	//do touch screen calibration if needed
-	performTouchScreenCalibration(&g_context);
+	performTouchScreenCalibration(&g_drawingContext);
 
 
 	while (1) {
@@ -1292,8 +1273,8 @@ int main(void) {
 			TouchPoint a;
 			a = ADS7843getTouchedPoint();
 			//MAIN_DEBUG("RESULTS: x=%d, y=%d\n\r", a.x, a.y);
-			GrContextForegroundSet(&g_context, ClrRed);
-			GrCircleFill(&g_context, a.x, a.y, 3);
+			GrContextForegroundSet(&g_drawingContext, ClrRed);
+			GrCircleFill(&g_drawingContext, a.x, a.y, 3);
 		}
 
 #endif

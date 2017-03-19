@@ -94,6 +94,24 @@ ConfigParameters* configGetCurrent(void)
 
 
 // EEPROM
+static const ConfigEepromParameters defaultEepromSettings =
+{
+		{
+				{0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f},
+				0x00
+		},
+		.wifiConfig[0] = {
+				{"default"},
+				{"defaultPass"},
+		},
+		{
+				{""}, {""}, {""}
+		},
+		.openweatherDomain = {"https://api.openweathermap.org/"},
+		0xFF, /*0x00 and 0xFF means invalid one*/
+		0x00
+};
+
 static ConfigEepromParameters m_currentEepromParameters;
 
 bool configEepromInit(void)
@@ -111,9 +129,16 @@ void configEepromLoad(void)
 {
 	EEPROMRead((uint8_t*)&m_currentEepromParameters, EEPROM_START_ADDRESS, sizeof(ConfigEepromParameters));
 }
-void configEepromSave(void)
+
+bool configEepromSaveDefaults(void)
 {
-	EEPROMProgram((uint8_t*)&m_currentEepromParameters, EEPROM_START_ADDRESS, sizeof(ConfigEepromParameters));
+	return 0 == EEPROMProgram((uint8_t*)&defaultEepromSettings, EEPROM_START_ADDRESS, sizeof(ConfigEepromParameters));
+}
+
+
+bool configEepromSave(void)
+{
+	return 0 == EEPROMProgram((uint8_t*)&m_currentEepromParameters, EEPROM_START_ADDRESS, sizeof(ConfigEepromParameters));
 }
 
 

@@ -12,8 +12,8 @@
 
 
 
-#define MAX_CITIES 1
-#define MAX_CITY_NAME_LENGTH 10
+#define MAX_CITIES 3
+#define MAX_CITY_NAME_LENGTH 20
 #define MAX_WIFI_CONFIGS 1
 
 #define DEFAULT_VERSION 0xFF
@@ -38,14 +38,14 @@
 typedef struct
 {
 	CalibCoefficients calibCoeffs;
-	uint8_t isUpdated;
+	uint8_t isModified;
 }TouchScreenConfigParameters;
 
 typedef struct
 {
 	char wifiSSID[20];
-	char wifiWPA2_key[20];
-	uint32_t ipAddr;
+	char wifiWPA2pass[20];
+	uint8_t updatePeriodTime; /*Time after which  request is sent in seconds*/
 }AccessPointConfigParameters;
 
 typedef struct
@@ -73,14 +73,21 @@ ConfigParameters* configGetCurrent(void);
 typedef struct
 {
 	TouchScreenConfigParameters touchScreenParams;
+	AccessPointConfigParameters wifiConfig[MAX_WIFI_CONFIGS];
+	char cityNames[MAX_CITIES][MAX_CITY_NAME_LENGTH];
+	char openweatherDomain[50];
 	uint8_t paramsVersion;
 	uint8_t isModified;
-	uint8_t reserved; //just to provide correct alignment
 }ConfigEepromParameters;
 
-bool configEepromInit(void);
+/*
+ * @brief utils for EEprom memory
+ * @return true on success
+ */
 void configEepromLoad(void);
-void configEepromSave(void);
+bool configEepromInit(void);
+bool configEepromSaveDefaults(void);
+bool configEepromSave(void);
 ConfigEepromParameters* configEepromGetCurrent(void);
 
 

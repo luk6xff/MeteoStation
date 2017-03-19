@@ -147,7 +147,7 @@ typedef struct
 extern tCanvasWidget g_screenMainBackground;
 extern tCanvasWidget g_screenWifiSetupBackground;
 extern tCanvasWidget g_screenSensorSetupBackground;
-extern tCanvasWidget g_sKeyboardBackground;
+extern tCanvasWidget g_keyboardBackground;
 extern tCanvasWidget g_settingsPanel;
 extern tPushButtonWidget g_sPushBtn;
 
@@ -157,39 +157,6 @@ extern tPushButtonWidget g_sPushBtn;
 // Typedefs.
 //
 //*****************************************************************************
-//*****************************************************************************
-//
-// State information for the toggle buttons used in the settings panel.
-//
-//*****************************************************************************
-typedef struct
-{
-    //
-    // The outside area of the button.
-    //
-    tRectangle sRectContainer;
-
-    //
-    // The actual button area.
-    //
-    tRectangle sRectButton;
-
-    //
-    // The text for the on position.
-    //
-    const char *pcOn;
-
-    //
-    // The text for the off position.
-    //
-    const char *pcOff;
-
-    //
-    // The label for the button.
-    //
-    const char *pcLabel;
-}
-tButtonToggle;
 
 
 //*****************************************************************************
@@ -236,12 +203,11 @@ typedef struct
 	WifiConnectionState wifiState;
 	SensorConnectionState sensorState;
 	Screens currentScreen;
-	char* currentCity;
-	char* apSsid;
-	char* apPass;
+	char currentCity[50];
+	char apSsid[50];
+	char apPass[50];
 
 }AppContext;
-
 
 //*****************************************************************************
 //
@@ -251,7 +217,7 @@ typedef struct
 static tContext g_drawingContext;
 static volatile State g_mainState = STATE_RESET;
 static volatile Swipe g_swipe;
-static volatile AppContext g_appCtx = {false, false, false, true, WIFI_NOT_CONNECTED, SENSOR_NOT_CONNECTED, SCREEN_MAIN, (void*)0, (void*)0, (void*)0};
+static volatile AppContext g_appCtx = {false, false, false, true, WIFI_NOT_CONNECTED, SENSOR_NOT_CONNECTED, SCREEN_MAIN, {"NowySacz"}, {"INTEHNET"}, {"Faza939290"}/*(void*)0, (void*)0, (void*)0*/};
 
 static ScreenContainer g_screens[SCREEN_NUM_OF_SCREENS] =
 {
@@ -272,7 +238,7 @@ static ScreenContainer g_screens[SCREEN_NUM_OF_SCREENS] =
 		SCREEN_CONN_SETTINGS, SCREEN_CONN_SETTINGS, SCREEN_CONN_SETTINGS, SCREEN_CONN_SETTINGS
     },
     {
-        (tWidget *)&g_sKeyboardBackground,
+        (tWidget *)&g_keyboardBackground,
         SCREEN_KEYBOARD, SCREEN_KEYBOARD, SCREEN_KEYBOARD, SCREEN_KEYBOARD
     }
 };
@@ -286,8 +252,10 @@ static ScreenContainer g_screens[SCREEN_NUM_OF_SCREENS] =
 //*****************************************************************************
 static void onKeyEvent(tWidget *psWidget, uint32_t ui32Key, uint32_t ui32Event);
 static void onWifiEnable(tWidget *psWidget);
-static void drawToggleButton(const tButtonToggle *psButton, bool enable);
 static void onCityEntry(tWidget *psWidget);
+static void onSsidEntry(tWidget *psWidget);
+static void onPassEntry(tWidget *psWidget);
+static void onUpdateTimeEntry(tWidget *psWidget);
 static int32_t touchScreenCallback(uint32_t msg, int32_t x, int32_t y);
 
 //*****************************************************************************
@@ -328,14 +296,14 @@ static bool performTouchScreenCalibration(tContext* ctx)
 	intsOff = IntMasterDisable();
 	//ConfigParameters* cfg = configGetCurrent(); //FLASH
 	ConfigEepromParameters* cfg = configEepromGetCurrent();
-	if(cfg->touchScreenParams.isUpdated == 0xFF || cfg->touchScreenParams.isUpdated == 0x00)
+	if(cfg->touchScreenParams.isModified == 0xFF || cfg->touchScreenParams.isModified == 0x00)
 	{
 		performThreePointCalibration(ctx, &coeffs);
 		ADS7843setCalibrationCoefficients(&coeffs);
 		if(confirmThreePointCalibration(ctx))
 		{
 			cfg->touchScreenParams.calibCoeffs = coeffs;
-			cfg->touchScreenParams.isUpdated = 0x1;
+			cfg->touchScreenParams.isModified = 0x1;
 			//configSave(); //FLASH
 			configEepromSave();
 
@@ -447,7 +415,7 @@ static volatile uint32_t g_ui32CursorDelay;
 //
 // The keyboard widget used by the application.
 //
-Keyboard(g_sKeyboard, &g_sKeyboardBackground, 0, 0,
+Keyboard(g_sKeyboard, &g_keyboardBackground, 0, 0,
 		 &g_ILI9320, 8, 90, 300, 140,
          KEYBOARD_STYLE_FILL | KEYBOARD_STYLE_AUTO_REPEAT |
          KEYBOARD_STYLE_PRESS_NOTIFY | KEYBOARD_STYLE_RELEASE_NOTIFY |
@@ -458,7 +426,7 @@ Keyboard(g_sKeyboard, &g_sKeyboardBackground, 0, 0,
 //
 // The keyboard text entry area.
 //
-Canvas(g_sKeyboardText, &g_sKeyboardBackground, &g_sKeyboard, 0,
+Canvas(g_sKeyboardText, &g_keyboardBackground, &g_sKeyboard, 0,
 	   &g_ILI9320, BG_MIN_X, BG_MIN_Y,
        BG_MAX_X - BG_MIN_X, 60,
        CANVAS_STYLE_FILL | CANVAS_STYLE_TEXT | CANVAS_STYLE_TEXT_LEFT,
@@ -467,7 +435,7 @@ Canvas(g_sKeyboardText, &g_sKeyboardBackground, &g_sKeyboard, 0,
 //
 // The full background for the keyboard when it is takes over the screen.
 //
-Canvas(g_sKeyboardBackground, WIDGET_ROOT, 0, &g_sKeyboardText,
+Canvas(g_keyboardBackground, WIDGET_ROOT, 0, &g_sKeyboardText,
 	   &g_ILI9320, BG_MIN_X, BG_MIN_Y,
        BG_MAX_X - BG_MIN_X, BG_MAX_Y - BG_MIN_Y,
        CANVAS_STYLE_FILL, ClrBlack, ClrWhite, ClrWhite, 0, 0, 0 ,0 );
@@ -482,38 +450,33 @@ Canvas(g_sKeyboardBackground, WIDGET_ROOT, 0, &g_sKeyboardText,
 //
 // The text entry button for the custom city.
 //
-RectangularButton(g_customCity, &g_screenWifiSetupBackground, 0, 0,
+
+RectangularButton(g_wifiApSsid, &g_screenWifiSetupBackground, 0, 0,
        &g_ILI9320, 118, 30, 190, 28,
        PB_STYLE_FILL | PB_STYLE_TEXT, ClrLightGrey,
        ClrLightGrey, ClrWhite, ClrGray, g_psFontCmss14,
-       0, 0, 0, 0 ,0 , onCityEntry);
+	   g_appCtx.apSsid, 0, 0, 0 ,0 , onSsidEntry);
 
-//
-// MAC Address display.
-//
-//GrContextForegroundSet(g_drawingContext, ClrSilver);
-//GrContextFontSet(g_drawingContext, g_psFontCm14);
-//GrStringDraw(g_drawingContext, "Strings", -1, 120, 104, 0);
-char g_wifiMACAddr[40];
-Canvas(g_screenWifiSetupMACAddr, &g_screenWifiSetupBackground, &g_customCity, 0,
-       &g_ILI9320, 12, 180, 147, 20,
-       CANVAS_STYLE_FILL | CANVAS_STYLE_TEXT | CANVAS_STYLE_TEXT_LEFT,
-       ClrGray, ClrDarkGray, ClrBlack, g_psFontCmss14,
-       g_wifiMACAddr, 0, 0);
+RectangularButton(g_wifiApPass, &g_screenWifiSetupBackground, &g_wifiApSsid, 0,
+       &g_ILI9320, 118, 70, 190, 28,
+       PB_STYLE_FILL | PB_STYLE_TEXT, ClrLightGrey,
+       ClrLightGrey, ClrWhite, ClrGray, g_psFontCmss14,
+	   g_appCtx.apPass, 0, 0, 0 ,0 , onPassEntry);
 
-//
-// IP Address display.
-//
-char g_wifiIPAddr[20];
-Canvas(g_screenWifiSetupIPAddr, &g_screenWifiSetupBackground, &g_screenWifiSetupMACAddr, 0,
-       &g_ILI9320, 12, 200, 147, 20,
-       CANVAS_STYLE_FILL | CANVAS_STYLE_TEXT | CANVAS_STYLE_TEXT_LEFT,
-       ClrGray, ClrDarkGray, ClrBlack, g_psFontCmss14,
-       g_wifiIPAddr, 0, 0);
+RectangularButton(g_wifiCustomCity, &g_screenWifiSetupBackground, &g_wifiApPass, 0,
+       &g_ILI9320, 118, 110, 190, 28,
+       PB_STYLE_FILL | PB_STYLE_TEXT, ClrLightGrey,
+       ClrLightGrey, ClrWhite, ClrGray, g_psFontCmss14,
+	   g_appCtx.currentCity, 0, 0, 0 ,0 , onCityEntry);
 
+RectangularButton(g_wifiUpdateTime, &g_screenWifiSetupBackground, &g_wifiCustomCity, 0,
+       &g_ILI9320, 118, 150, 190, 28,
+       PB_STYLE_FILL | PB_STYLE_TEXT, ClrLightGrey,
+       ClrLightGrey, ClrWhite, ClrGray, g_psFontCmss14,
+       0, 0, 0, 0 ,0 , onUpdateTimeEntry);
 
 /* the WIFIsettings panel. */
-Canvas(g_screenWifiSetupBackground, WIDGET_ROOT, 0, &g_screenWifiSetupIPAddr,
+Canvas(g_screenWifiSetupBackground, WIDGET_ROOT, 0, &g_wifiUpdateTime/*&g_screenWifiSetupIPAddr*/,
        &g_ILI9320, BG_MIN_X, BG_MIN_Y,
        BG_MAX_X - BG_MIN_X, BG_MAX_Y - BG_MIN_Y,
        CANVAS_STYLE_FILL | CANVAS_STYLE_TEXT_RIGHT |
@@ -677,8 +640,6 @@ void onConnToAP(tWidget *psWidget)
 		}
 		else
 		{
-			g_appCtx.apSsid = "testSsid"; //TODO !!
-			g_appCtx.apPass = "testPass";
 			esp8266CommandCWMODE(ESP8266_MODE_CLIENT);
 			if(esp8266CommandCWJAP(g_appCtx.apSsid, g_appCtx.apPass))
 			{
@@ -768,80 +729,12 @@ static void updateWifiConnectionStatus(WifiConnectionState state)
 	}
 	g_appCtx.wifiState = state;
 }
+
 static void updateSensorConnectionStatus(SensorConnectionState state)
 {
 
 }
 
-//*****************************************************************************
-//
-// Draws a toggle button.
-//
-//*****************************************************************************
-static void drawToggleButton(const tButtonToggle *psButton, bool enable)
-{
-    tRectangle sRect;
-    int16_t i16X, i16Y;
-
-    //
-    // Copy the data out of the bounds of the button.
-    //
-    sRect = psButton->sRectButton;
-
-    GrContextForegroundSet(&g_drawingContext, ClrLightGrey);
-    GrRectFill(&g_drawingContext, &psButton->sRectContainer);
-
-    //
-    // Copy the data out of the bounds of the button.
-    //
-    sRect = psButton->sRectButton;
-
-    GrContextForegroundSet(&g_drawingContext, ClrDarkGray);
-    GrRectFill(&g_drawingContext, &psButton->sRectButton);
-
-    if(enable)
-    {
-        sRect.i16XMin += 2;
-        sRect.i16YMin += 2;
-        sRect.i16XMax -= 15;
-        sRect.i16YMax -= 2;
-    }
-    else
-    {
-        sRect.i16XMin += 15;
-        sRect.i16YMin += 2;
-        sRect.i16XMax -= 2;
-        sRect.i16YMax -= 2;
-    }
-    GrContextForegroundSet(&g_drawingContext, ClrLightGrey);
-    GrRectFill(&g_drawingContext, &sRect);
-
-    GrContextFontSet(&g_drawingContext, &g_sFontCm16);
-    GrContextForegroundSet(&g_drawingContext, ClrBlack);
-    GrContextBackgroundSet(&g_drawingContext, ClrLightGrey);
-
-    i16X = sRect.i16XMin + ((sRect.i16XMax - sRect.i16XMin) / 2);
-    i16Y = sRect.i16YMin + ((sRect.i16YMax - sRect.i16YMin) / 2);
-
-    if(enable)
-    {
-        GrStringDrawCentered(&g_drawingContext, psButton->pcOn, -1, i16X, i16Y,
-                             true);
-    }
-    else
-    {
-        GrStringDrawCentered(&g_drawingContext, psButton->pcOff, -1, i16X, i16Y,
-                             true);
-    }
-
-    if(psButton->pcLabel)
-    {
-        GrStringDraw(&g_drawingContext, psButton->pcLabel, -1,
-                     psButton->sRectButton.i16XMax + 2,
-                     psButton->sRectButton.i16YMin + 6,
-                     true);
-    }
-}
 
 
 
@@ -893,31 +786,12 @@ static void onKeyEvent(tWidget *psWidget, uint32_t ui32Key, uint32_t ui32Event)
                 //
                 // Switch back to the previous screen and add its widget back.
                 //
-                g_appCtx.currentScreen = SCREEN_CONN_SETTINGS;
+                g_appCtx.currentScreen = SCREEN_WIFI_SETTINGS; //TODO
                 WidgetAdd(WIDGET_ROOT, g_screens[g_appCtx.currentScreen].widget);
 
-
-                //
-                // If returning to the main screen then re-draw the frame to
-                // indicate the main screen.
-                //
-                if(g_appCtx.currentScreen  == SCREEN_MAIN)
-                {
-                    WidgetPaint(g_screens[g_appCtx.currentScreen].widget);
-                }
-                else
-                {
-                    //
-                    // Returning to the settings screen.
-                    //
-                    //FrameDraw(&g_g_drawingContext, "Settings");
-                    WidgetPaint(g_screens[g_appCtx.currentScreen].widget);
-                    //AnimateButtons(true);
-                    WidgetMessageQueueProcess();
-
-                }
+				WidgetPaint(g_screens[g_appCtx.currentScreen].widget);
+				WidgetMessageQueueProcess();
             }
-
             break;
         }
         //
@@ -956,12 +830,12 @@ static void onWifiEnable(tWidget *psWidget)
 	if(g_appCtx.wifiEnabled)
 	{
 		g_appCtx.wifiEnabled = false;
-		PushButtonTextColorSet(&g_customCity, ClrGray);
+		PushButtonTextColorSet(&g_wifiCustomCity, ClrGray);
 	}
 	else
 	{
 		g_appCtx.wifiEnabled = true;
-		PushButtonTextColorSet(&g_customCity, ClrBlack);
+		PushButtonTextColorSet(&g_wifiCustomCity, ClrBlack);
 	}
 }
 
@@ -985,7 +859,7 @@ static void onCityEntry(tWidget *psWidget)
         // The keyboard string is now the custom city so set the string,
         // reset the string index and width to 0.
         //
-        //g_pcKeyStr = g_sConfig.pcCustomCity;
+        g_pcKeyStr = g_appCtx.currentCity;
         g_ui32StringIdx = 0;
         g_i32StringWidth = 0;
 
@@ -1013,10 +887,61 @@ static void onCityEntry(tWidget *psWidget)
         clearBackground(&g_drawingContext);
 
         GrContextFontSet(&g_drawingContext, g_psFontCmss24);
-        WidgetPaint((tWidget *)&g_sKeyboardBackground);
+        WidgetPaint((tWidget *)&g_keyboardBackground);
     //}
 }
 
+static void onSsidEntry(tWidget *psWidget)
+{
+}
+
+static void onPassEntry(tWidget *psWidget)
+{
+}
+
+static void onUpdateTimeEntry(tWidget *psWidget)
+{
+}
+
+//*****************************************************************************
+//
+// handle keyboard updates.
+//
+//*****************************************************************************
+static void handleKeyboard(void)
+{
+    // Nothing to do if the keyboard is not active.
+    if(g_appCtx.currentScreen != SCREEN_KEYBOARD)
+    {
+        return;
+    }
+
+    //
+    // If the mid value is hit then clear the cursor.
+    //
+    if(g_ui32CursorDelay == KEYBOARD_BLINK_RATE / 2)
+    {
+        GrContextForegroundSet(&g_drawingContext, ClrBlack);
+        // Keep the counter moving now that the clearing has been handled.
+        g_ui32CursorDelay--;
+    }
+    else if(g_ui32CursorDelay == 0)
+    {
+        GrContextForegroundSet(&g_drawingContext, ClrWhite);
+
+        // Reset the blink delay now that the drawing of the cursor has been
+        // handled.
+        g_ui32CursorDelay = KEYBOARD_BLINK_RATE;
+    }
+    else
+    {
+        return;
+    }
+
+    // Draw the cursor only if it is time.
+    GrLineDrawV(&g_drawingContext, BG_MIN_X + g_i32StringWidth , BG_MIN_Y + 20,
+                BG_MIN_Y + 40);
+}
 
 //*****************************************************************************
 //
@@ -1264,6 +1189,7 @@ int main(void) {
 	while (1) {
 
         handleMovement();
+        handleKeyboard();
         // Process any messages in the widget message queue.
         WidgetMessageQueueProcess();
 #if 0

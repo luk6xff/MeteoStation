@@ -47,7 +47,7 @@ static Canvas(m_msgBoxBackground, WIDGET_ROOT, 0, &m_noButton,
 	   &g_ILI9320, MSGBOX_UP_LEFT_CORNER_X, MSGBOX_UP_LEFT_CORNER_Y,
 	   MSGBOX_WIDTH_X, MSGBOX_HEIGHT_Y,
        CANVAS_STYLE_FILL | CANVAS_STYLE_TEXT_RIGHT |
-       CANVAS_STYLE_TEXT_TOP, BG_COLOR_MAIN, ClrWhite, ClrBlueViolet, 0,
+       CANVAS_STYLE_TEXT_TOP, BG_COLOR_MAIN, ClrRed, ClrBlueViolet, 0,
        0, 0, 0);
 
 static void onYesPressButton()
@@ -104,12 +104,18 @@ bool uiMessageBoxCreate(const char* msgTitle, const char* msg)
 {
 	m_buttonPressResult = false;
 	m_buttonPressed = false;
-    WidgetPaint((tWidget *)&m_msgBoxBackground);
+    WidgetAdd(WIDGET_ROOT, (tWidget *)&m_msgBoxBackground);
+	WidgetPaint(WIDGET_ROOT);
+	//WidgetPaint((tWidget *)&m_msgBoxBackground);
     WidgetMessageQueueProcess();
     writeMessage(msg);
     createBanner(msgTitle);
     uint32_t start = uiDelayCounterMsVal();
-    while(((uiDelayCounterMsVal() - start) < 5000) && !m_buttonPressed); //5[s]
+    while(((uiDelayCounterMsVal() - start) < 5000) && !m_buttonPressed) //5[s]
+    {
+        WidgetMessageQueueProcess(); //check buttons' state
+    }
+	WidgetRemove((tWidget *)&m_msgBoxBackground);
 	return m_buttonPressResult;
 }
 

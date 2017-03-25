@@ -267,7 +267,6 @@ static void clearBackground(tContext *psContext)
         BG_MAX_X,
         BG_MAX_Y,
     };
-
     GrRectFill(psContext, &sRect);
 }
 
@@ -766,14 +765,20 @@ static void onKeyEvent(tWidget *psWidget, uint32_t ui32Key, uint32_t ui32Event)
         {
             if(ui32Event == KEYBOARD_EVENT_PRESS)
             {
+            	WidgetRemove(g_screens[g_appCtx.currentScreen].widget);
+            	g_appCtx.currentScreen = SCREEN_WIFI_SETTINGS;
+            	if(uiMessageBoxCreate("Save parameter", "Wanna save the params ?"))
+            	{
+            		MAIN_DEBUG("TRUE");
+            	}
+            	else
+            	{
+            		MAIN_DEBUG("FALSEEEEE");
+            	}
 
-                uiMessageBoxCreate("Save parameter", "Wanna save the params ?");
-
-                WidgetRemove(g_screens[g_appCtx.currentScreen].widget);
-                g_appCtx.currentScreen = SCREEN_WIFI_SETTINGS;
                 WidgetAdd(WIDGET_ROOT, g_screens[g_appCtx.currentScreen].widget);
 				WidgetPaint(WIDGET_ROOT);
-		        // Enable swiping while the keyboard is active.
+		        //Enable swiping while the keyboard is active.
 		        g_appCtx.swipeEnabled = true;
             }
             break;
@@ -842,11 +847,6 @@ static void onCityEntry(tWidget *psWidget)
         // Activate the keyboard.
         g_appCtx.currentScreen = SCREEN_KEYBOARD;
         WidgetAdd(WIDGET_ROOT, g_screens[g_appCtx.currentScreen].widget);
-
-        GrContextForegroundSet(&g_drawingContext, BG_COLOR_SETTINGS);
-        clearBackground(&g_drawingContext);
-
-        GrContextFontSet(&g_drawingContext, g_psFontCmss24);
         WidgetPaint(WIDGET_ROOT);
 }
 
@@ -875,9 +875,7 @@ static void handleKeyboard(void)
         return;
     }
 
-    //
     // If the mid value is hit then clear the cursor.
-    //
     if(g_keyboardCursorDelay == KEYBOARD_BLINK_RATE / 2)
     {
         GrContextForegroundSet(&g_drawingContext, ClrBlack);

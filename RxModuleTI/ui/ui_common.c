@@ -7,6 +7,7 @@
 
 #include "ui_common.h"
 #include "ui_message_box.h"
+#include "ui_keyboard.h"
 
 #define UI_TIMER_BASE TIMER2_BASE
 #define UI_TIMER_TYPE TIMER_A
@@ -83,6 +84,7 @@ void uiInit(tContext* mainDrawingContext)
 	m_drawingCtx = mainDrawingContext;
 	uiTimerInit();
 	uiMessageBoxInit(); //msgBox
+	uiKeyboardInit(); //keyboard
 }
 
 tContext* uiGetMainDrawingContext()

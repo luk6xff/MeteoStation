@@ -9,7 +9,8 @@
 #define UI_UI_KEYBOARD_H_
 
 
-bool createMessageBox(void (*yesCallback)(void), void (*noCallback)(void));
+bool uiKeyboardInit();
+
 
 
 #endif /* UI_UI_KEYBOARD_H_ */

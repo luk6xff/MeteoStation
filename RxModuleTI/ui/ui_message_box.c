@@ -54,6 +54,7 @@ static void onYesPressButton()
 {
 	m_buttonPressed = true;
 	m_buttonPressResult = true;
+	PushButtonFillColorSet(&m_yesButton, ClrGreen);
 }
 
 static void onNoPressButton()
@@ -106,7 +107,6 @@ bool uiMessageBoxCreate(const char* msgTitle, const char* msg)
 	m_buttonPressed = false;
     WidgetAdd(WIDGET_ROOT, (tWidget *)&m_msgBoxBackground);
 	WidgetPaint(WIDGET_ROOT);
-	//WidgetPaint((tWidget *)&m_msgBoxBackground);
     WidgetMessageQueueProcess();
     writeMessage(msg);
     createBanner(msgTitle);

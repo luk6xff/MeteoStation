@@ -13,15 +13,6 @@
 #include "utils/ustdlib.h"
 #include "utils/sine.h"
 
-#include "grlib/grlib.h"
-#include "grlib/widget.h"
-#include "grlib/canvas.h"
-#include "grlib/pushbutton.h"
-#include "grlib/checkbox.h"
-#include "grlib/container.h"
-#include "grlib/radiobutton.h"
-#include "grlib/slider.h"
-#include "grlib/keyboard.h"
 
 #include "ILI9320_driver.h"
 #include "3PointCalibration.h"
@@ -367,69 +358,7 @@ Canvas(g_screenMainBackground, WIDGET_ROOT, 0, &g_sCityName,
 
 
 
-//*****************************************************************************
-//
-// The canvas widget acting as Keyboard
-//
-//*****************************************************************************
 
-//
-// Keyboard cursor blink rate.
-//
-#define KEYBOARD_BLINK_RATE     100
-
-//
-// The current string pointer for the keyboard.
-//
-static char *g_keyboardString;
-
-//
-// The current string index for the keyboard.
-//
-static uint32_t g_keyboardStringIdx;
-
-//
-// A place holder string used when nothing is being displayed on the keyboard.
-//
-static const char g_keyboardTempString = 0;
-
-//
-// The current string width for the keyboard in pixels.
-//
-static int32_t g_keyboardStringWidth;
-
-//
-// The cursor blink counter.
-//
-static volatile uint32_t g_keyboardCursorDelay;
-
-//
-// The keyboard widget used by the application.
-//
-Keyboard(g_sKeyboard, &g_keyboardBackground, 0, 0,
-		 &g_ILI9320, 8, 90, 300, 140,
-         KEYBOARD_STYLE_FILL | KEYBOARD_STYLE_AUTO_REPEAT |
-         KEYBOARD_STYLE_PRESS_NOTIFY | KEYBOARD_STYLE_RELEASE_NOTIFY |
-         KEYBOARD_STYLE_BG,
-         ClrBlack, ClrGray, ClrDarkGray, ClrGray, ClrBlack, g_psFontCmss14,
-         100, 100, NUM_KEYBOARD_US_ENGLISH, g_psKeyboardUSEnglish, onKeyEvent);
-
-//
-// The keyboard text entry area.
-//
-Canvas(g_keyboardTextView, &g_keyboardBackground, &g_sKeyboard, 0,
-	   &g_ILI9320, BG_MIN_X, BG_MIN_Y,
-       BG_MAX_X - BG_MIN_X, 60,
-       CANVAS_STYLE_FILL | CANVAS_STYLE_TEXT | CANVAS_STYLE_TEXT_LEFT,
-       ClrBlack, ClrWhite, ClrWhite, g_psFontCmss24, &g_keyboardTempString, 0 ,0 );
-
-//
-// The full background for the keyboard when it is takes over the screen.
-//
-Canvas(g_keyboardBackground, WIDGET_ROOT, 0, &g_keyboardTextView,
-	   &g_ILI9320, BG_MIN_X, BG_MIN_Y,
-       BG_MAX_X - BG_MIN_X, BG_MAX_Y - BG_MIN_Y,
-       CANVAS_STYLE_FILL, ClrBlack, ClrWhite, ClrWhite, 0, 0, 0 ,0 );
 
 
 //*****************************************************************************

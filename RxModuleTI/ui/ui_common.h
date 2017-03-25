@@ -31,6 +31,8 @@
 #include "../grlib/checkbox.h"
 #include "../grlib/container.h"
 #include "../grlib/radiobutton.h"
+#include "../grlib/slider.h"
+#include "../grlib/keyboard.h"
 
 #include "../system.h"
 #include "../ILI9320_driver.h"

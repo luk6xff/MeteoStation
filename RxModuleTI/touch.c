@@ -20,6 +20,8 @@
 #include "grlib/grlib.h"
 #include "grlib/widget.h"
 
+#include "system.h"
+
 #include "touch.h"
 #include "ads7843.h"
 
@@ -57,7 +59,9 @@ static void touchScreenTimerInit()
     TimerConfigure(TIMER0_BASE, TIMER_CFG_32_BIT_PER_UP);
     // Set the Timer0A load value to 1ms.
     TimerLoadSet(TIMER0_BASE, TIMER_A, SysCtlClockGet() / 1000); //1 [ms]
-    IntMasterEnable();
+
+    //enable all interrupts
+    ENABLE_ALL_INTERRUPTS();
 
     // Configure the Timer0A interrupt for timer timeout.
     TimerIntEnable(TIMER0_BASE, TIMER_TIMA_TIMEOUT);
@@ -90,7 +94,7 @@ static void touchIntPinInit()
 	ADS7843_INT_INPUT();
 	ADS7843_INT_CONFIG_AS_FALLING();
 	GPIOPortIntRegister(ADS7843_PORT_INT, TouchScreenIntHandler);
-    IntMasterEnable();
+	ENABLE_ALL_INTERRUPTS();
     touchIntPinInterruptEnable(true);
 }
 
@@ -105,7 +109,7 @@ static void touchIntPinInterruptEnable(bool enable)
 }
 
 
-//init method for touch controller
+//Init method for touch controller
 void touchScreenInit()
 {
 	ADS7843init();

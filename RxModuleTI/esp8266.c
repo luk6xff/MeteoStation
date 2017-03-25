@@ -21,6 +21,7 @@
 #include "driverlib/timer.h"
 #include "driverlib/uart.h"
 
+#include "system.h"
 #include "esp8266.h"
 
 
@@ -44,10 +45,6 @@
 #define TX_BUF_SIZE 256
 #define RX_BUF_SIZE 512
 
-//Critical section
-//Enable Disable all interrupts
-#define ESP8266_ENABLE_ALL_INTERRUPTS() IntMasterEnable();
-#define ESP8266_DISABLE_ALL_INTERRUPTS() IntMasterDisable();
 
 //Function prototypes
 static bool esp8266WaitForResponse(const char* resp, uint16_t msTimeout);
@@ -81,9 +78,10 @@ static void esp8266UartSetup(void) {
 			UART_CONFIG_PAR_NONE));
 
 	// Enable the  UART5 RX interrupts.
-	IntMasterEnable();
 	IntEnable(INT_UART5);
 	UARTIntEnable(UART5_BASE, UART_INT_RX | UART_INT_RT);
+	//enable all
+	ENABLE_ALL_INTERRUPTS();
 }
 
 
@@ -120,7 +118,7 @@ static void esp8266TimerInit()
     TimerConfigure(TIMER1_BASE, TIMER_CFG_32_BIT_PER_UP);
     // Set the Timer1A load value to 1ms.
     TimerLoadSet(TIMER1_BASE, TIMER_A, SysCtlClockGet() / 1000); //1 [ms]
-    ESP8266_ENABLE_ALL_INTERRUPTS();
+    ENABLE_ALL_INTERRUPTS();
 
     // Configure the Timer1A interrupt for timer timeout.
     TimerIntEnable(TIMER1_BASE, TIMER_TIMA_TIMEOUT);
@@ -235,11 +233,11 @@ static void esp8266UartSend(const char* dataBuffer)
 
 static void esp8266SendATCommand(const char* cmd)
 {
-	ESP8266_DISABLE_ALL_INTERRUPTS();
+	DISABLE_ALL_INTERRUPTS();
 	esp8266ResetUartRxBuffer();
 	esp8266UartSend(cmd);
 	esp8266UartSend((const char*)"\r\n"); //CR LF
-	ESP8266_ENABLE_ALL_INTERRUPTS();
+	ENABLE_ALL_INTERRUPTS();
 }
 
 

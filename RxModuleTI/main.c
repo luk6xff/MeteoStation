@@ -29,6 +29,9 @@
 #include "esp8266.h"
 #include "touch.h"
 #include "images.h"
+#include "system.h"
+#include "ui/ui_message_box.h"
+#include "ui/ui_common.h"
 
 #define MAIN_DEBUG_ENABLE 1
 #if MAIN_DEBUG_ENABLE
@@ -36,37 +39,25 @@
 #endif
 static inline void MAIN_DEBUG(const char* fmt, ...)
 {
-		do
+	do
+	{
+		if (MAIN_DEBUG_ENABLE)
 		{
-			if (MAIN_DEBUG_ENABLE)
-			{
-			    va_list args;
-				va_start(args, fmt);
-				debugConsolePrintf("Main: ");
-				debugConsolePrintf(fmt, args);
-				va_end(args);
-				debugConsolePrintf("\n");
-			}
-		}while(0);
+			va_list args;
+			va_start(args, fmt);
+			debugConsolePrintf("Main: ");
+			debugConsolePrintf(fmt, args);
+			va_end(args);
+			debugConsolePrintf("\n");
+		}
+	}while(0);
 }
 
-#define RED_LED   GPIO_PIN_1
-#define BLUE_LED  GPIO_PIN_2
-#define GREEN_LED GPIO_PIN_3
 
 
 
-//*****************************************************************************
-//
-// Defines for the main screen area used by the application.
-//
-//*****************************************************************************
-#define BG_MIN_X                4
-#define BG_MAX_X                (320 - 4)
-#define BG_MIN_Y                24
-#define BG_MAX_Y                (240 - 8)
-#define BG_COLOR_SETTINGS       ClrGray
-#define BG_COLOR_MAIN           ClrBlack
+
+
 
 
 //*****************************************************************************
@@ -325,7 +316,7 @@ static bool performTouchScreenCalibration(tContext* ctx)
 
 	if(!intsOff)
 	{
-		IntMasterEnable();
+		ENABLE_ALL_INTERRUPTS();
 	}
 	return ret;
 }
@@ -376,6 +367,7 @@ Canvas(g_screenMainBackground, WIDGET_ROOT, 0, &g_sCityName,
 
 
 
+
 //*****************************************************************************
 //
 // The canvas widget acting as Keyboard
@@ -390,27 +382,27 @@ Canvas(g_screenMainBackground, WIDGET_ROOT, 0, &g_sCityName,
 //
 // The current string pointer for the keyboard.
 //
-static char *g_pcKeyStr;
+static char *g_keyboardString;
 
 //
 // The current string index for the keyboard.
 //
-static uint32_t g_ui32StringIdx;
+static uint32_t g_keyboardStringIdx;
 
 //
 // A place holder string used when nothing is being displayed on the keyboard.
 //
-static const char g_cTempStr = 0;
+static const char g_keyboardTempString = 0;
 
 //
 // The current string width for the keyboard in pixels.
 //
-static int32_t g_i32StringWidth;
+static int32_t g_keyboardStringWidth;
 
 //
 // The cursor blink counter.
 //
-static volatile uint32_t g_ui32CursorDelay;
+static volatile uint32_t g_keyboardCursorDelay;
 
 //
 // The keyboard widget used by the application.
@@ -426,16 +418,16 @@ Keyboard(g_sKeyboard, &g_keyboardBackground, 0, 0,
 //
 // The keyboard text entry area.
 //
-Canvas(g_sKeyboardText, &g_keyboardBackground, &g_sKeyboard, 0,
+Canvas(g_keyboardTextView, &g_keyboardBackground, &g_sKeyboard, 0,
 	   &g_ILI9320, BG_MIN_X, BG_MIN_Y,
        BG_MAX_X - BG_MIN_X, 60,
        CANVAS_STYLE_FILL | CANVAS_STYLE_TEXT | CANVAS_STYLE_TEXT_LEFT,
-       ClrBlack, ClrWhite, ClrWhite, g_psFontCmss24, &g_cTempStr, 0 ,0 );
+       ClrBlack, ClrWhite, ClrWhite, g_psFontCmss24, &g_keyboardTempString, 0 ,0 );
 
 //
 // The full background for the keyboard when it is takes over the screen.
 //
-Canvas(g_keyboardBackground, WIDGET_ROOT, 0, &g_sKeyboardText,
+Canvas(g_keyboardBackground, WIDGET_ROOT, 0, &g_keyboardTextView,
 	   &g_ILI9320, BG_MIN_X, BG_MIN_Y,
        BG_MAX_X - BG_MIN_X, BG_MAX_Y - BG_MIN_Y,
        CANVAS_STYLE_FILL, ClrBlack, ClrWhite, ClrWhite, 0, 0, 0 ,0 );
@@ -677,7 +669,7 @@ void onWifiSetup(tWidget *psWidget)
         WidgetRemove(g_screens[g_appCtx.currentScreen].widget);
         g_appCtx.currentScreen = SCREEN_WIFI_SETTINGS;
         WidgetAdd(WIDGET_ROOT, g_screens[g_appCtx.currentScreen].widget);
-        WidgetPaint((tWidget *)(g_screens[g_appCtx.currentScreen].widget));
+        WidgetPaint(WIDGET_ROOT);
 	}
 }
 
@@ -755,68 +747,55 @@ static void onKeyEvent(tWidget *psWidget, uint32_t ui32Key, uint32_t ui32Event)
         {
             if(ui32Event == KEYBOARD_EVENT_PRESS)
             {
-                if(g_ui32StringIdx != 0)
+                if(g_keyboardStringIdx != 0)
                 {
-                    g_ui32StringIdx--;
-                    g_pcKeyStr[g_ui32StringIdx] = 0;
+                    g_keyboardStringIdx--;
+                    g_keyboardString[g_keyboardStringIdx] = 0;
                 }
 
-                WidgetPaint((tWidget *)&g_sKeyboardText);
+                WidgetPaint((tWidget *)&g_keyboardTextView);
 
-                //
                 // Save the pixel width of the current string.
-                //
-                g_i32StringWidth = GrStringWidthGet(&g_drawingContext, g_pcKeyStr, 40);
+                g_keyboardStringWidth = GrStringWidthGet(&g_drawingContext, g_keyboardString, 40);
             }
             break;
         }
-        //
         // Look for an enter/return key press.  This will exit the keyboard and
-        // return to the current active screen.
-        //
+        // return to the last active screen.
         case UNICODE_RETURN:
         {
-            if(ui32Event == KEYBOARD_EVENT_RELEASE)
+            if(ui32Event == KEYBOARD_EVENT_PRESS)
             {
-                //
-                // Get rid of the keyboard widget.
-                //
+
+                uiMessageBoxCreate("Save parameter", "Wanna save the params ?");
+
                 WidgetRemove(g_screens[g_appCtx.currentScreen].widget);
-
-                //
-                // Switch back to the previous screen and add its widget back.
-                //
-                g_appCtx.currentScreen = SCREEN_WIFI_SETTINGS; //TODO
+                g_appCtx.currentScreen = SCREEN_WIFI_SETTINGS;
                 WidgetAdd(WIDGET_ROOT, g_screens[g_appCtx.currentScreen].widget);
-
-				WidgetPaint(g_screens[g_appCtx.currentScreen].widget);
-				WidgetMessageQueueProcess();
+				WidgetPaint(WIDGET_ROOT);
+		        // Enable swiping while the keyboard is active.
+		        g_appCtx.swipeEnabled = true;
             }
             break;
         }
-        //
         // If the key is not special then update the text string.
-        //
         default:
         {
             if(ui32Event == KEYBOARD_EVENT_PRESS)
             {
                 // Set the string to the current string to be updated.
                 //
-                if(g_ui32StringIdx == 0)
+                if(g_keyboardStringIdx == 0)
                 {
-                    CanvasTextSet(&g_sKeyboardText, g_pcKeyStr);
+                    CanvasTextSet(&g_keyboardTextView, g_keyboardString);
                 }
-                g_pcKeyStr[g_ui32StringIdx] = (char)ui32Key;
-                g_ui32StringIdx++;
-                g_pcKeyStr[g_ui32StringIdx] = 0;
+                g_keyboardString[g_keyboardStringIdx] = (char)ui32Key;
+                g_keyboardStringIdx++;
+                g_keyboardString[g_keyboardStringIdx] = 0;
 
-                WidgetPaint((tWidget *)&g_sKeyboardText);
-
-                //
+                WidgetPaint((tWidget *)&g_keyboardTextView);
                 // Save the pixel width of the current string.
-                //
-                g_i32StringWidth = GrStringWidthGet(&g_drawingContext, g_pcKeyStr, 40);
+                g_keyboardStringWidth = GrStringWidthGet(&g_drawingContext, g_keyboardString, 40);
             }
             break;
         }
@@ -848,47 +827,27 @@ static void onWifiEnable(tWidget *psWidget)
 static void onCityEntry(tWidget *psWidget)
 
 {
-    // if wifi connection is enabled
-    //if(g_appCtx.wifiEnabled)
-    //{
-        //
         // Disable swiping while the keyboard is active.
-        //
         g_appCtx.swipeEnabled = false;
-        //
         // The keyboard string is now the custom city so set the string,
         // reset the string index and width to 0.
-        //
-        g_pcKeyStr = g_appCtx.currentCity;
-        g_ui32StringIdx = 0;
-        g_i32StringWidth = 0;
+        g_keyboardString = g_appCtx.currentCity;
+        g_keyboardStringIdx = 0;
+        g_keyboardStringWidth = 0;
 
-        //
         // Set the initial string to a null string so that nothing is shown.
-        //
-        CanvasTextSet(&g_sKeyboardText, &g_cTempStr);
-
-        //
-        // Remove the current widget so that it is not used while keyboard
-        // is active.
-        //
+        CanvasTextSet(&g_keyboardTextView, &g_keyboardTempString);
         WidgetRemove(g_screens[g_appCtx.currentScreen].widget);
 
-        //
         // Activate the keyboard.
-        //
         g_appCtx.currentScreen = SCREEN_KEYBOARD;
         WidgetAdd(WIDGET_ROOT, g_screens[g_appCtx.currentScreen].widget);
 
-        //
-        // Clear the main screen area with the settings background color.
-        //
         GrContextForegroundSet(&g_drawingContext, BG_COLOR_SETTINGS);
         clearBackground(&g_drawingContext);
 
         GrContextFontSet(&g_drawingContext, g_psFontCmss24);
-        WidgetPaint((tWidget *)&g_keyboardBackground);
-    //}
+        WidgetPaint(WIDGET_ROOT);
 }
 
 static void onSsidEntry(tWidget *psWidget)
@@ -919,19 +878,19 @@ static void handleKeyboard(void)
     //
     // If the mid value is hit then clear the cursor.
     //
-    if(g_ui32CursorDelay == KEYBOARD_BLINK_RATE / 2)
+    if(g_keyboardCursorDelay == KEYBOARD_BLINK_RATE / 2)
     {
         GrContextForegroundSet(&g_drawingContext, ClrBlack);
         // Keep the counter moving now that the clearing has been handled.
-        g_ui32CursorDelay--;
+        g_keyboardCursorDelay--;
     }
-    else if(g_ui32CursorDelay == 0)
+    else if(g_keyboardCursorDelay == 0)
     {
         GrContextForegroundSet(&g_drawingContext, ClrWhite);
 
         // Reset the blink delay now that the drawing of the cursor has been
         // handled.
-        g_ui32CursorDelay = KEYBOARD_BLINK_RATE;
+        g_keyboardCursorDelay = KEYBOARD_BLINK_RATE;
     }
     else
     {
@@ -939,7 +898,7 @@ static void handleKeyboard(void)
     }
 
     // Draw the cursor only if it is time.
-    GrLineDrawV(&g_drawingContext, BG_MIN_X + g_i32StringWidth , BG_MIN_Y + 20,
+    GrLineDrawV(&g_drawingContext, BG_MIN_X + g_keyboardStringWidth , BG_MIN_Y + 20,
                 BG_MIN_Y + 40);
 }
 
@@ -948,15 +907,15 @@ static void handleKeyboard(void)
 // The interrupt handler for the for Systick interrupt.
 //
 //*****************************************************************************
-static int uartCounter = 0;
+static int g_uartCounter = 0;
 void SysTickIntHandler(void) {
-	uartCounter++;
+	g_uartCounter++;
 
 	// keyboard cursor blinking
-    if((g_ui32CursorDelay != 0) &&
-       (g_ui32CursorDelay != (KEYBOARD_BLINK_RATE / 2)))
+    if((g_keyboardCursorDelay != 0) &&
+       (g_keyboardCursorDelay != (KEYBOARD_BLINK_RATE / 2)))
     {
-        g_ui32CursorDelay--;
+        g_keyboardCursorDelay--;
     }
 
 }
@@ -1093,7 +1052,7 @@ static void handleMovement(void)
 		{
             WidgetRemove(g_screens[g_appCtx.currentScreen].widget);
             WidgetAdd(WIDGET_ROOT, g_screens[newScreenIdx].widget);
-            WidgetPaint((tWidget *)(g_screens[newScreenIdx].widget));
+            WidgetPaint(WIDGET_ROOT);
             //WidgetPaint(WIDGET_ROOT);
             g_appCtx.currentScreen = newScreenIdx;
 
@@ -1105,12 +1064,10 @@ static void handleMovement(void)
 
 
 
-//
 // Main method of the application
-//
 
-
-int main(void) {
+int main(void)
+{
 	FPUEnable();
 	FPULazyStackingEnable();
 	// Setup the system clock to run at 80 Mhz from PLL with crystal reference
@@ -1138,6 +1095,7 @@ int main(void) {
 
     tRectangle sRect;
     GrContextInit(&g_drawingContext, &g_ILI9320);
+    uiInit(&g_drawingContext);
     //FrameDraw(&g_drawingContext, "hello-widget");
 #if 1
     //
@@ -1164,7 +1122,7 @@ int main(void) {
 #endif
 
 
-    g_appCtx.currentScreen = SCREEN_MAIN;
+    g_appCtx.currentScreen = SCREEN_WIFI_SETTINGS;
     WidgetAdd(WIDGET_ROOT, g_screens[g_appCtx.currentScreen].widget);
     WidgetPaint(WIDGET_ROOT);
 
@@ -1175,7 +1133,7 @@ int main(void) {
 	touchScreenSetTouchCallback(touchScreenCallback);
 
 	//Enable all interrupts
-	IntMasterEnable();
+	ENABLE_ALL_INTERRUPTS();
 
 	// Enable the SysTick and its Interrupt.
 	SysTickPeriodSet(SysCtlClockGet());

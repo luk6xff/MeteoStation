@@ -6,13 +6,17 @@
  */
 #include "ui_common.h"
 #include "ui_keyboard.h"
+#include "ui_message_box.h"
 
 //*****************************************************************************
 // The canvas widget acting as a Keyboard
 //*****************************************************************************
 
-// Keyboard cursor blink rate.
-#define KEYBOARD_BLINK_RATE     100
+// Keyboard cursor blink rate in ms.
+#define KEYBOARD_BLINK_RATE_MS	1000
+#define KEYBOARD_TEXT_CHARS_NUM	25
+
+static bool m_keyboardActive = false;
 
 static tCanvasWidget m_keyboardBackground;
 
@@ -23,15 +27,27 @@ static char *m_keyboardString;
 static uint32_t m_keyboardStringIdx;
 
 // A place holder string used when nothing is being displayed on the keyboard.
-static const char m_keyboardTempString = 0;
+static char m_keyboardTempString[KEYBOARD_TEXT_CHARS_NUM];
 
 // The current string width for the keyboard in pixels.
 static int32_t m_keyboardStringWidth;
 
-// The cursor blink counter.
-static volatile uint32_t m_keyboardCursorDelay;
-
+// Pointer to global drawing context
 static tContext* m_drawingCtx = NULL;
+
+// Previous widget which shall be redraw after keyboard exit
+static Screens m_previousScreen;
+
+// Params which describe exit msgBox
+static const char* m_exitKeyboardMsgBoxTitle;
+static const char* m_exitKeyboardMsgContent;
+
+
+//*****************************************************************************
+//Forward local methods declarations
+//*****************************************************************************
+static void onKeyEvent(tWidget *widget, uint32_t key, uint32_t event);
+static void (*onExitKeyboardCb)(const Screens previousWidget);
 
 // The keyboard widget used by the application.
 static Keyboard(m_keyboard, &m_keyboardBackground, 0, 0,
@@ -56,12 +72,135 @@ static Canvas(m_keyboardBackground, WIDGET_ROOT, 0, &m_keyboardTextView,
        CANVAS_STYLE_FILL, ClrBlack, ClrWhite, ClrWhite, 0, 0, 0 ,0 );
 
 
+//*****************************************************************************
+// @brief Handles when a key is pressed on the keyboard.
+//*****************************************************************************
+static void onKeyEvent(tWidget *widget, uint32_t key, uint32_t event)
+{
+    switch(key)
+    {
+        // Look for a backspace key press.
+        case UNICODE_BACKSPACE:
+        {
+            if(event == KEYBOARD_EVENT_PRESS)
+            {
+                if(m_keyboardStringIdx != 0)
+                {
+                    m_keyboardStringIdx--;
+                    m_keyboardString[m_keyboardStringIdx] = 0;
+                }
+
+                WidgetPaint((tWidget *)&m_keyboardTextView);
+
+                // Save the pixel width of the current string.
+                m_keyboardStringWidth = GrStringWidthGet(m_drawingCtx, m_keyboardString, 40);
+            }
+            break;
+        }
+        // Look for an enter/return key press.  This will exit the keyboard and
+        // return to the last active screen.
+        case UNICODE_RETURN:
+        {
+            if(event == KEYBOARD_EVENT_PRESS)
+            {
+            	m_keyboardActive = false;
+            	WidgetRemove((tWidget*)&m_keyboardBackground);
+            	if(uiMessageBoxCreate(m_exitKeyboardMsgBoxTitle, m_exitKeyboardMsgContent))
+            	{
+            		//MAIN_DEBUG("TRUE"); //copy changed content to param
+//            		//memcpy(m_keyboardTempString, param, KEYBOARD_TEXT_CHARS_NUM*sizeof(char));
+            	}
+            	else
+            	{
+            		//MAIN_DEBUG("FALSEEEEE"); //don't copy
+            	}
+            	(*onExitKeyboardCb)(m_previousScreen);
+            }
+            break;
+        }
+        // If the key is not special then update the text string.
+        default:
+        {
+            if(event == KEYBOARD_EVENT_PRESS)
+            {
+                // Set the string to the current string to be updated.
+                if(m_keyboardStringIdx == 0)
+                {
+                    CanvasTextSet(&m_keyboardTextView, m_keyboardString);
+                }
+                m_keyboardString[m_keyboardStringIdx] = (char)key;
+                m_keyboardStringIdx++;
+                m_keyboardString[m_keyboardStringIdx] = 0;
+
+                WidgetPaint((tWidget *)&m_keyboardTextView);
+                // Save the pixel width of the current string.
+                m_keyboardStringWidth = GrStringWidthGet(m_drawingCtx, m_keyboardString, 40);
+            }
+            break;
+        }
+    }
+}
+
+//*****************************************************************************
+//
+// handle keyboard updates.
+//
+//*****************************************************************************
+static void handleKeyboardCursor(void)
+{
+    // Nothing to do if the keyboard is not active.
+    if(!m_keyboardActive)
+    {
+        return;
+    }
+    // The cursor blink state; false-disabled, true-enabled.
+    static bool m_keyboardCursorBlinkState = false;
+    if(m_keyboardCursorBlinkState)
+    {
+        GrContextForegroundSet(m_drawingCtx, ClrBlack);
+        m_keyboardCursorBlinkState = false;
+    }
+    else
+    {
+        GrContextForegroundSet(m_drawingCtx, ClrWhite);
+        m_keyboardCursorBlinkState = true;
+    }
+    // Draw the cursor only if it is time.
+    GrLineDrawV(m_drawingCtx, BG_MIN_X+m_keyboardStringWidth,
+    			BG_MIN_Y+20, BG_MIN_Y+40);
+}
 
 
 
-//init
+//*****************************************************************************
+// @brief Inits the keyboard instance
+//*****************************************************************************
 bool uiKeyboardInit()
 {
 	m_drawingCtx = uiGetMainDrawingContext();
+	uiRegisterTimerCb(handleKeyboardCursor, KEYBOARD_BLINK_RATE_MS);
+	return true;
+}
+
+bool uiKeyboardCreate(char* param, Screens prevScreen,
+					  const char* retMsgBoxTitle, const char* retMsgBoxContent,
+					  void(*exitKeyboardCb)(const Screens prevWidget))
+{
+	m_keyboardString = param;
+	m_previousScreen = prevScreen;
+	m_exitKeyboardMsgBoxTitle = retMsgBoxTitle;
+	m_exitKeyboardMsgContent = retMsgBoxContent;
+	onExitKeyboardCb = exitKeyboardCb;
+
+    m_keyboardStringIdx = 0;
+    m_keyboardStringWidth = 0;
+
+    //keyboard already active
+	m_keyboardActive = true;
+    // Set the initial string to the param value.
+	memcpy(m_keyboardTempString, param, KEYBOARD_TEXT_CHARS_NUM*sizeof(char));
+    CanvasTextSet(&m_keyboardTextView, m_keyboardTempString);
+    WidgetAdd(WIDGET_ROOT, (tWidget*)&m_keyboardBackground);
+    WidgetPaint(WIDGET_ROOT);
 	return true;
 }

@@ -16,11 +16,19 @@
 #define UI_TIMER_INT_FLAGS (TIMER_TIMA_TIMEOUT)
 #define UI_TIMER_INT_MODE (INT_TIMER2A)
 
+#define UI_TIMER_CB_NUM 3
 
 static tContext* m_drawingCtx = NULL;
 
 static volatile uint32_t m_msCounter = 0;
 
+typedef struct
+{
+	uint16_t periodTime;
+	void (*timerCb)(void);
+}TimerCallback;
+static uint8_t m_timerCbNum = 0;
+static TimerCallback* m_timerCb[UI_TIMER_CB_NUM];
 
 //@brief Fires up/down the timer
 static void uiTimerEnable(bool enable)
@@ -56,6 +64,16 @@ void UiTimer2AIntHandler(void)
 {
 	TimerIntClear(TIMER2_BASE, TIMER_TIMA_TIMEOUT);
 	++m_msCounter;
+	for(uint8_t i = 0; i < m_timerCbNum; i++)
+	{
+		if(m_timerCb[i]->timerCb != NULL)
+		{
+			if((m_msCounter % m_timerCb[i]->periodTime) == 0)
+			{
+				(*m_timerCb[i]->timerCb)();
+			}
+		}
+	}
 }
 
 //@brief Delay for all UI methods
@@ -92,4 +110,28 @@ tContext* uiGetMainDrawingContext()
 	return m_drawingCtx;
 }
 
+bool uiRegisterTimerCb(void(*cb)(void), uint16_t period)
+{
+	if(m_timerCbNum >= UI_TIMER_CB_NUM)
+	{
+		return false;
+	}
+	TimerCallback* newCb = (TimerCallback*)malloc(sizeof(TimerCallback));
+	m_timerCb[m_timerCbNum++] = newCb;
+	return true;
+}
 
+bool uiUnRegisterTimerCb(void(*cb)(void))
+{
+	uint8_t i = 0;
+	for(i = 0; i < m_timerCbNum; i++)
+	{
+		if(m_timerCb[i]->timerCb == cb)
+		{
+			free(m_timerCb[i]);
+			m_timerCbNum--;
+			return true;
+		}
+	}
+	return false;
+}

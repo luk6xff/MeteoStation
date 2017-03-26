@@ -28,4 +28,28 @@
 //Enable/Disable all interrupts
 #define ENABLE_ALL_INTERRUPTS() IntMasterEnable();
 #define DISABLE_ALL_INTERRUPTS() IntMasterDisable();
+
+
+
+//Screens
+//*****************************************************************************
+//
+// Screens
+//
+//*****************************************************************************
+typedef enum
+{
+	SCREEN_MAIN,
+	SCREEN_CONN_SETTINGS,
+	SCREEN_WIFI_SETTINGS,
+	SCREEN_SENSOR_SETTINGS,
+	SCREEN_KEYBOARD,
+	SCREEN_NUM_OF_SCREENS
+}Screens;
+
+
+
+
 #endif /* SYSTEM_H_ */
+
+

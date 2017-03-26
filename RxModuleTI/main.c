@@ -93,21 +93,6 @@ static const char* const connStateDesc[] = {
 		"Disconnect"
 };
 
-//*****************************************************************************
-//
-// Screens
-//
-//*****************************************************************************
-typedef enum
-{
-	SCREEN_MAIN,
-	SCREEN_CONN_SETTINGS,
-	SCREEN_WIFI_SETTINGS,
-	SCREEN_SENSOR_SETTINGS,
-	SCREEN_KEYBOARD,
-	SCREEN_NUM_OF_SCREENS
-}Screens;
-
 typedef struct
 {
 	tWidget *widget;
@@ -118,9 +103,6 @@ typedef struct
 }ScreenContainer;
 
 
-
-
-
 //*****************************************************************************
 //
 // Forward reference to all used widget structures.
@@ -129,9 +111,7 @@ typedef struct
 extern tCanvasWidget g_screenMainBackground;
 extern tCanvasWidget g_screenWifiSetupBackground;
 extern tCanvasWidget g_screenSensorSetupBackground;
-extern tCanvasWidget g_keyboardBackground;
 extern tCanvasWidget g_settingsPanel;
-extern tPushButtonWidget g_sPushBtn;
 
 
 //*****************************************************************************
@@ -139,8 +119,6 @@ extern tPushButtonWidget g_sPushBtn;
 // Typedefs.
 //
 //*****************************************************************************
-
-
 //*****************************************************************************
 //
 // Structure that describes swipes data.
@@ -218,10 +196,6 @@ static ScreenContainer g_screens[SCREEN_NUM_OF_SCREENS] =
     {
         (tWidget *)&g_screenSensorSetupBackground,
 		SCREEN_CONN_SETTINGS, SCREEN_CONN_SETTINGS, SCREEN_CONN_SETTINGS, SCREEN_CONN_SETTINGS
-    },
-    {
-        (tWidget *)&g_keyboardBackground,
-        SCREEN_KEYBOARD, SCREEN_KEYBOARD, SCREEN_KEYBOARD, SCREEN_KEYBOARD
     }
 };
 
@@ -238,6 +212,7 @@ static void onCityEntry(tWidget *psWidget);
 static void onSsidEntry(tWidget *psWidget);
 static void onPassEntry(tWidget *psWidget);
 static void onUpdateTimeEntry(tWidget *psWidget);
+static void onParameterEdited(const Screens prevWidget);
 static int32_t touchScreenCallback(uint32_t msg, int32_t x, int32_t y);
 
 //*****************************************************************************
@@ -658,86 +633,6 @@ static void updateSensorConnectionStatus(SensorConnectionState state)
 
 
 
-
-//*****************************************************************************
-//
-// Handles when a key is pressed on the keyboard.
-//
-//*****************************************************************************
-static void onKeyEvent(tWidget *psWidget, uint32_t ui32Key, uint32_t ui32Event)
-{
-    switch(ui32Key)
-    {
-        //
-        // Look for a backspace key press.
-        //
-        case UNICODE_BACKSPACE:
-        {
-            if(ui32Event == KEYBOARD_EVENT_PRESS)
-            {
-                if(g_keyboardStringIdx != 0)
-                {
-                    g_keyboardStringIdx--;
-                    g_keyboardString[g_keyboardStringIdx] = 0;
-                }
-
-                WidgetPaint((tWidget *)&g_keyboardTextView);
-
-                // Save the pixel width of the current string.
-                g_keyboardStringWidth = GrStringWidthGet(&g_drawingContext, g_keyboardString, 40);
-            }
-            break;
-        }
-        // Look for an enter/return key press.  This will exit the keyboard and
-        // return to the last active screen.
-        case UNICODE_RETURN:
-        {
-            if(ui32Event == KEYBOARD_EVENT_PRESS)
-            {
-            	WidgetRemove(g_screens[g_appCtx.currentScreen].widget);
-            	g_appCtx.currentScreen = SCREEN_WIFI_SETTINGS;
-            	if(uiMessageBoxCreate("Save parameter", "Wanna save the params ?"))
-            	{
-            		MAIN_DEBUG("TRUE");
-            	}
-            	else
-            	{
-            		MAIN_DEBUG("FALSEEEEE");
-            	}
-
-                WidgetAdd(WIDGET_ROOT, g_screens[g_appCtx.currentScreen].widget);
-				WidgetPaint(WIDGET_ROOT);
-		        //Enable swiping while the keyboard is active.
-		        g_appCtx.swipeEnabled = true;
-            }
-            break;
-        }
-        // If the key is not special then update the text string.
-        default:
-        {
-            if(ui32Event == KEYBOARD_EVENT_PRESS)
-            {
-                // Set the string to the current string to be updated.
-                //
-                if(g_keyboardStringIdx == 0)
-                {
-                    CanvasTextSet(&g_keyboardTextView, g_keyboardString);
-                }
-                g_keyboardString[g_keyboardStringIdx] = (char)ui32Key;
-                g_keyboardStringIdx++;
-                g_keyboardString[g_keyboardStringIdx] = 0;
-
-                WidgetPaint((tWidget *)&g_keyboardTextView);
-                // Save the pixel width of the current string.
-                g_keyboardStringWidth = GrStringWidthGet(&g_drawingContext, g_keyboardString, 40);
-            }
-            break;
-        }
-    }
-}
-
-
-
 static void onWifiEnable(tWidget *psWidget)
 {
 	if(g_appCtx.wifiEnabled)
@@ -763,20 +658,12 @@ static void onCityEntry(tWidget *psWidget)
 {
         // Disable swiping while the keyboard is active.
         g_appCtx.swipeEnabled = false;
-        // The keyboard string is now the custom city so set the string,
-        // reset the string index and width to 0.
-        g_keyboardString = g_appCtx.currentCity;
-        g_keyboardStringIdx = 0;
-        g_keyboardStringWidth = 0;
-
-        // Set the initial string to a null string so that nothing is shown.
-        CanvasTextSet(&g_keyboardTextView, &g_keyboardTempString);
         WidgetRemove(g_screens[g_appCtx.currentScreen].widget);
-
+        uiKeyboardCreate(g_appCtx.currentCity, g_appCtx.currentScreen,
+        				"Save the city", "Wanna save the city?",
+						onParameterEdited);
         // Activate the keyboard.
         g_appCtx.currentScreen = SCREEN_KEYBOARD;
-        WidgetAdd(WIDGET_ROOT, g_screens[g_appCtx.currentScreen].widget);
-        WidgetPaint(WIDGET_ROOT);
 }
 
 static void onSsidEntry(tWidget *psWidget)
@@ -792,42 +679,18 @@ static void onUpdateTimeEntry(tWidget *psWidget)
 }
 
 //*****************************************************************************
-//
-// handle keyboard updates.
-//
+// @brief Function which is passed to given to react on a parameter change (keyboard widget exit)
 //*****************************************************************************
-static void handleKeyboard(void)
+static void onParameterEdited(const Screens prevWidget)
 {
-    // Nothing to do if the keyboard is not active.
-    if(g_appCtx.currentScreen != SCREEN_KEYBOARD)
-    {
-        return;
-    }
-
-    // If the mid value is hit then clear the cursor.
-    if(g_keyboardCursorDelay == KEYBOARD_BLINK_RATE / 2)
-    {
-        GrContextForegroundSet(&g_drawingContext, ClrBlack);
-        // Keep the counter moving now that the clearing has been handled.
-        g_keyboardCursorDelay--;
-    }
-    else if(g_keyboardCursorDelay == 0)
-    {
-        GrContextForegroundSet(&g_drawingContext, ClrWhite);
-
-        // Reset the blink delay now that the drawing of the cursor has been
-        // handled.
-        g_keyboardCursorDelay = KEYBOARD_BLINK_RATE;
-    }
-    else
-    {
-        return;
-    }
-
-    // Draw the cursor only if it is time.
-    GrLineDrawV(&g_drawingContext, BG_MIN_X + g_keyboardStringWidth , BG_MIN_Y + 20,
-                BG_MIN_Y + 40);
+	g_appCtx.currentScreen = prevWidget;
+    WidgetAdd(WIDGET_ROOT, g_screens[g_appCtx.currentScreen].widget);
+	WidgetPaint(WIDGET_ROOT);
+    //Enable swiping after removing keyboard from the root
+    g_appCtx.swipeEnabled = true;
 }
+
+
 
 //*****************************************************************************
 //
@@ -835,16 +698,9 @@ static void handleKeyboard(void)
 //
 //*****************************************************************************
 static int g_uartCounter = 0;
-void SysTickIntHandler(void) {
+void SysTickIntHandler(void)
+{
 	g_uartCounter++;
-
-	// keyboard cursor blinking
-    if((g_keyboardCursorDelay != 0) &&
-       (g_keyboardCursorDelay != (KEYBOARD_BLINK_RATE / 2)))
-    {
-        g_keyboardCursorDelay--;
-    }
-
 }
 
 
@@ -1074,7 +930,6 @@ int main(void)
 	while (1) {
 
         handleMovement();
-        handleKeyboard();
         // Process any messages in the widget message queue.
         WidgetMessageQueueProcess();
 #if 0

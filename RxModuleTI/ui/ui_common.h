@@ -49,5 +49,8 @@ void uiInit(tContext* mainDrawingContext);
 tContext* uiGetMainDrawingContext();
 void uiDelay(uint32_t msDelay);
 uint32_t uiDelayCounterMsVal();
+bool uiRegisterTimerCb(void(*cb)(void), uint16_t period);
+bool uiUnRegisterTimerCb(void(*cb)(void));
+
 
 #endif /* UI_UI_COMMON_H_ */

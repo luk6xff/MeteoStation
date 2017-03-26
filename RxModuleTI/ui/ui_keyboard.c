@@ -21,16 +21,16 @@ static bool m_keyboardActive = false;
 static tCanvasWidget m_keyboardBackground;
 
 // The current string pointer for the keyboard.
-static char *m_keyboardString;
+static const char *m_keyboardString;
 
 // The current string index for the keyboard.
 static uint32_t m_keyboardStringIdx;
 
-// A place holder string used when nothing is being displayed on the keyboard.
-static char m_keyboardTempString[KEYBOARD_TEXT_CHARS_NUM];
-
 // The current string width for the keyboard in pixels.
 static int32_t m_keyboardStringWidth;
+
+// A place holder string used when nothing is being displayed on the keyboard.
+static char m_keyboardTempString[KEYBOARD_TEXT_CHARS_NUM] = {'\0'};
 
 // Pointer to global drawing context
 static tContext* m_drawingCtx = NULL;
@@ -63,7 +63,7 @@ static Canvas(m_keyboardTextView, &m_keyboardBackground, &m_keyboard, 0,
 	   &g_ILI9320, BG_MIN_X, BG_MIN_Y,
        BG_MAX_X - BG_MIN_X, 60,
        CANVAS_STYLE_FILL | CANVAS_STYLE_TEXT | CANVAS_STYLE_TEXT_LEFT,
-       ClrBlack, ClrWhite, ClrWhite, g_psFontCmss24, &m_keyboardTempString, 0 ,0 );
+       ClrBlack, ClrWhite, ClrWhite, g_psFontCmss24, m_keyboardTempString, 0 ,0 );
 
 // The full background for the keyboard when it is takes over the screen.
 static Canvas(m_keyboardBackground, WIDGET_ROOT, 0, &m_keyboardTextView,
@@ -87,13 +87,13 @@ static void onKeyEvent(tWidget *widget, uint32_t key, uint32_t event)
                 if(m_keyboardStringIdx != 0)
                 {
                     m_keyboardStringIdx--;
-                    m_keyboardString[m_keyboardStringIdx] = 0;
+                    m_keyboardTempString[m_keyboardStringIdx] = 0;
                 }
 
                 WidgetPaint((tWidget *)&m_keyboardTextView);
 
                 // Save the pixel width of the current string.
-                m_keyboardStringWidth = GrStringWidthGet(m_drawingCtx, m_keyboardString, 40);
+                m_keyboardStringWidth = GrStringWidthGet(m_drawingCtx, m_keyboardTempString, 40);
             }
             break;
         }
@@ -108,7 +108,7 @@ static void onKeyEvent(tWidget *widget, uint32_t key, uint32_t event)
             	if(uiMessageBoxCreate(m_exitKeyboardMsgBoxTitle, m_exitKeyboardMsgContent))
             	{
             		//MAIN_DEBUG("TRUE"); //copy changed content to param
-//            		//memcpy(m_keyboardTempString, param, KEYBOARD_TEXT_CHARS_NUM*sizeof(char));
+            		memcpy(m_keyboardString, m_keyboardTempString, KEYBOARD_TEXT_CHARS_NUM*sizeof(char));
             	}
             	else
             	{
@@ -126,15 +126,15 @@ static void onKeyEvent(tWidget *widget, uint32_t key, uint32_t event)
                 // Set the string to the current string to be updated.
                 if(m_keyboardStringIdx == 0)
                 {
-                    CanvasTextSet(&m_keyboardTextView, m_keyboardString);
+                    CanvasTextSet(&m_keyboardTextView, m_keyboardTempString);
                 }
-                m_keyboardString[m_keyboardStringIdx] = (char)key;
+                m_keyboardTempString[m_keyboardStringIdx] = (char)key;
                 m_keyboardStringIdx++;
-                m_keyboardString[m_keyboardStringIdx] = 0;
+                m_keyboardTempString[m_keyboardStringIdx] = 0;
 
                 WidgetPaint((tWidget *)&m_keyboardTextView);
                 // Save the pixel width of the current string.
-                m_keyboardStringWidth = GrStringWidthGet(m_drawingCtx, m_keyboardString, 40);
+                m_keyboardStringWidth = GrStringWidthGet(m_drawingCtx, m_keyboardTempString, 40);
             }
             break;
         }
@@ -198,7 +198,7 @@ bool uiKeyboardCreate(char* param, Screens prevScreen,
     //keyboard already active
 	m_keyboardActive = true;
     // Set the initial string to the param value.
-	memcpy(m_keyboardTempString, param, KEYBOARD_TEXT_CHARS_NUM*sizeof(char));
+	memcpy(m_keyboardTempString, m_keyboardString, KEYBOARD_TEXT_CHARS_NUM*sizeof(char));
     CanvasTextSet(&m_keyboardTextView, m_keyboardTempString);
     WidgetAdd(WIDGET_ROOT, (tWidget*)&m_keyboardBackground);
     WidgetPaint(WIDGET_ROOT);

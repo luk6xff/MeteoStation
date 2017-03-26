@@ -117,8 +117,12 @@ bool uiRegisterTimerCb(void(*cb)(void), uint16_t period)
 		return false;
 	}
 	TimerCallback* newCb = (TimerCallback*)malloc(sizeof(TimerCallback));
-	m_timerCb[m_timerCbNum++] = newCb;
-	return true;
+	if(newCb != NULL)
+	{
+		m_timerCb[m_timerCbNum++] = newCb;
+		return true;
+	}
+	return false;
 }
 
 bool uiUnRegisterTimerCb(void(*cb)(void))

@@ -22,6 +22,7 @@
 #include "images.h"
 #include "system.h"
 #include "ui/ui_message_box.h"
+#include "ui/ui_keyboard.h"
 #include "ui/ui_common.h"
 
 #define MAIN_DEBUG_ENABLE 1
@@ -691,7 +692,6 @@ static void onParameterEdited(const Screens prevWidget)
 }
 
 
-
 //*****************************************************************************
 //
 // The interrupt handler for the for Systick interrupt.
@@ -702,7 +702,6 @@ void SysTickIntHandler(void)
 {
 	g_uartCounter++;
 }
-
 
 
 
@@ -719,9 +718,7 @@ static int32_t touchScreenCallback(uint32_t msg, int32_t x, int32_t y)
     {
         switch(msg)
         {
-            //
             // The user has just touched the screen.
-            //
             case WIDGET_MSG_PTR_DOWN:
             {
                 //
@@ -742,9 +739,7 @@ static int32_t touchScreenCallback(uint32_t msg, int32_t x, int32_t y)
                 break;
             }
 
-            //
             // The user has moved the touch location on the screen.
-            //
             case WIDGET_MSG_PTR_MOVE:
             {
             	if(g_swipe.swipeOnGoing)
@@ -836,7 +831,6 @@ static void handleMovement(void)
             WidgetRemove(g_screens[g_appCtx.currentScreen].widget);
             WidgetAdd(WIDGET_ROOT, g_screens[newScreenIdx].widget);
             WidgetPaint(WIDGET_ROOT);
-            //WidgetPaint(WIDGET_ROOT);
             g_appCtx.currentScreen = newScreenIdx;
 
 		}

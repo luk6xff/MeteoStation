@@ -150,7 +150,7 @@ void TouchScreenTimer0AIntHandler(void)
 {
 	static uint8_t lastWidgetPtrStatus = 0;
 	TimerIntClear(TIMER0_BASE, TIMER_TIMA_TIMEOUT);
-	if((++m_counter % TIMER_SCAN_PERIOD_MS) == 0) //after every 3ms
+	if((++m_counter % TIMER_SCAN_PERIOD_MS) == 0) //after every TIMER_SCAN_PERIOD_MS [ms]
 	{
 		ADS7843touchPenIntHandler();
 		if(ADS7843dataAvailable())
@@ -158,7 +158,7 @@ void TouchScreenTimer0AIntHandler(void)
 			m_WidgetPtrStatus = WIDGET_MSG_PTR_DOWN;
 			//TOUCH_DEBUG("Number of interrupts: %d\r", m_counter);
 			TOUCH_DEBUG("PEN_DOWN\r\n");
-			if(++m_MoveTouchStatus> 20)
+			if(++m_MoveTouchStatus > (TIMER_SCAN_PERIOD_MS*20))
 			{
 				m_WidgetPtrStatus = WIDGET_MSG_PTR_MOVE;
 				TOUCH_DEBUG("PEN_MOVE\r\n");

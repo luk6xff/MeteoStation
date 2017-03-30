@@ -21,7 +21,7 @@ static bool m_keyboardActive = false;
 static tCanvasWidget m_keyboardBackground;
 
 // The current string pointer for the keyboard.
-static const char *m_keyboardString;
+static char *m_keyboardString;
 
 // The current string index for the keyboard.
 static uint32_t m_keyboardStringIdx;
@@ -52,9 +52,11 @@ static void (*onExitKeyboardCb)(const Screens previousWidget);
 // The keyboard widget used by the application.
 static Keyboard(m_keyboard, &m_keyboardBackground, 0, 0,
 		 &g_ILI9320, 8, 90, 300, 140,
-         KEYBOARD_STYLE_FILL | KEYBOARD_STYLE_AUTO_REPEAT |
-         KEYBOARD_STYLE_PRESS_NOTIFY | KEYBOARD_STYLE_RELEASE_NOTIFY |
-         KEYBOARD_STYLE_BG,
+         KEYBOARD_STYLE_FILL | //KEYBOARD_STYLE_AUTO_REPEAT// |
+		KEYBOARD_STYLE_PRESS_NOTIFY
+		 //| KEYBOARD_STYLE_RELEASE_NOTIFY,// |
+         | KEYBOARD_STYLE_BG
+		 ,
          ClrBlack, ClrGray, ClrDarkGray, ClrGray, ClrBlack, g_psFontCmss14,
          100, 100, NUM_KEYBOARD_US_ENGLISH, g_psKeyboardUSEnglish, onKeyEvent);
 
@@ -178,7 +180,7 @@ static void handleKeyboardCursor(void)
 bool uiKeyboardInit()
 {
 	m_drawingCtx = uiGetMainDrawingContext();
-	uiRegisterTimerCb(handleKeyboardCursor, KEYBOARD_BLINK_RATE_MS);
+	uiRegisterTimerCb(handleKeyboardCursor, KEYBOARD_BLINK_RATE_MS); //register cursor blinker handler
 	return true;
 }
 
@@ -192,15 +194,19 @@ bool uiKeyboardCreate(char* param, Screens prevScreen,
 	m_exitKeyboardMsgContent = retMsgBoxContent;
 	onExitKeyboardCb = exitKeyboardCb;
 
-    m_keyboardStringIdx = 0;
-    m_keyboardStringWidth = 0;
-
-    //keyboard already active
-	m_keyboardActive = true;
     // Set the initial string to the param value.
 	memcpy(m_keyboardTempString, m_keyboardString, KEYBOARD_TEXT_CHARS_NUM*sizeof(char));
-    CanvasTextSet(&m_keyboardTextView, m_keyboardTempString);
+
+    //update length and idx
+    m_keyboardStringIdx = strlen(m_keyboardTempString);
+    m_keyboardStringWidth = GrStringWidthGet(m_drawingCtx, m_keyboardTempString, 40);
+
+
     WidgetAdd(WIDGET_ROOT, (tWidget*)&m_keyboardBackground);
+    //WidgetPaint((tWidget*)&m_keyboardBackground);
     WidgetPaint(WIDGET_ROOT);
+    CanvasTextSet(&m_keyboardTextView, m_keyboardTempString);
+    //mark keyboard already active
+	m_keyboardActive = true;
 	return true;
 }

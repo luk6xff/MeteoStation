@@ -66,7 +66,7 @@ void UiTimer2AIntHandler(void)
 	++m_msCounter;
 	for(uint8_t i = 0; i < m_timerCbNum; i++)
 	{
-		if(m_timerCb[i]->timerCb != NULL)
+		if(m_timerCb[i] != NULL && m_timerCb[i]->timerCb != NULL)
 		{
 			if((m_msCounter % m_timerCb[i]->periodTime) == 0)
 			{
@@ -119,6 +119,8 @@ bool uiRegisterTimerCb(void(*cb)(void), uint16_t period)
 	TimerCallback* newCb = (TimerCallback*)malloc(sizeof(TimerCallback));
 	if(newCb != NULL)
 	{
+		newCb->timerCb = cb;
+		newCb->periodTime = period;
 		m_timerCb[m_timerCbNum++] = newCb;
 		return true;
 	}

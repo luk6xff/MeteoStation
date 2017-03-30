@@ -137,6 +137,7 @@ typedef struct
 	int32_t bufX[LAST_VAL_BUF_SIZE];
 	int32_t bufY[LAST_VAL_BUF_SIZE];
 	uint8_t sampleNum;
+	bool swipeStarted;
 	bool swipeOnGoing;
     enum
     {
@@ -177,7 +178,7 @@ typedef struct
 //*****************************************************************************
 static tContext g_drawingContext;
 static volatile State g_mainState = STATE_RESET;
-static volatile Swipe g_swipe;
+static volatile Swipe m_swipe;
 static volatile AppContext g_appCtx = {false, false, false, true, WIFI_NOT_CONNECTED, SENSOR_NOT_CONNECTED, SCREEN_MAIN, {"NowySacz"}, {"INTEHNET"}, {"Faza939290"}/*(void*)0, (void*)0, (void*)0*/};
 
 static ScreenContainer g_screens[SCREEN_NUM_OF_SCREENS] =
@@ -680,7 +681,7 @@ static void onUpdateTimeEntry(tWidget *psWidget)
 }
 
 //*****************************************************************************
-// @brief Function which is passed to given to react on a parameter change (keyboard widget exit)
+// @brief Callback which is passed to an active keyboard canvas to react on a parameter change (keyboard widget exit)
 //*****************************************************************************
 static void onParameterEdited(const Screens prevWidget)
 {
@@ -724,16 +725,17 @@ static int32_t touchScreenCallback(uint32_t msg, int32_t x, int32_t y)
                 //
                 // Save this press location.
                 //
-            	if(!g_swipe.swipeOnGoing)
+            	m_swipe.swipeStarted = true;
+            	if(!m_swipe.swipeOnGoing)
             	{
-					g_swipe.initX = x;
-					g_swipe.initY = y;
-					g_swipe.swipeOnGoing = true;
+					m_swipe.initX = x;
+					m_swipe.initY = y;
+
             	}
             	else
-            	{	++g_swipe.sampleNum;
-            		g_swipe.bufX[g_swipe.sampleNum % LAST_VAL_BUF_SIZE] = x;
-            		g_swipe.bufY[g_swipe.sampleNum % LAST_VAL_BUF_SIZE] = y;
+            	{	++m_swipe.sampleNum;
+            		m_swipe.bufX[m_swipe.sampleNum % LAST_VAL_BUF_SIZE] = x;
+            		m_swipe.bufY[m_swipe.sampleNum % LAST_VAL_BUF_SIZE] = y;
             	}
 
                 break;
@@ -742,12 +744,12 @@ static int32_t touchScreenCallback(uint32_t msg, int32_t x, int32_t y)
             // The user has moved the touch location on the screen.
             case WIDGET_MSG_PTR_MOVE:
             {
-            	if(g_swipe.swipeOnGoing)
+            	if(m_swipe.swipeStarted || m_swipe.swipeOnGoing)
             	{
-            		++g_swipe.sampleNum;
-            		g_swipe.bufX[g_swipe.sampleNum % LAST_VAL_BUF_SIZE] = x;
-            		g_swipe.bufY[g_swipe.sampleNum % LAST_VAL_BUF_SIZE] = y;
-
+            		++m_swipe.sampleNum;
+            		m_swipe.bufX[m_swipe.sampleNum % LAST_VAL_BUF_SIZE] = x;
+            		m_swipe.bufY[m_swipe.sampleNum % LAST_VAL_BUF_SIZE] = y;
+					m_swipe.swipeOnGoing = true;
             	}
                 break;
             }
@@ -755,48 +757,53 @@ static int32_t touchScreenCallback(uint32_t msg, int32_t x, int32_t y)
             // The user just stopped touching the screen.
             case WIDGET_MSG_PTR_UP:
             {
-            	if(g_swipe.swipeOnGoing)
+            	if(m_swipe.swipeOnGoing)
             	{
             		//checks on last gathered data for now
-            		int32_t xLastVal = g_swipe.bufX[g_swipe.sampleNum % LAST_VAL_BUF_SIZE];
-            		int32_t yLastVal = g_swipe.bufY[g_swipe.sampleNum % LAST_VAL_BUF_SIZE];
-            		bool xLessThanInit = xLastVal < g_swipe.initX;
-            		bool yLessThanInit = yLastVal < g_swipe.initY;
-            		swipeDiffX = ((xLastVal - g_swipe.initX)>0) ? (xLastVal - g_swipe.initX) : (g_swipe.initX - xLastVal);
-            		swipeDiffY = ((yLastVal - g_swipe.initY)>0) ? (yLastVal - g_swipe.initY) : (g_swipe.initY - yLastVal);
+            		int32_t xLastVal = m_swipe.bufX[m_swipe.sampleNum % LAST_VAL_BUF_SIZE];
+            		int32_t yLastVal = m_swipe.bufY[m_swipe.sampleNum % LAST_VAL_BUF_SIZE];
+            		bool xLessThanInit = xLastVal < m_swipe.initX;
+            		bool yLessThanInit = yLastVal < m_swipe.initY;
+            		swipeDiffX = ((xLastVal - m_swipe.initX)>0) ? (xLastVal - m_swipe.initX) : (m_swipe.initX - xLastVal);
+            		swipeDiffY = ((yLastVal - m_swipe.initY)>0) ? (yLastVal - m_swipe.initY) : (m_swipe.initY - yLastVal);
             		// checks which difference is bigger
             		if(swipeDiffX > swipeDiffY )
             		{
 
             			if(!xLessThanInit && (swipeDiffX > MIN_SWIPE_DIFFERENCE))
 						{
-							g_swipe.swipeDirecttion = SWIPE_RIGHT;
+							m_swipe.swipeDirecttion = SWIPE_RIGHT;
 						}
 						else if(xLessThanInit && (swipeDiffX > MIN_SWIPE_DIFFERENCE))
 						{
-							g_swipe.swipeDirecttion = SWIPE_LEFT;
+							m_swipe.swipeDirecttion = SWIPE_LEFT;
 						}
             		}
             		else
             		{
 						if(!yLessThanInit && (swipeDiffY > MIN_SWIPE_DIFFERENCE))
 						{
-							g_swipe.swipeDirecttion = SWIPE_DOWN;
+							m_swipe.swipeDirecttion = SWIPE_DOWN;
 						}
 						else if(yLessThanInit && (swipeDiffY > MIN_SWIPE_DIFFERENCE))
 						{
-							g_swipe.swipeDirecttion = SWIPE_UP;
+							m_swipe.swipeDirecttion = SWIPE_UP;
 						}
             		}
             	}
-        		g_swipe.swipeOnGoing = false;
-        		g_swipe.sampleNum = 0;
+        		m_swipe.swipeOnGoing = false;
+        		m_swipe.swipeStarted = false;
+        		m_swipe.sampleNum = 0;
         		break;
             }
+            default:
+        		m_swipe.swipeOnGoing = false;
+        		m_swipe.swipeStarted = false;
+        		m_swipe.sampleNum = 0;
+        		break;
         }
     }
     WidgetPointerMessage(msg, x, y);
-
     return(0);
 }
 
@@ -806,22 +813,22 @@ static void handleMovement(void)
 	uint16_t newScreenIdx = g_appCtx.currentScreen;
 	if(g_appCtx.swipeEnabled)
 	{
-		if(g_swipe.swipeDirecttion != SWIPE_NONE )
+		if(m_swipe.swipeDirecttion != SWIPE_NONE )
 		{
 
-			if(g_swipe.swipeDirecttion == SWIPE_RIGHT)
+			if(m_swipe.swipeDirecttion == SWIPE_RIGHT)
 			{
 			    newScreenIdx = g_screens[g_appCtx.currentScreen].right;
 			}
-			else if(g_swipe.swipeDirecttion == SWIPE_LEFT)
+			else if(m_swipe.swipeDirecttion == SWIPE_LEFT)
 			{
 			    newScreenIdx = g_screens[g_appCtx.currentScreen].left;
 			}
-			else if(g_swipe.swipeDirecttion == SWIPE_UP)
+			else if(m_swipe.swipeDirecttion == SWIPE_UP)
 			{
 			    newScreenIdx = g_screens[g_appCtx.currentScreen].up;
 			}
-			else if(g_swipe.swipeDirecttion == SWIPE_DOWN)
+			else if(m_swipe.swipeDirecttion == SWIPE_DOWN)
 			{
 			    newScreenIdx = g_screens[g_appCtx.currentScreen].down;
 			}
@@ -835,7 +842,7 @@ static void handleMovement(void)
 
 		}
 	}
-	g_swipe.swipeDirecttion = SWIPE_NONE;
+	m_swipe.swipeDirecttion = SWIPE_NONE;
 
 }
 

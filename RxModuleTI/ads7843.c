@@ -195,7 +195,7 @@ TouchPoint ADS7843translateCoordinates(const TouchPoint* rawPoint) {
 }
 
 bool ADS7843readPointXY(TouchPoint* touchPoint, bool calibrationEnabled) {
-    m_touchInfoData.touchStatus = TOUCH_STATUS_PENDOWN; //TODO to be removed!!
+    //m_touchInfoData.touchStatus = TOUCH_STATUS_PENDOWN; //TODO to be removed!!
 	if (m_touchInfoData.touchStatus == TOUCH_STATUS_PENDOWN) {
 		uint16_t xyDataBuf[2][7]; //7 samples
 		TouchPoint p;
@@ -214,7 +214,7 @@ bool ADS7843readPointXY(TouchPoint* touchPoint, bool calibrationEnabled) {
 	return false;
 }
 
-TouchStatus ADS7843getTouchStatus() {
+inline TouchStatus ADS7843getTouchStatus() {
 	return m_touchInfoData.touchStatus;
 }
 

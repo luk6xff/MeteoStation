@@ -13,8 +13,8 @@
 //*****************************************************************************
 
 // Keyboard cursor blink rate in ms.
-#define KEYBOARD_BLINK_RATE_MS	1000
-#define KEYBOARD_TEXT_CHARS_NUM	25
+#define KEYBOARD_BLINK_RATE_MS	500
+#define KEYBOARD_TEXT_CHARS_NUM	KEYBOARD_MAX_TEXT_LEN
 
 static bool m_keyboardActive = false;
 
@@ -29,7 +29,7 @@ static uint32_t m_keyboardStringIdx;
 // The current string width for the keyboard in pixels.
 static int32_t m_keyboardStringWidth;
 
-// A place holder string used when nothing is being displayed on the keyboard.
+// A string which contains the content of the keyboard text view window.
 static char m_keyboardTempString[KEYBOARD_TEXT_CHARS_NUM] = {'\0'};
 
 // Pointer to global drawing context
@@ -37,6 +37,9 @@ static tContext* m_drawingCtx = NULL;
 
 // Previous widget which shall be redraw after keyboard exit
 static Screens m_previousScreen;
+
+// Allowed chars type in text view - Alpha numeric by default
+static KeyboardAllowedChars m_allowedChars = AlphaNumeric;
 
 // Params which describe exit msgBox
 static const char* m_exitKeyboardMsgBoxTitle;
@@ -47,16 +50,14 @@ static const char* m_exitKeyboardMsgContent;
 //Forward local methods declarations
 //*****************************************************************************
 static void onKeyEvent(tWidget *widget, uint32_t key, uint32_t event);
+static bool isKeyValid(char key);
 static void (*onExitKeyboardCb)(const Screens previousWidget);
 
 // The keyboard widget used by the application.
 static Keyboard(m_keyboard, &m_keyboardBackground, 0, 0,
 		 &g_ILI9320, 8, 90, 300, 140,
          KEYBOARD_STYLE_FILL | //KEYBOARD_STYLE_AUTO_REPEAT// |
-		KEYBOARD_STYLE_PRESS_NOTIFY
-		 //| KEYBOARD_STYLE_RELEASE_NOTIFY,// |
-         | KEYBOARD_STYLE_BG
-		 ,
+		 KEYBOARD_STYLE_PRESS_NOTIFY | KEYBOARD_STYLE_BG,
          ClrBlack, ClrGray, ClrDarkGray, ClrGray, ClrBlack, g_psFontCmss14,
          100, 100, NUM_KEYBOARD_US_ENGLISH, g_psKeyboardUSEnglish, onKeyEvent);
 
@@ -89,7 +90,7 @@ static void onKeyEvent(tWidget *widget, uint32_t key, uint32_t event)
                 if(m_keyboardStringIdx != 0)
                 {
                     m_keyboardStringIdx--;
-                    m_keyboardTempString[m_keyboardStringIdx] = 0;
+                    m_keyboardTempString[m_keyboardStringIdx] = '\0';
                 }
 
                 WidgetPaint((tWidget *)&m_keyboardTextView);
@@ -107,15 +108,13 @@ static void onKeyEvent(tWidget *widget, uint32_t key, uint32_t event)
             {
             	m_keyboardActive = false;
             	WidgetRemove((tWidget*)&m_keyboardBackground);
+                //WidgetMessageQueueProcess();
             	if(uiMessageBoxCreate(m_exitKeyboardMsgBoxTitle, m_exitKeyboardMsgContent))
             	{
-            		//MAIN_DEBUG("TRUE"); //copy changed content to param
+            	    //copy changed content to param
             		memcpy(m_keyboardString, m_keyboardTempString, KEYBOARD_TEXT_CHARS_NUM*sizeof(char));
             	}
-            	else
-            	{
-            		//MAIN_DEBUG("FALSEEEEE"); //don't copy
-            	}
+            	m_keyboard.ui32Flags = 0; //clear all flags of the widget
             	(*onExitKeyboardCb)(m_previousScreen);
             }
             break;
@@ -128,24 +127,64 @@ static void onKeyEvent(tWidget *widget, uint32_t key, uint32_t event)
                 // Set the string to the current string to be updated.
                 if(m_keyboardStringIdx == 0)
                 {
-                    CanvasTextSet(&m_keyboardTextView, m_keyboardTempString);
+                    CanvasTextSet(&m_keyboardTextView, "\0");
                 }
-                m_keyboardTempString[m_keyboardStringIdx] = (char)key;
-                m_keyboardStringIdx++;
-                m_keyboardTempString[m_keyboardStringIdx] = 0;
+                if(isKeyValid(key))
+                {
+                    m_keyboardTempString[m_keyboardStringIdx] = (char)key;
+                    if(m_keyboardStringIdx < KEYBOARD_TEXT_CHARS_NUM)
+                    {
+                    	m_keyboardStringIdx++;
+                    	m_keyboardTempString[m_keyboardStringIdx] = '\0';
+                    }
 
-                WidgetPaint((tWidget *)&m_keyboardTextView);
-                // Save the pixel width of the current string.
-                m_keyboardStringWidth = GrStringWidthGet(m_drawingCtx, m_keyboardTempString, 40);
+                    WidgetPaint((tWidget *)&m_keyboardTextView);
+                    // Save the pixel width of the current string.
+                    m_keyboardStringWidth = GrStringWidthGet(m_drawingCtx, m_keyboardTempString, 40);
+                }
             }
             break;
         }
     }
 }
-
 //*****************************************************************************
 //
-// handle keyboard updates.
+// @brief checks if pressed key is valid (based on m_allowedChars type)
+//
+//*****************************************************************************
+static bool isKeyValid(char key)
+{
+	bool ret = false;
+	switch(m_allowedChars)
+	{
+	case AlphaNumeric:
+		if((('0' <= key) && (key <= '9')) ||
+		   (('a' <= key) && (key <= 'z')) ||
+		   (('A' <= key) && (key <= 'Z')))
+		{
+			ret = true;
+		}
+		break;
+
+	case Numeric:
+		if(('0' <= key) && (key <= '9'))
+		{
+			ret = true;
+		}
+		break;
+
+	case All:
+		ret = true;
+		break;
+
+	default:
+		break;
+	}
+	return ret;
+}
+//*****************************************************************************
+//
+// @brief handle keyboard updates.
 //
 //*****************************************************************************
 static void handleKeyboardCursor(void)
@@ -173,7 +212,7 @@ static void handleKeyboardCursor(void)
 }
 
 
-
+//publics
 //*****************************************************************************
 // @brief Inits the keyboard instance
 //*****************************************************************************
@@ -184,6 +223,9 @@ bool uiKeyboardInit()
 	return true;
 }
 
+//*****************************************************************************
+// @brief creates and draws the keyboard widget on the screen
+//*****************************************************************************
 bool uiKeyboardCreate(char* param, Screens prevScreen,
 					  const char* retMsgBoxTitle, const char* retMsgBoxContent,
 					  void(*exitKeyboardCb)(const Screens prevWidget))
@@ -193,6 +235,7 @@ bool uiKeyboardCreate(char* param, Screens prevScreen,
 	m_exitKeyboardMsgBoxTitle = retMsgBoxTitle;
 	m_exitKeyboardMsgContent = retMsgBoxContent;
 	onExitKeyboardCb = exitKeyboardCb;
+	m_allowedChars = AlphaNumeric; //default
 
     // Set the initial string to the param value.
 	memcpy(m_keyboardTempString, m_keyboardString, KEYBOARD_TEXT_CHARS_NUM*sizeof(char));
@@ -203,10 +246,16 @@ bool uiKeyboardCreate(char* param, Screens prevScreen,
 
 
     WidgetAdd(WIDGET_ROOT, (tWidget*)&m_keyboardBackground);
-    //WidgetPaint((tWidget*)&m_keyboardBackground);
     WidgetPaint(WIDGET_ROOT);
     CanvasTextSet(&m_keyboardTextView, m_keyboardTempString);
+    WidgetMessageQueueProcess(); //draw the actual keyboard on the screen
+
     //mark keyboard already active
 	m_keyboardActive = true;
 	return true;
+}
+
+void uiKeyboardSetAllowedCharsType(KeyboardAllowedChars type)
+{
+	m_allowedChars = type;
 }

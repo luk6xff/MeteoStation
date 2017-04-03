@@ -37,6 +37,8 @@
 // Screens
 //
 //*****************************************************************************
+#define KEYBOARD_MAX_TEXT_LEN 25 //25 chars to be typed in the keyboard
+
 typedef enum
 {
 	SCREEN_MAIN,

@@ -8,9 +8,19 @@
 #ifndef UI_UI_KEYBOARD_H_
 #define UI_UI_KEYBOARD_H_
 
+typedef enum
+{
+	AlphaNumeric,
+	Numeric,
+	All
+}KeyboardAllowedChars;
 
 bool uiKeyboardInit();
 
+bool uiKeyboardCreate(char* param, Screens prevScreen,
+					  const char* retMsgBoxTitle, const char* retMsgBoxContent,
+					  void(*exitKeyboardCb)(const Screens prevWidget));
 
+void uiKeyboardSetAllowedCharsType(KeyboardAllowedChars type);
 
 #endif /* UI_UI_KEYBOARD_H_ */

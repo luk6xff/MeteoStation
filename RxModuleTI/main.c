@@ -165,9 +165,10 @@ typedef struct
 	WifiConnectionState wifiState;
 	SensorConnectionState sensorState;
 	Screens currentScreen;
-	char currentCity[50];
-	char apSsid[50];
-	char apPass[50];
+	char currentCity[KEYBOARD_MAX_TEXT_LEN];
+	char apSsid[KEYBOARD_MAX_TEXT_LEN];
+	char apPass[KEYBOARD_MAX_TEXT_LEN];
+	uint8_t updateWeatherPeriod; //in seconds
 
 }AppContext;
 
@@ -179,7 +180,7 @@ typedef struct
 static tContext g_drawingContext;
 static volatile State g_mainState = STATE_RESET;
 static volatile Swipe m_swipe;
-static volatile AppContext g_appCtx = {false, false, false, true, WIFI_NOT_CONNECTED, SENSOR_NOT_CONNECTED, SCREEN_MAIN, {"NowySacz"}, {"INTEHNET"}, {"Faza939290"}/*(void*)0, (void*)0, (void*)0*/};
+static volatile AppContext g_appCtx = {false, false, false, true, WIFI_NOT_CONNECTED, SENSOR_NOT_CONNECTED, SCREEN_MAIN, {"NowySacz"}, {"INTEHNET"}, {"Faza939290"}, 10};
 
 static ScreenContainer g_screens[SCREEN_NUM_OF_SCREENS] =
 {
@@ -208,7 +209,6 @@ static ScreenContainer g_screens[SCREEN_NUM_OF_SCREENS] =
 // Methods forward declarations.
 //
 //*****************************************************************************
-static void onKeyEvent(tWidget *psWidget, uint32_t ui32Key, uint32_t ui32Event);
 static void onWifiEnable(tWidget *psWidget);
 static void onCityEntry(tWidget *psWidget);
 static void onSsidEntry(tWidget *psWidget);
@@ -656,28 +656,46 @@ static void onWifiEnable(tWidget *psWidget)
 //
 //*****************************************************************************
 static void onCityEntry(tWidget *psWidget)
-
 {
-        // Disable swiping while the keyboard is active.
-        g_appCtx.swipeEnabled = false;
-        WidgetRemove(g_screens[g_appCtx.currentScreen].widget);
-        uiKeyboardCreate(g_appCtx.currentCity, g_appCtx.currentScreen,
-        				"Save the city", "Wanna save the city?",
-						onParameterEdited);
-        // Activate the keyboard.
-        g_appCtx.currentScreen = SCREEN_KEYBOARD;
+	// Disable swiping while the keyboard is active.
+	g_appCtx.swipeEnabled = false;
+	WidgetRemove(g_screens[g_appCtx.currentScreen].widget);
+	uiKeyboardCreate(g_appCtx.currentCity, g_appCtx.currentScreen,
+					"Save the city", "Wanna save the city?",
+					onParameterEdited);
+	// Activate the keyboard.
+	g_appCtx.currentScreen = SCREEN_KEYBOARD;
 }
 
 static void onSsidEntry(tWidget *psWidget)
 {
+	g_appCtx.swipeEnabled = false;
+	WidgetRemove(g_screens[g_appCtx.currentScreen].widget);
+	uiKeyboardCreate(g_appCtx.apSsid, g_appCtx.currentScreen,
+					"Save the ap ssid", "Wanna save the AP SSID?",
+					onParameterEdited);
+	g_appCtx.currentScreen = SCREEN_KEYBOARD;
 }
 
 static void onPassEntry(tWidget *psWidget)
 {
+	g_appCtx.swipeEnabled = false;
+	WidgetRemove(g_screens[g_appCtx.currentScreen].widget);
+	uiKeyboardCreate(g_appCtx.apPass, g_appCtx.currentScreen,
+					"Save the AP pass", "Wanna save the AP password?",
+					onParameterEdited);
+	g_appCtx.currentScreen = SCREEN_KEYBOARD;
 }
 
 static void onUpdateTimeEntry(tWidget *psWidget)
 {
+	g_appCtx.swipeEnabled = false;
+	WidgetRemove(g_screens[g_appCtx.currentScreen].widget);
+	uiKeyboardCreate(g_appCtx.updateWeatherPeriod, g_appCtx.currentScreen,
+					"Update refresh period", "Wanna save the period value?",
+					onParameterEdited);
+	uiKeyboardSetAllowedCharsType(Numeric);
+	g_appCtx.currentScreen = SCREEN_KEYBOARD;
 }
 
 //*****************************************************************************
@@ -722,9 +740,7 @@ static int32_t touchScreenCallback(uint32_t msg, int32_t x, int32_t y)
             // The user has just touched the screen.
             case WIDGET_MSG_PTR_DOWN:
             {
-                //
                 // Save this press location.
-                //
             	m_swipe.swipeStarted = true;
             	if(!m_swipe.swipeOnGoing)
             	{
@@ -856,13 +872,15 @@ int main(void)
 	FPULazyStackingEnable();
 	// Setup the system clock to run at 80 Mhz from PLL with crystal reference
 	SysCtlClockSet(SYSCTL_SYSDIV_2_5 | SYSCTL_USE_PLL | SYSCTL_OSC_MAIN | SYSCTL_XTAL_16MHZ);
-	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF);
-	GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, RED_LED | BLUE_LED | GREEN_LED);
-	GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, GREEN_LED);
-	GPIOPinWrite(GPIO_PORTF_BASE, RED_LED, 1 & 0xFF ? RED_LED : 0);
-	GPIOPinWrite(GPIO_PORTF_BASE, BLUE_LED, 1 & 0xFF ? BLUE_LED : 0);
-	GPIOPinWrite(GPIO_PORTF_BASE, GREEN_LED, 1 & 0xFF ? GREEN_LED : 0);
-	GPIOPinWrite(GPIO_PORTF_BASE, BLUE_LED, 0 & 0xFF ? BLUE_LED : 0);
+	/*
+		SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF);
+		GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, RED_LED | BLUE_LED | GREEN_LED);
+		GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, GREEN_LED);
+		GPIOPinWrite(GPIO_PORTF_BASE, RED_LED, 1 & 0xFF ? RED_LED : 0);
+		GPIOPinWrite(GPIO_PORTF_BASE, BLUE_LED, 1 & 0xFF ? BLUE_LED : 0);
+		GPIOPinWrite(GPIO_PORTF_BASE, GREEN_LED, 1 & 0xFF ? GREEN_LED : 0);
+		GPIOPinWrite(GPIO_PORTF_BASE, BLUE_LED, 0 & 0xFF ? BLUE_LED : 0);
+	*/
 
 	//debug Console
 	debugConsoleInit();

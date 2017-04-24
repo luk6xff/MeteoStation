@@ -252,7 +252,7 @@ static bool performTouchScreenCalibration(tContext* ctx)
 	tBoolean intsOff;
 	//disable all interrupts
 	intsOff = IntMasterDisable();
-	//ConfigParameters* cfg = configGetCurrent(); //FLASH
+	//ConfigFlashParameters* cfg = configFlashGetCurrent(); //FLASH
 	ConfigEepromParameters* cfg = configEepromGetCurrent();
 	if(cfg->touchScreenParams.isModified == 0xFF || cfg->touchScreenParams.isModified == 0x00)
 	{
@@ -262,7 +262,7 @@ static bool performTouchScreenCalibration(tContext* ctx)
 		{
 			cfg->touchScreenParams.calibCoeffs = coeffs;
 			cfg->touchScreenParams.isModified = 0x1;
-			//configSave(); //FLASH
+			//configFlashSave(); //FLASH
 			configEepromSave();
 
 			MAIN_DEBUG("COEFFSa: a.x=%d, a.y=%d\n\r", coeffs.m_ax, coeffs.m_ay);

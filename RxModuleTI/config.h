@@ -11,30 +11,42 @@
 #include "ads7843.h"
 
 
-
-#define MAX_CITIES 3
-#define MAX_CITY_NAME_LENGTH 20
-#define MAX_WIFI_CONFIGS 1
-
 #define DEFAULT_VERSION 0xFF
 
-//
+////////////////////////////////////////////////////////////////////////
+//FLASH stored parameters
+////////////////////////////////////////////////////////////////////////
+
 // Define the size of the flash program blocks for saving configuration data.
-//
 #define FLASH_PB_START          0x3FF00
 #define FLASH_PB_END            FLASH_PB_START + 0xFF
 //#define FLASH_PB_START          0x20000
 //#define FLASH_PB_END            FLASH_PB_START + 0x4000
-
-//
 // The size of the parameter block to save.  This must be a power of 2,
 // and should be large enough to contain the tConfigParameters structure.
-//
 #define FLASH_PB_SIZE           256
 
-#define ALL_PARAMS_SUPPORTEDx
+typedef struct
+{
+	uint8_t paramsVersion;
+	uint8_t isModified;
+}ConfigFlashParameters;
 
-//FLASH stored
+void configFlashInit(void);
+void configFlashLoadFactory(void);
+void configFlashLoad(void);
+void configFlashSave(void);
+ConfigFlashParameters* configFlashGetCurrent(void);
+
+////////////////////////////////////////////////////////////////////////
+//EEPROM stored parameters
+////////////////////////////////////////////////////////////////////////
+#define MAX_CITIES 3
+#define MAX_PARAMETER_NAME_LENGTH 20
+#define MAX_WIFI_CONFIGS 2
+
+#define  EEPROM_START_ADDRESS 0x0000
+
 typedef struct
 {
 	CalibCoefficients calibCoeffs;
@@ -43,39 +55,17 @@ typedef struct
 
 typedef struct
 {
-	char wifiSSID[20];
-	char wifiWPA2pass[20];
+	char wifiSSID[MAX_PARAMETER_NAME_LENGTH];
+	char wifiWPA2pass[MAX_PARAMETER_NAME_LENGTH];
 	uint8_t updatePeriodTime; /*Time after which  request is sent in seconds*/
 }AccessPointConfigParameters;
 
 typedef struct
 {
 	TouchScreenConfigParameters touchScreenParams;
-#ifdef ALL_PARAMS_SUPPORTED
 	AccessPointConfigParameters wifiConfig[MAX_WIFI_CONFIGS];
-	char cityNames[MAX_CITIES][MAX_CITY_NAME_LENGTH];
-	char openweatherDomain[50];
-#endif
-	uint8_t paramsVersion;
-	uint8_t isModified;
-}ConfigParameters;
-
-
-void configInit(void);
-void configLoadFactory(void);
-void configLoad(void);
-void configSave(void);
-ConfigParameters* configGetCurrent(void);
-
-
-//EEPROM stored
-#define  EEPROM_START_ADDRESS 0x0000
-typedef struct
-{
-	TouchScreenConfigParameters touchScreenParams;
-	AccessPointConfigParameters wifiConfig[MAX_WIFI_CONFIGS];
-	char cityNames[MAX_CITIES][MAX_CITY_NAME_LENGTH];
-	char openweatherDomain[50];
+	char cityNames[MAX_CITIES][MAX_PARAMETER_NAME_LENGTH];
+	char openweatherDomain[MAX_PARAMETER_NAME_LENGTH + MAX_PARAMETER_NAME_LENGTH];
 	uint8_t paramsVersion;
 	uint8_t isModified;
 }ConfigEepromParameters;
@@ -90,6 +80,9 @@ bool configEepromSaveDefaults(void);
 bool configEepromSave(void);
 ConfigEepromParameters* configEepromGetCurrent(void);
 
-
+////////////////////////////////////////////////////////////////////////
+//public API methods:
+////////////////////////////////////////////////////////////////////////
+void configInit(void);
 
 #endif /* CONFIG_H_ */

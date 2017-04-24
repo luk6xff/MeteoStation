@@ -18,56 +18,40 @@
 
 #include "config.h"
 // FLASH
-static const ConfigParameters defaultSettings =
+static const ConfigFlashParameters defaultSettings =
 {
-		{
-				{0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f},
-				0x00
-		},
-#ifdef ALL_PARAMS_SUPPORTED
-		.wifiConfig = {
-				{"default"},
-				{"default_pass"},
-
-				{0xFFFFFFFF}
-		},
-		{
-				{""}, {""}, {""}, {""}, {""}
-		},
-		.openweatherDomain = {"https://openweathermap.org/"},
-#endif
 		0xFF,
 		0x00
 };
 
 
-
-static ConfigParameters m_currentParameters;
+static ConfigFlashParameters m_currentFlashParameters;
 
 void configInit(void)
+{
+	configFlashInit();
+    configFlashLoadFactory();
+    configFlashLoad();
+
+    configEepromInit();
+    configEepromLoad();
+}
+
+void configFlashInit(void)
 {
     // Verify that the parameter block structure matches the FLASH parameter
     // block size.
     ASSERT(sizeof(ConfigParameters) == FLASH_PB_SIZE);
-
     // Initialize the flash parameter block driver.
     FlashPBInit(FLASH_PB_START, FLASH_PB_END, FLASH_PB_SIZE);
-
-    configLoadFactory();
-
-    configLoad();
-
-    configEepromInit();
-    configEepromLoad();
-
 }
 
-void configLoadFactory(void)
+void configFlashLoadFactory(void)
 {
-	m_currentParameters = defaultSettings;
+	m_currentFlashParameters = defaultSettings;
 }
 
-void configLoad(void)
+void configFlashLoad(void)
 {
 	uint8_t * configBuffer;
 
@@ -77,18 +61,18 @@ void configLoad(void)
 	if(configBuffer)
 	{
 		//copy params from flash to RAM
-		m_currentParameters = *(ConfigParameters*)configBuffer;
+		m_currentFlashParameters = *(ConfigFlashParameters*)configBuffer;
 	}
 }
 
-void configSave(void)
+void configFlashSave(void)
 {
-	FlashPBSave((uint8_t*)&m_currentParameters);
+	FlashPBSave((uint8_t*)&m_currentFlashParameters);
 }
 
-ConfigParameters* configGetCurrent(void)
+ConfigFlashParameters* configFlashGetCurrent(void)
 {
-	return &m_currentParameters;
+	return &m_currentFlashParameters;
 }
 
 
@@ -101,6 +85,10 @@ static const ConfigEepromParameters defaultEepromSettings =
 				0x00
 		},
 		.wifiConfig[0] = {
+				{"default"},
+				{"defaultPass"},
+		},
+		.wifiConfig[1] = {
 				{"default"},
 				{"defaultPass"},
 		},

@@ -17,11 +17,20 @@
 #include "driverlib/eeprom.h"
 
 #include "config.h"
+
+////////////////////////////////////////////////////////////////////////
 // FLASH
-static const ConfigFlashParameters defaultSettings =
+////////////////////////////////////////////////////////////////////////
+static const ConfigFlashParameters defaultFlashSettings =
 {
-		0xFF,
-		0x00
+	{
+		0x00,
+		0x00,
+		0x00,
+		0x00,
+	},
+	0xFF,
+	0x0
 };
 
 
@@ -48,7 +57,7 @@ void configFlashInit(void)
 
 void configFlashLoadFactory(void)
 {
-	m_currentFlashParameters = defaultSettings;
+	m_currentFlashParameters = defaultFlashSettings;
 }
 
 void configFlashLoad(void)
@@ -76,8 +85,9 @@ ConfigFlashParameters* configFlashGetCurrent(void)
 }
 
 
-
+////////////////////////////////////////////////////////////////////////
 // EEPROM
+////////////////////////////////////////////////////////////////////////
 static const ConfigEepromParameters defaultEepromSettings =
 {
 		{

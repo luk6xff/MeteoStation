@@ -127,9 +127,6 @@ extern tCanvasWidget g_settingsPanel;
 //*****************************************************************************
 typedef struct
 {
-	//
-	//
-	//
 	#define  MIN_SWIPE_DIFFERENCE 60
 	#define  LAST_VAL_BUF_SIZE 10
 	int32_t initX;
@@ -158,17 +155,20 @@ typedef struct
 //*****************************************************************************
 typedef struct
 {
-	bool wifiEnabled;
-	bool sensorEnabled;
-	bool powerSaveModeEnabled;
-	bool swipeEnabled;
+	ConfigFlashParameters flashParams;
+	ConfigEepromParameters eepromParams;
+	//bool wifiEnabled;
+	//bool sensorEnabled;
+	//bool powerSaveModeEnabled;
+
 	WifiConnectionState wifiState;
 	SensorConnectionState sensorState;
 	Screens currentScreen;
-	char currentCity[KEYBOARD_MAX_TEXT_LEN];
-	char apSsid[KEYBOARD_MAX_TEXT_LEN];
-	char apPass[KEYBOARD_MAX_TEXT_LEN];
-	uint8_t updateWeatherPeriod; //in seconds
+	bool swipeEnabled;
+	//char currentCity[KEYBOARD_MAX_TEXT_LEN];
+	//char apSSID[KEYBOARD_MAX_TEXT_LEN];
+	//char apPass[KEYBOARD_MAX_TEXT_LEN];
+	//uint8_t updateWeatherPeriod; //in seconds
 
 }AppContext;
 
@@ -180,7 +180,7 @@ typedef struct
 static tContext g_drawingContext;
 static volatile State g_mainState = STATE_RESET;
 static volatile Swipe m_swipe;
-static volatile AppContext g_appCtx = {false, false, false, true, WIFI_NOT_CONNECTED, SENSOR_NOT_CONNECTED, SCREEN_MAIN, {"NowySacz"}, {"INTEHNET"}, {"Faza939290"}, 10};
+static volatile AppContext g_appCtx;// = {false, false, false, true, WIFI_NOT_CONNECTED, SENSOR_NOT_CONNECTED, SCREEN_MAIN, {"NowySacz"}, {"INTEHNET"}, {"Faza939290"}, 10};
 
 static ScreenContainer g_screens[SCREEN_NUM_OF_SCREENS] =
 {
@@ -225,6 +225,17 @@ static int32_t touchScreenCallback(uint32_t msg, int32_t x, int32_t y);
 static void updateWifiConnectionStatus(WifiConnectionState state);
 static void updateSensorConnectionStatus(SensorConnectionState state);
 
+// Reads config from flash and eeprom and fills the current App cntext
+static bool readConfigAndSetAppContext()
+{
+	//reads configuration from flash/eeprom
+	configInit();
+	memcpy(&g_appCtx.flashParams, configFlashGetCurrent(), sizeof(ConfigFlashParameters));
+	memcpy(&g_appCtx.eepromParams, configEepromGetCurrent(), sizeof(ConfigEepromParameters));
+	return true;
+}
+
+
 // Clears the main screens background.
 static void clearBackground(tContext *psContext)
 {
@@ -252,7 +263,6 @@ static bool performTouchScreenCalibration(tContext* ctx)
 	tBoolean intsOff;
 	//disable all interrupts
 	intsOff = IntMasterDisable();
-	//ConfigFlashParameters* cfg = configFlashGetCurrent(); //FLASH
 	ConfigEepromParameters* cfg = configEepromGetCurrent();
 	if(cfg->touchScreenParams.isModified == 0xFF || cfg->touchScreenParams.isModified == 0x00)
 	{
@@ -262,7 +272,6 @@ static bool performTouchScreenCalibration(tContext* ctx)
 		{
 			cfg->touchScreenParams.calibCoeffs = coeffs;
 			cfg->touchScreenParams.isModified = 0x1;
-			//configFlashSave(); //FLASH
 			configEepromSave();
 
 			MAIN_DEBUG("COEFFSa: a.x=%d, a.y=%d\n\r", coeffs.m_ax, coeffs.m_ay);
@@ -352,19 +361,19 @@ RectangularButton(g_wifiApSsid, &g_screenWifiSetupBackground, 0, 0,
        &g_ILI9320, 118, 30, 190, 28,
        PB_STYLE_FILL | PB_STYLE_TEXT, ClrLightGrey,
        ClrLightGrey, ClrWhite, ClrGray, g_psFontCmss14,
-	   g_appCtx.apSsid, 0, 0, 0 ,0 , onSsidEntry);
+	   g_appCtx.eepromParams.wifiConfig[0].apSSID, 0, 0, 0 ,0 , onSsidEntry);
 
 RectangularButton(g_wifiApPass, &g_screenWifiSetupBackground, &g_wifiApSsid, 0,
        &g_ILI9320, 118, 70, 190, 28,
        PB_STYLE_FILL | PB_STYLE_TEXT, ClrLightGrey,
        ClrLightGrey, ClrWhite, ClrGray, g_psFontCmss14,
-	   g_appCtx.apPass, 0, 0, 0 ,0 , onPassEntry);
+	   g_appCtx.eepromParams.wifiConfig[0].apWPA2pass, 0, 0, 0 ,0 , onPassEntry);
 
 RectangularButton(g_wifiCustomCity, &g_screenWifiSetupBackground, &g_wifiApPass, 0,
        &g_ILI9320, 118, 110, 190, 28,
        PB_STYLE_FILL | PB_STYLE_TEXT, ClrLightGrey,
        ClrLightGrey, ClrWhite, ClrGray, g_psFontCmss14,
-	   g_appCtx.currentCity, 0, 0, 0 ,0 , onCityEntry);
+	   g_appCtx.eepromParams.cityNames[0], 0, 0, 0 ,0 , onCityEntry);
 
 RectangularButton(g_wifiUpdateTime, &g_screenWifiSetupBackground, &g_wifiCustomCity, 0,
        &g_ILI9320, 118, 150, 190, 28,
@@ -512,21 +521,21 @@ void onConnCheckBoxChange(tWidget *widget, uint32_t enabled)
     WidgetPaint((tWidget *)(g_connCheckBoxIndicators + idx));
     if(strcmp(g_connCheckBoxes[idx].pcText, "WIFI") == 0)
     {
-    		g_appCtx.wifiEnabled = enabled;
+    		g_appCtx.flashParams.connectionSetupState.wifiEnabled = enabled;
     }
     else if(strcmp(g_connCheckBoxes[idx].pcText, "Sensors") == 0)
     {
-    		g_appCtx.sensorEnabled = enabled;
+    		g_appCtx.flashParams.connectionSetupState.sensorsEnabled = enabled;
     }
     else if(strcmp(g_connCheckBoxes[idx].pcText, "PowerSaving") == 0)
     {
-    		g_appCtx.powerSaveModeEnabled = enabled;
+    		g_appCtx.flashParams.connectionSetupState.powerSavingEnabled = enabled;
     }
 }
 
 void onConnToAP(tWidget *psWidget)
 {
-	if(!g_appCtx.wifiEnabled)
+	if(!g_appCtx.flashParams.connectionSetupState.wifiEnabled)
 		return;
 	WifiConnectionState state = g_appCtx.wifiState;
 	if(state == WIFI_NOT_CONNECTED)
@@ -538,14 +547,14 @@ void onConnToAP(tWidget *psWidget)
 		else
 		{
 			esp8266CommandCWMODE(ESP8266_MODE_CLIENT);
-			if(esp8266CommandCWJAP(g_appCtx.apSsid, g_appCtx.apPass))
+			if(esp8266CommandCWJAP(g_appCtx.apSSID, g_appCtx.apPass))
 			{
-				MAIN_DEBUG("Connected to AP: %s", g_appCtx.apSsid);
+				MAIN_DEBUG("Connected to AP: %s", g_appCtx.apSSID);
 				state = WIFI_CONNECTED;
 			}
 			else
 			{
-				MAIN_DEBUG("Cannot connect to AP: %s", g_appCtx.apSsid);
+				MAIN_DEBUG("Cannot connect to AP: %s", g_appCtx.apSSID);
 			}
 		}
 	}
@@ -553,7 +562,7 @@ void onConnToAP(tWidget *psWidget)
 	{
 		if(esp8266CommandCWQAP())
 		{
-			MAIN_DEBUG("Disconnected from AP: %s", g_appCtx.apSsid);
+			MAIN_DEBUG("Disconnected from AP: %s", g_appCtx.apSSID);
 			state = WIFI_NOT_CONNECTED;
 		}
 		else
@@ -671,7 +680,7 @@ static void onSsidEntry(tWidget *psWidget)
 {
 	g_appCtx.swipeEnabled = false;
 	WidgetRemove(g_screens[g_appCtx.currentScreen].widget);
-	uiKeyboardCreate(g_appCtx.apSsid, g_appCtx.currentScreen,
+	uiKeyboardCreate(g_appCtx.apSSID, g_appCtx.currentScreen,
 					"Save the ap ssid", "Wanna save the AP SSID?",
 					onParameterEdited);
 	g_appCtx.currentScreen = SCREEN_KEYBOARD;
@@ -882,13 +891,14 @@ int main(void)
 		GPIOPinWrite(GPIO_PORTF_BASE, BLUE_LED, 0 & 0xFF ? BLUE_LED : 0);
 	*/
 
+	readConfigAndSetAppContext();
 	//debug Console
 	debugConsoleInit();
 
 	//Display driver
 	ILI9320Init();
 
-	//Configuration
+	//Read Configuration
 	configInit();
 
 	//ESP8266

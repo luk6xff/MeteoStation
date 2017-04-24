@@ -23,11 +23,20 @@
 //#define FLASH_PB_START          0x20000
 //#define FLASH_PB_END            FLASH_PB_START + 0x4000
 // The size of the parameter block to save.  This must be a power of 2,
-// and should be large enough to contain the tConfigParameters structure.
+// and should be large enough to contain the ConfigFlashParameters structure.
 #define FLASH_PB_SIZE           256
 
 typedef struct
 {
+	uint8_t wifiEnabled;
+	uint8_t sensorsEnabled;
+	uint8_t powerSavingEnabled;
+	uint8_t isConnectedToAP;
+}ConectionSetupState;
+
+typedef struct
+{
+	ConectionSetupState connectionSetupState;
 	uint8_t paramsVersion;
 	uint8_t isModified;
 }ConfigFlashParameters;
@@ -55,9 +64,10 @@ typedef struct
 
 typedef struct
 {
-	char wifiSSID[MAX_PARAMETER_NAME_LENGTH];
-	char wifiWPA2pass[MAX_PARAMETER_NAME_LENGTH];
+	char apSSID[MAX_PARAMETER_NAME_LENGTH];
+	char apWPA2pass[MAX_PARAMETER_NAME_LENGTH];
 	uint8_t updatePeriodTime; /*Time after which  request is sent in seconds*/
+
 }AccessPointConfigParameters;
 
 typedef struct

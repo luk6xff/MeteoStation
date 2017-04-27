@@ -31,12 +31,15 @@ typedef struct
 	uint8_t wifiEnabled;
 	uint8_t sensorsEnabled;
 	uint8_t powerSavingEnabled;
-	uint8_t isConnectedToAP;
+	uint8_t wifiConnectionState;
+	uint8_t sensorConnectionState;
 }ConectionSetupState;
 
 typedef struct
 {
 	ConectionSetupState connectionSetupState;
+	uint8_t currentCity;
+	uint8_t currentWifiConfig;
 	uint8_t paramsVersion;
 	uint8_t isModified;
 }ConfigFlashParameters;
@@ -44,7 +47,12 @@ typedef struct
 void configFlashInit(void);
 void configFlashLoadFactory(void);
 void configFlashLoad(void);
+void configFlashSaveDefaults(void);
 void configFlashSave(void);
+bool configFlashCheckAndCleanModified(ConfigFlashParameters * const ptr);
+void configFlashSetModified(ConfigFlashParameters* const ptr);
+bool configFlashIsInvalid(const ConfigFlashParameters * const ptr);
+ConfigFlashParameters* const configFlashGetDefaultSettings(void);
 ConfigFlashParameters* configFlashGetCurrent(void);
 
 ////////////////////////////////////////////////////////////////////////
@@ -59,15 +67,13 @@ ConfigFlashParameters* configFlashGetCurrent(void);
 typedef struct
 {
 	CalibCoefficients calibCoeffs;
-	uint8_t isModified;
+	uint8_t isValid; // 0 - default invalid, other - valid
 }TouchScreenConfigParameters;
 
 typedef struct
 {
 	char apSSID[MAX_PARAMETER_NAME_LENGTH];
 	char apWPA2pass[MAX_PARAMETER_NAME_LENGTH];
-	uint8_t updatePeriodTime; /*Time after which  request is sent in seconds*/
-
 }AccessPointConfigParameters;
 
 typedef struct
@@ -76,7 +82,9 @@ typedef struct
 	AccessPointConfigParameters wifiConfig[MAX_WIFI_CONFIGS];
 	char cityNames[MAX_CITIES][MAX_PARAMETER_NAME_LENGTH];
 	char openweatherDomain[MAX_PARAMETER_NAME_LENGTH + MAX_PARAMETER_NAME_LENGTH];
-	uint8_t paramsVersion;
+	uint8_t updateWifiPeriodTime;  /*Time after which request to OpenWeatherMap is sent in seconds*/
+	uint8_t updateSensorPeriodTime;/*Time after which request to Sensor is sent in seconds*/
+	uint8_t paramsVersion; 		   /* First Time the value will be 0x00 -invalid, 0x01-defaults, 0x02 - updated */
 	uint8_t isModified;
 }ConfigEepromParameters;
 
@@ -84,10 +92,15 @@ typedef struct
  * @brief utils for EEprom memory
  * @return true on success
  */
+
 void configEepromLoad(void);
 bool configEepromInit(void);
 bool configEepromSaveDefaults(void);
 bool configEepromSave(void);
+bool configEepromCheckAndCleanModified(ConfigEepromParameters * const ptr);
+void configEepromSetModified(ConfigEepromParameters* const ptr);
+bool configEepromIsInvalid(const ConfigEepromParameters * const ptr);
+ConfigEepromParameters* const configEepromGetDefaultSettings(void);
 ConfigEepromParameters* configEepromGetCurrent(void);
 
 ////////////////////////////////////////////////////////////////////////

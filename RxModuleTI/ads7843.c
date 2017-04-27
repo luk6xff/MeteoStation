@@ -118,11 +118,13 @@ void ADS7843init(void) {
 	ADS7843setIrqAndPowerDown();
 }
 
-bool ADS7843read() {
-	return ADS7843readPointXY(&m_currentTouchedPoint, false);
+bool ADS7843read()
+{
+	ADS7843readPointXY(&m_currentTouchedPoint, false);
 }
 
-bool ADS7843dataAvailable() {
+bool ADS7843dataAvailable()
+{
 	if (ADS7843getTouchStatus() == TOUCH_STATUS_PENDOWN) {
 		return true;
 	}
@@ -194,9 +196,9 @@ TouchPoint ADS7843translateCoordinates(const TouchPoint* rawPoint) {
 	return p;
 }
 
-bool ADS7843readPointXY(TouchPoint* touchPoint, bool calibrationEnabled) {
-    //m_touchInfoData.touchStatus = TOUCH_STATUS_PENDOWN; //TODO to be removed!!
-	if (m_touchInfoData.touchStatus == TOUCH_STATUS_PENDOWN) {
+bool ADS7843readPointXY(TouchPoint* touchPoint, bool calibrationEnabled)
+{
+	if (m_touchInfoData.touchStatus == TOUCH_STATUS_PENDOWN || calibrationEnabled) {
 		uint16_t xyDataBuf[2][7]; //7 samples
 		TouchPoint p;
 		for (uint8_t i = 0; i < 7; i++) {

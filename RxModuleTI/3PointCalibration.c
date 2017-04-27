@@ -32,10 +32,10 @@ uint8_t performThreePointCalibration(tContext* ctx, CalibCoefficients* coefs)
 	p3.y = (size_y * 75) / 100;
 
 	//1st point
-    GrContextForegroundSet(ctx, ClrLightGoldenrodYellow);
+    GrContextForegroundSet(ctx, ClrRed);
     GrContextFontSet(ctx, &g_sFontCm16);
     GrStringDrawCentered(ctx, "Tap & hold the point", -1,
-                         GrContextDpyWidthGet(ctx) / 2, 8, 0);
+                         GrContextDpyWidthGet(ctx) / 2, 30, 0);
 
     GrContextForegroundSet(ctx, ClrBlue);
 	drawCalibrationPoint(ctx, p1.x, p1.y, 30);
@@ -57,6 +57,12 @@ uint8_t performThreePointCalibration(tContext* ctx, CalibCoefficients* coefs)
     GrContextForegroundSet(ctx, ClrYellow);
 	drawCalibrationPoint(ctx, p3.x, p3.y, 30);
 	delay_ms(delayMs);
+
+	//clear the string
+    GrContextForegroundSet(ctx, ClrWhite);
+    GrContextFontSet(ctx, &g_sFontCm16);
+    GrStringDrawCentered(ctx, "Tap & hold the point", -1,
+                         GrContextDpyWidthGet(ctx) / 2, 30, 0);
 
 	//final computation based on:
 	//https://www.maximintegrated.com/en/app-notes/index.mvp/id/5296
@@ -122,12 +128,13 @@ uint8_t confirmThreePointCalibration(tContext* ctx)
 		const uint8_t successThreshold = 20;
 		TouchPoint testPoint;
 		TouchPoint result;
+		uint8_t res = 1;
 		testPoint.x = ctx->psDisplay->ui16Width/2;
 		testPoint.y = ctx->psDisplay->ui16Height/2;
 	    GrContextForegroundSet(ctx, ClrRed);
 	    GrContextFontSet(ctx, &g_sFontCm16);
 	    GrStringDrawCentered(ctx, "Tap & hold the test point until become yellow", -1,
-	                         GrContextDpyWidthGet(ctx) / 2, 8, 0);
+	                         GrContextDpyWidthGet(ctx) / 2, 30, 0);
 		drawCalibrationPoint(ctx, testPoint.x, testPoint.y, 30);
 		while (ADS7843getIntPinState()); //wait till we pen down the touch screen
 		if(!ADS7843getIntPinState()) //if touch panel is being touched
@@ -138,14 +145,26 @@ uint8_t confirmThreePointCalibration(tContext* ctx)
 		delay_ms(delayMs);
 	    GrContextForegroundSet(ctx, ClrYellow);
 		drawCalibrationPoint(ctx, testPoint.x, testPoint.y, 30);
+
+	    GrContextForegroundSet(ctx, ClrBlack);
+	    GrContextFontSet(ctx, &g_sFontCm20);
+
 		if(((result.x) > (testPoint.x+successThreshold)) ||
 		   ((result.x) < (testPoint.x-successThreshold)) ||
 		   ((result.y) > (testPoint.y+successThreshold)) ||
 		   ((result.y) < (testPoint.y-successThreshold)))
 		{
-			return 0;
+		    GrStringDrawCentered(ctx, "Calibration failed!, try again", -1,
+		                         GrContextDpyWidthGet(ctx) / 2, 120, 0);
+			res = 0;
 		}
-		return 1;
+		else
+		{
+			GrStringDrawCentered(ctx, "Calibration succeed!", -1,
+	                         	 GrContextDpyWidthGet(ctx) / 2, 120, 0);
+		}
+		delay_ms(delayMs);
+		return res;
 }
 
 

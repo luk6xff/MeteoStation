@@ -24,13 +24,16 @@
 static const ConfigFlashParameters defaultFlashSettings =
 {
 	{
-		0x00,
-		0x00,
-		0x00,
-		0x00,
+		0x00,	// wifiEnabled
+		0x00,	// sensorsEnabled
+		0x00,	// powerSavingEnabled
+		0x00,	// wifiConnectionState - WIFI_NOT_CONNECTED
+		0x00	// sensorConnectionState - SENSOR_NOT_CONNECTED
 	},
-	0xFF,
-	0x0
+	0x00, // currentCity
+	0x00, // currentWifiConfig
+	0x01, // paramsVersion
+	0x00  // isModified
 };
 
 
@@ -74,9 +77,39 @@ void configFlashLoad(void)
 	}
 }
 
+void configFlashSaveDefaults(void)
+{
+	FlashPBSave((uint8_t*)&defaultFlashSettings);
+}
+
 void configFlashSave(void)
 {
 	FlashPBSave((uint8_t*)&m_currentFlashParameters);
+}
+
+bool configFlashCheckAndCleanModified(ConfigFlashParameters * const ptr)
+{
+	if(ptr && ptr->isModified == 0x01)
+	{
+		ptr->isModified = 0x00; //clear
+		return true;
+	}
+	return false;
+}
+
+void configFlashSetModified(ConfigFlashParameters* const ptr)
+{
+	ptr->isModified = 0x01;
+}
+
+bool configFlashIsInvalid(const ConfigFlashParameters * const ptr)
+{
+	return (ptr->paramsVersion == 0xFF || ptr->paramsVersion == 0x00);
+}
+
+ConfigFlashParameters* const configFlashGetDefaultSettings(void)
+{
+	return &defaultFlashSettings;
 }
 
 ConfigFlashParameters* configFlashGetCurrent(void)
@@ -91,23 +124,25 @@ ConfigFlashParameters* configFlashGetCurrent(void)
 static const ConfigEepromParameters defaultEepromSettings =
 {
 		{
-				{0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f},
-				0x00
+				{0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f},	// calibCoeffs
+				0x00,  									// isValid
 		},
 		.wifiConfig[0] = {
-				{"default"},
-				{"defaultPass"},
+				{"default"}, 							// apSSID
+				{"defaultPass"},						// isModified
 		},
 		.wifiConfig[1] = {
 				{"default"},
 				{"defaultPass"},
 		},
 		{
-				{""}, {""}, {""}
+				{"city"}, {"city"}, {"city"}			// cityNames
 		},
 		.openweatherDomain = {"https://api.openweathermap.org/"},
-		0xFF, /*0x00 and 0xFF means invalid one*/
-		0x00
+		60,												// updateWifiPeriodTime
+		60,												// updateSensorPeriodTime
+		0x01, 											// paramsVersion 0x00 and 0xFF means invalid one
+		0x00											// isModified
 };
 
 static ConfigEepromParameters m_currentEepromParameters;
@@ -133,12 +168,35 @@ bool configEepromSaveDefaults(void)
 	return 0 == EEPROMProgram((uint8_t*)&defaultEepromSettings, EEPROM_START_ADDRESS, sizeof(ConfigEepromParameters));
 }
 
-
 bool configEepromSave(void)
 {
 	return 0 == EEPROMProgram((uint8_t*)&m_currentEepromParameters, EEPROM_START_ADDRESS, sizeof(ConfigEepromParameters));
 }
 
+bool configEepromCheckAndCleanModified(ConfigEepromParameters * const ptr)
+{
+	if(ptr && ptr->isModified == 0x01)
+	{
+		ptr->isModified = 0x00; //clear
+		return true;
+	}
+	return false;
+}
+
+void configEepromSetModified(ConfigEepromParameters* const ptr)
+{
+	ptr->isModified = 0x01;
+}
+
+bool configEepromIsInvalid(const ConfigEepromParameters * const ptr)
+{
+	return (ptr->paramsVersion == 0xFF || ptr->paramsVersion == 0x00);
+}
+
+ConfigEepromParameters* const configEepromGetDefaultSettings(void)
+{
+	return &defaultEepromSettings;
+}
 
 ConfigEepromParameters* configEepromGetCurrent(void)
 {

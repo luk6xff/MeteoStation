@@ -103,7 +103,6 @@ typedef struct
 	Screens right;
 }ScreenContainer;
 
-
 //*****************************************************************************
 //
 // Forward reference to all used widget structures.
@@ -157,18 +156,10 @@ typedef struct
 {
 	ConfigFlashParameters flashParams;
 	ConfigEepromParameters eepromParams;
-	//bool wifiEnabled;
-	//bool sensorEnabled;
-	//bool powerSaveModeEnabled;
-
 	WifiConnectionState wifiState;
 	SensorConnectionState sensorState;
 	Screens currentScreen;
 	bool swipeEnabled;
-	//char currentCity[KEYBOARD_MAX_TEXT_LEN];
-	//char apSSID[KEYBOARD_MAX_TEXT_LEN];
-	//char apPass[KEYBOARD_MAX_TEXT_LEN];
-	//uint8_t updateWeatherPeriod; //in seconds
 
 }AppContext;
 
@@ -180,7 +171,7 @@ typedef struct
 static tContext g_drawingContext;
 static volatile State g_mainState = STATE_RESET;
 static volatile Swipe m_swipe;
-static volatile AppContext g_appCtx;// = {false, false, false, true, WIFI_NOT_CONNECTED, SENSOR_NOT_CONNECTED, SCREEN_MAIN, {"NowySacz"}, {"INTEHNET"}, {"Faza939290"}, 10};
+static volatile AppContext m_appCtx;
 
 static ScreenContainer g_screens[SCREEN_NUM_OF_SCREENS] =
 {
@@ -225,19 +216,64 @@ static int32_t touchScreenCallback(uint32_t msg, int32_t x, int32_t y);
 static void updateWifiConnectionStatus(WifiConnectionState state);
 static void updateSensorConnectionStatus(SensorConnectionState state);
 
-// Reads config from flash and eeprom and fills the current App cntext
+static bool saveApplicationContextToMemory()
+{
+	bool ret = false;
+	if(configFlashCheckAndCleanModified(&m_appCtx.flashParams))
+	{
+		memcpy(configFlashGetCurrent(), &m_appCtx.flashParams, sizeof(ConfigFlashParameters));
+		configFlashSave();
+		ret = true;
+	}
+
+	if(configEepromCheckAndCleanModified(&m_appCtx.eepromParams))
+	{
+		memcpy(configEepromGetCurrent(), &m_appCtx.eepromParams, sizeof(ConfigEepromParameters));
+		configEepromSave();
+		ret = true;
+	}
+	return ret;
+}
+
+// Reads config from flash and eeprom and fills the current App context
 static bool readConfigAndSetAppContext()
 {
-	//reads configuration from flash/eeprom
+	// assign defaults
+	memcpy(&m_appCtx.flashParams, configFlashGetDefaultSettings(), sizeof(ConfigFlashParameters));
+	memcpy(&m_appCtx.eepromParams, configEepromGetDefaultSettings(), sizeof(ConfigEepromParameters));
+
+	// reads configuration from flash/eeprom
 	configInit();
-	memcpy(&g_appCtx.flashParams, configFlashGetCurrent(), sizeof(ConfigFlashParameters));
-	memcpy(&g_appCtx.eepromParams, configEepromGetCurrent(), sizeof(ConfigEepromParameters));
+
+	if(configFlashIsInvalid(configFlashGetCurrent()))
+	{
+		configFlashSaveDefaults();
+	}
+	else
+	{
+		// assign defaults settings from memory
+		memcpy(&m_appCtx.flashParams, configFlashGetCurrent(), sizeof(ConfigFlashParameters));
+	}
+
+	if(configEepromIsInvalid(configEepromGetCurrent()))
+	{
+		configEepromSaveDefaults();
+	}
+	else
+	{
+		// assign defaults settings from memory
+		memcpy(&m_appCtx.eepromParams, configEepromGetCurrent(), sizeof(ConfigEepromParameters));
+	}
+
+	m_appCtx.currentScreen = SCREEN_MAIN;
+	m_appCtx.swipeEnabled = true;
+
 	return true;
 }
 
 
 // Clears the main screens background.
-static void clearBackground(tContext *psContext)
+static void clearBackground(tContext* context)
 {
     static const tRectangle sRect =
     {
@@ -246,32 +282,35 @@ static void clearBackground(tContext *psContext)
         BG_MAX_X,
         BG_MAX_Y,
     };
-    GrRectFill(psContext, &sRect);
+    GrRectFill(context, &sRect);
 }
 
-static void handleMovement(void);
 
 //*****************************************************************************
 //
 // Touch screen calibration method.
 //
 //*****************************************************************************
-static bool performTouchScreenCalibration(tContext* ctx)
+static bool setTouchScreenCalibration(tContext* ctx)
 {
 	CalibCoefficients coeffs;
 	bool ret = false;
 	tBoolean intsOff;
 	//disable all interrupts
 	intsOff = IntMasterDisable();
-	ConfigEepromParameters* cfg = configEepromGetCurrent();
-	if(cfg->touchScreenParams.isModified == 0xFF || cfg->touchScreenParams.isModified == 0x00)
+	ConfigEepromParameters* cfg = &m_appCtx.eepromParams;
+	if(configEepromIsInvalid(cfg) || cfg->touchScreenParams.isValid == 0x00) //first time enabled
 	{
 		performThreePointCalibration(ctx, &coeffs);
 		ADS7843setCalibrationCoefficients(&coeffs);
 		if(confirmThreePointCalibration(ctx))
 		{
 			cfg->touchScreenParams.calibCoeffs = coeffs;
-			cfg->touchScreenParams.isModified = 0x1;
+			cfg->touchScreenParams.isValid = 0x01;
+			cfg->paramsVersion = 0x01;
+			//configEepromSetModified(cfg); //not needed here
+			ConfigEepromParameters* curr = configEepromGetCurrent();
+			curr = cfg;
 			configEepromSave();
 
 			MAIN_DEBUG("COEFFSa: a.x=%d, a.y=%d\n\r", coeffs.m_ax, coeffs.m_ay);
@@ -341,39 +380,30 @@ Canvas(g_screenMainBackground, WIDGET_ROOT, 0, &g_sCityName,
        BG_COLOR_MAIN, ClrWhite, ClrBlueViolet, g_psFontCmss20,
        0, 0, 0);
 
-
-
-
-
-
-
 //*****************************************************************************
 //
-// // The canvas widget acting as WIFI connection settings panel.
+// The canvas widget acting as WIFI connection settings panel.
 //
 //*****************************************************************************
 
-//
 // The text entry button for the custom city.
-//
-
 RectangularButton(g_wifiApSsid, &g_screenWifiSetupBackground, 0, 0,
        &g_ILI9320, 118, 30, 190, 28,
        PB_STYLE_FILL | PB_STYLE_TEXT, ClrLightGrey,
        ClrLightGrey, ClrWhite, ClrGray, g_psFontCmss14,
-	   g_appCtx.eepromParams.wifiConfig[0].apSSID, 0, 0, 0 ,0 , onSsidEntry);
+	   m_appCtx.eepromParams.wifiConfig[0].apSSID, 0, 0, 0 ,0 , onSsidEntry);
 
 RectangularButton(g_wifiApPass, &g_screenWifiSetupBackground, &g_wifiApSsid, 0,
        &g_ILI9320, 118, 70, 190, 28,
        PB_STYLE_FILL | PB_STYLE_TEXT, ClrLightGrey,
        ClrLightGrey, ClrWhite, ClrGray, g_psFontCmss14,
-	   g_appCtx.eepromParams.wifiConfig[0].apWPA2pass, 0, 0, 0 ,0 , onPassEntry);
+	   m_appCtx.eepromParams.wifiConfig[0].apWPA2pass, 0, 0, 0 ,0 , onPassEntry);
 
 RectangularButton(g_wifiCustomCity, &g_screenWifiSetupBackground, &g_wifiApPass, 0,
        &g_ILI9320, 118, 110, 190, 28,
        PB_STYLE_FILL | PB_STYLE_TEXT, ClrLightGrey,
        ClrLightGrey, ClrWhite, ClrGray, g_psFontCmss14,
-	   g_appCtx.eepromParams.cityNames[0], 0, 0, 0 ,0 , onCityEntry);
+	   m_appCtx.eepromParams.cityNames[0], 0, 0, 0 ,0 , onCityEntry);
 
 RectangularButton(g_wifiUpdateTime, &g_screenWifiSetupBackground, &g_wifiCustomCity, 0,
        &g_ILI9320, 118, 150, 190, 28,
@@ -521,23 +551,23 @@ void onConnCheckBoxChange(tWidget *widget, uint32_t enabled)
     WidgetPaint((tWidget *)(g_connCheckBoxIndicators + idx));
     if(strcmp(g_connCheckBoxes[idx].pcText, "WIFI") == 0)
     {
-    		g_appCtx.flashParams.connectionSetupState.wifiEnabled = enabled;
+    		m_appCtx.flashParams.connectionSetupState.wifiEnabled = enabled;
     }
     else if(strcmp(g_connCheckBoxes[idx].pcText, "Sensors") == 0)
     {
-    		g_appCtx.flashParams.connectionSetupState.sensorsEnabled = enabled;
+    		m_appCtx.flashParams.connectionSetupState.sensorsEnabled = enabled;
     }
     else if(strcmp(g_connCheckBoxes[idx].pcText, "PowerSaving") == 0)
     {
-    		g_appCtx.flashParams.connectionSetupState.powerSavingEnabled = enabled;
+    		m_appCtx.flashParams.connectionSetupState.powerSavingEnabled = enabled;
     }
 }
 
 void onConnToAP(tWidget *psWidget)
 {
-	if(!g_appCtx.flashParams.connectionSetupState.wifiEnabled)
+	if(!m_appCtx.flashParams.connectionSetupState.wifiEnabled  )
 		return;
-	WifiConnectionState state = g_appCtx.wifiState;
+	WifiConnectionState state = m_appCtx.wifiState;
 	if(state == WIFI_NOT_CONNECTED)
 	{
 		if(!esp8266CommandAT())
@@ -547,14 +577,14 @@ void onConnToAP(tWidget *psWidget)
 		else
 		{
 			esp8266CommandCWMODE(ESP8266_MODE_CLIENT);
-			if(esp8266CommandCWJAP(g_appCtx.apSSID, g_appCtx.apPass))
+			if(esp8266CommandCWJAP(m_appCtx.eepromParams.wifiConfig[0].apSSID, m_appCtx.eepromParams.wifiConfig[0].apWPA2pass))
 			{
-				MAIN_DEBUG("Connected to AP: %s", g_appCtx.apSSID);
+				MAIN_DEBUG("Connected to AP: %s", m_appCtx.eepromParams.wifiConfig[0].apSSID);
 				state = WIFI_CONNECTED;
 			}
 			else
 			{
-				MAIN_DEBUG("Cannot connect to AP: %s", g_appCtx.apSSID);
+				MAIN_DEBUG("Cannot connect to AP: %s",  m_appCtx.eepromParams.wifiConfig[0].apSSID);
 			}
 		}
 	}
@@ -562,7 +592,7 @@ void onConnToAP(tWidget *psWidget)
 	{
 		if(esp8266CommandCWQAP())
 		{
-			MAIN_DEBUG("Disconnected from AP: %s", g_appCtx.apSSID);
+			MAIN_DEBUG("Disconnected from AP: %s",  m_appCtx.eepromParams.wifiConfig[0].apSSID);
 			state = WIFI_NOT_CONNECTED;
 		}
 		else
@@ -578,11 +608,11 @@ void onConnToAP(tWidget *psWidget)
 void onWifiSetup(tWidget *psWidget)
 {
 	MAIN_DEBUG("onWifiSetup pressed");
-	if(g_appCtx.wifiEnabled)
+	if(m_appCtx.flashParams.connectionSetupState.wifiEnabled)
 	{
-        WidgetRemove(g_screens[g_appCtx.currentScreen].widget);
-        g_appCtx.currentScreen = SCREEN_WIFI_SETTINGS;
-        WidgetAdd(WIDGET_ROOT, g_screens[g_appCtx.currentScreen].widget);
+        WidgetRemove(g_screens[m_appCtx.currentScreen].widget);
+        m_appCtx.currentScreen = SCREEN_WIFI_SETTINGS;
+        WidgetAdd(WIDGET_ROOT, g_screens[m_appCtx.currentScreen].widget);
         WidgetPaint(WIDGET_ROOT);
 	}
 }
@@ -599,13 +629,13 @@ void onOthersSetup(tWidget *psWidget)
 
 static void updateWifiConnectionStatus(WifiConnectionState state)
 {
-	//if(state == g_appCtx.wifiState)
+	//if(state == m_appCtx.wifiState)
 	//{
 	//	return;
 	//}
 	switch (state) {
 		case WIFI_NOT_CONNECTED:
-			if(g_appCtx.currentScreen == SCREEN_CONN_SETTINGS)
+			if(m_appCtx.currentScreen == SCREEN_CONN_SETTINGS)
 			{
 			    GrContextFontSet(&g_drawingContext, &g_sFontCm12);
 			    GrContextForegroundSet(&g_drawingContext, ClrWhite);
@@ -614,7 +644,7 @@ static void updateWifiConnectionStatus(WifiConnectionState state)
 			}
 			break;
 		case WIFI_CONNECTED:
-			if(g_appCtx.currentScreen == SCREEN_CONN_SETTINGS)
+			if(m_appCtx.currentScreen == SCREEN_CONN_SETTINGS)
 			{
 			    GrContextFontSet(&g_drawingContext, &g_sFontCm16);
 			    GrContextForegroundSet(&g_drawingContext, ClrWhite);
@@ -623,7 +653,7 @@ static void updateWifiConnectionStatus(WifiConnectionState state)
 			}
 			break;
 		case WIFI_WAIT_FOR_DATA:
-			if(g_appCtx.currentScreen == SCREEN_CONN_SETTINGS)
+			if(m_appCtx.currentScreen == SCREEN_CONN_SETTINGS)
 			{
 			    GrContextFontSet(&g_drawingContext, &g_sFontCm16);
 			    GrContextForegroundSet(&g_drawingContext, ClrWhite);
@@ -633,7 +663,7 @@ static void updateWifiConnectionStatus(WifiConnectionState state)
 		default:
 			break;
 	}
-	g_appCtx.wifiState = state;
+	m_appCtx.flashParams.connectionSetupState.wifiConnectionState = state;
 }
 
 static void updateSensorConnectionStatus(SensorConnectionState state)
@@ -646,14 +676,14 @@ static void updateSensorConnectionStatus(SensorConnectionState state)
 
 static void onWifiEnable(tWidget *psWidget)
 {
-	if(g_appCtx.wifiEnabled)
+	if(m_appCtx.flashParams.connectionSetupState.wifiEnabled)
 	{
-		g_appCtx.wifiEnabled = false;
+		m_appCtx.flashParams.connectionSetupState.wifiEnabled = false;
 		PushButtonTextColorSet(&g_wifiCustomCity, ClrGray);
 	}
 	else
 	{
-		g_appCtx.wifiEnabled = true;
+		m_appCtx.flashParams.connectionSetupState.wifiEnabled  = true;
 		PushButtonTextColorSet(&g_wifiCustomCity, ClrBlack);
 	}
 }
@@ -667,44 +697,44 @@ static void onWifiEnable(tWidget *psWidget)
 static void onCityEntry(tWidget *psWidget)
 {
 	// Disable swiping while the keyboard is active.
-	g_appCtx.swipeEnabled = false;
-	WidgetRemove(g_screens[g_appCtx.currentScreen].widget);
-	uiKeyboardCreate(g_appCtx.currentCity, g_appCtx.currentScreen,
+	m_appCtx.swipeEnabled = false;
+	WidgetRemove(g_screens[m_appCtx.currentScreen].widget);
+	uiKeyboardCreate(m_appCtx.eepromParams.cityNames[0], m_appCtx.currentScreen,
 					"Save the city", "Wanna save the city?",
 					onParameterEdited);
 	// Activate the keyboard.
-	g_appCtx.currentScreen = SCREEN_KEYBOARD;
+	m_appCtx.currentScreen = SCREEN_KEYBOARD;
 }
 
 static void onSsidEntry(tWidget *psWidget)
 {
-	g_appCtx.swipeEnabled = false;
-	WidgetRemove(g_screens[g_appCtx.currentScreen].widget);
-	uiKeyboardCreate(g_appCtx.apSSID, g_appCtx.currentScreen,
+	m_appCtx.swipeEnabled = false;
+	WidgetRemove(g_screens[m_appCtx.currentScreen].widget);
+	uiKeyboardCreate(m_appCtx.eepromParams.wifiConfig[0].apSSID, m_appCtx.currentScreen,
 					"Save the ap ssid", "Wanna save the AP SSID?",
 					onParameterEdited);
-	g_appCtx.currentScreen = SCREEN_KEYBOARD;
+	m_appCtx.currentScreen = SCREEN_KEYBOARD;
 }
 
 static void onPassEntry(tWidget *psWidget)
 {
-	g_appCtx.swipeEnabled = false;
-	WidgetRemove(g_screens[g_appCtx.currentScreen].widget);
-	uiKeyboardCreate(g_appCtx.apPass, g_appCtx.currentScreen,
+	m_appCtx.swipeEnabled = false;
+	WidgetRemove(g_screens[m_appCtx.currentScreen].widget);
+	uiKeyboardCreate(m_appCtx.eepromParams.wifiConfig[0].apWPA2pass, m_appCtx.currentScreen,
 					"Save the AP pass", "Wanna save the AP password?",
 					onParameterEdited);
-	g_appCtx.currentScreen = SCREEN_KEYBOARD;
+	m_appCtx.currentScreen = SCREEN_KEYBOARD;
 }
 
 static void onUpdateTimeEntry(tWidget *psWidget)
 {
-	g_appCtx.swipeEnabled = false;
-	WidgetRemove(g_screens[g_appCtx.currentScreen].widget);
-	uiKeyboardCreate(g_appCtx.updateWeatherPeriod, g_appCtx.currentScreen,
+	m_appCtx.swipeEnabled = false;
+	WidgetRemove(g_screens[m_appCtx.currentScreen].widget);
+	uiKeyboardCreate(m_appCtx.eepromParams.updateWifiPeriodTime, m_appCtx.currentScreen,
 					"Update refresh period", "Wanna save the period value?",
 					onParameterEdited);
 	uiKeyboardSetAllowedCharsType(Numeric);
-	g_appCtx.currentScreen = SCREEN_KEYBOARD;
+	m_appCtx.currentScreen = SCREEN_KEYBOARD;
 }
 
 //*****************************************************************************
@@ -712,11 +742,11 @@ static void onUpdateTimeEntry(tWidget *psWidget)
 //*****************************************************************************
 static void onParameterEdited(const Screens prevWidget)
 {
-	g_appCtx.currentScreen = prevWidget;
-    WidgetAdd(WIDGET_ROOT, g_screens[g_appCtx.currentScreen].widget);
+	m_appCtx.currentScreen = prevWidget;
+    WidgetAdd(WIDGET_ROOT, g_screens[m_appCtx.currentScreen].widget);
 	WidgetPaint(WIDGET_ROOT);
     //Enable swiping after removing keyboard from the root
-    g_appCtx.swipeEnabled = true;
+    m_appCtx.swipeEnabled = true;
 }
 
 
@@ -742,7 +772,7 @@ void SysTickIntHandler(void)
 static int32_t touchScreenCallback(uint32_t msg, int32_t x, int32_t y)
 {
 	int32_t swipeDiffX, swipeDiffY;
-    if(g_appCtx.swipeEnabled)
+    if(m_appCtx.swipeEnabled)
     {
         switch(msg)
         {
@@ -835,35 +865,35 @@ static int32_t touchScreenCallback(uint32_t msg, int32_t x, int32_t y)
 
 static void handleMovement(void)
 {
-	uint16_t newScreenIdx = g_appCtx.currentScreen;
-	if(g_appCtx.swipeEnabled)
+	uint16_t newScreenIdx = m_appCtx.currentScreen;
+	if(m_appCtx.swipeEnabled)
 	{
 		if(m_swipe.swipeDirecttion != SWIPE_NONE )
 		{
 
 			if(m_swipe.swipeDirecttion == SWIPE_RIGHT)
 			{
-			    newScreenIdx = g_screens[g_appCtx.currentScreen].right;
+			    newScreenIdx = g_screens[m_appCtx.currentScreen].right;
 			}
 			else if(m_swipe.swipeDirecttion == SWIPE_LEFT)
 			{
-			    newScreenIdx = g_screens[g_appCtx.currentScreen].left;
+			    newScreenIdx = g_screens[m_appCtx.currentScreen].left;
 			}
 			else if(m_swipe.swipeDirecttion == SWIPE_UP)
 			{
-			    newScreenIdx = g_screens[g_appCtx.currentScreen].up;
+			    newScreenIdx = g_screens[m_appCtx.currentScreen].up;
 			}
 			else if(m_swipe.swipeDirecttion == SWIPE_DOWN)
 			{
-			    newScreenIdx = g_screens[g_appCtx.currentScreen].down;
+			    newScreenIdx = g_screens[m_appCtx.currentScreen].down;
 			}
 		}
-		if(newScreenIdx != g_appCtx.currentScreen)
+		if(newScreenIdx != m_appCtx.currentScreen)
 		{
-            WidgetRemove(g_screens[g_appCtx.currentScreen].widget);
+            WidgetRemove(g_screens[m_appCtx.currentScreen].widget);
             WidgetAdd(WIDGET_ROOT, g_screens[newScreenIdx].widget);
             WidgetPaint(WIDGET_ROOT);
-            g_appCtx.currentScreen = newScreenIdx;
+            m_appCtx.currentScreen = newScreenIdx;
 
 		}
 	}
@@ -891,8 +921,10 @@ int main(void)
 		GPIOPinWrite(GPIO_PORTF_BASE, BLUE_LED, 0 & 0xFF ? BLUE_LED : 0);
 	*/
 
+	//Reads from non-volatile memory
 	readConfigAndSetAppContext();
-	//debug Console
+
+	//Debug Console
 	debugConsoleInit();
 
 	//Display driver
@@ -934,8 +966,8 @@ int main(void)
 #endif
 
 
-    g_appCtx.currentScreen = SCREEN_WIFI_SETTINGS;
-    WidgetAdd(WIDGET_ROOT, g_screens[g_appCtx.currentScreen].widget);
+    m_appCtx.currentScreen = SCREEN_WIFI_SETTINGS;
+    WidgetAdd(WIDGET_ROOT, g_screens[m_appCtx.currentScreen].widget);
     WidgetPaint(WIDGET_ROOT);
 
 	//touchScreenControler
@@ -953,7 +985,7 @@ int main(void)
 	SysTickEnable();
 
 	//do touch screen calibration if needed
-	performTouchScreenCalibration(&g_drawingContext);
+	setTouchScreenCalibration(&g_drawingContext);
 
 
 	while (1) {

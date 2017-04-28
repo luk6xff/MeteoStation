@@ -940,11 +940,8 @@ int main(void)
     tRectangle sRect;
     GrContextInit(&m_drawing_context, &g_ILI9320);
     uiInit(&m_drawing_context);
-    //FrameDraw(&m_drawing_context, "hello-widget");
 #if 1
-    //
     // Fill the top 24 rows of the screen with blue to create the banner.
-    //
     sRect.i16XMin = 0;
     sRect.i16YMin = 0;
     sRect.i16XMax = GrContextDpyWidthGet(&m_drawing_context) - 1;
@@ -952,9 +949,7 @@ int main(void)
     GrContextForegroundSet(&m_drawing_context, ClrDarkBlue);
     GrRectFill(&m_drawing_context, &sRect);
 
-    //
     // Put a Red box around the banner.
-    //
     GrContextForegroundSet(&m_drawing_context, ClrRed);
     GrRectDraw(&m_drawing_context, &sRect);
 

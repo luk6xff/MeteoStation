@@ -118,9 +118,9 @@ void ADS7843init(void) {
 	ADS7843setIrqAndPowerDown();
 }
 
-bool ADS7843read(bool calibration_enabled)
+bool ADS7843read(bool rawDataMode)
 {
-	ADS7843readPointXY(&m_currentTouchedPoint, calibration_enabled);
+	return ADS7843readPointXY(&m_currentTouchedPoint, rawDataMode);
 }
 
 bool ADS7843dataAvailable()
@@ -189,31 +189,37 @@ uint16_t ADS7843fastMedian(uint16_t *samples) {
 	return samples[3];
 }
 
-TouchPoint ADS7843translateCoordinates(const TouchPoint* rawPoint) {
+TouchPoint ADS7843translateCoordinates(const TouchPoint* rawPoint)
+{
 	TouchPoint p;
 	p.x = calibCoefs.m_ax * rawPoint->x + calibCoefs.m_bx * rawPoint->y + calibCoefs.m_dx;
 	p.y = calibCoefs.m_ay * rawPoint->x + calibCoefs.m_by * rawPoint->y + calibCoefs.m_dy;
 	return p;
 }
 
-bool ADS7843readPointXY(TouchPoint* touchPoint, bool calibrationEnabled)
+bool ADS7843readPointXY(TouchPoint* touchPoint, bool rawDataMode)
 {
-	if (m_touchInfoData.touchStatus == TOUCH_STATUS_PENDOWN || calibrationEnabled) {
-		uint16_t xyDataBuf[2][7]; //7 samples
-		TouchPoint p;
-		for (uint8_t i = 0; i < 7; i++) {
-			ADS7843readRawXY(&xyDataBuf[0][i], &xyDataBuf[1][i]);
-		}
-		p.x = ADS7843fastMedian(xyDataBuf[0]);
-		p.y = ADS7843fastMedian(xyDataBuf[1]);
-		if (!calibrationEnabled) {
-			*touchPoint = ADS7843translateCoordinates(&p);
-		} else {
-			*touchPoint = p;
-		}
-		return true;
+	bool isPenDown = m_touchInfoData.touchStatus == TOUCH_STATUS_PENDOWN;
+
+	uint16_t xyDataBuf[2][7]; //7 samples
+	TouchPoint p;
+	for (uint8_t i = 0; i < 7; i++)
+	{
+		ADS7843readRawXY(&xyDataBuf[0][i], &xyDataBuf[1][i]);
 	}
-	return false;
+
+	p.x = ADS7843fastMedian(xyDataBuf[0]);
+	p.y = ADS7843fastMedian(xyDataBuf[1]);
+
+	if (!rawDataMode)
+	{
+		*touchPoint = ADS7843translateCoordinates(&p);
+	}
+	else
+	{
+		*touchPoint = p;
+	}
+	return isPenDown;
 }
 
 inline TouchStatus ADS7843getTouchStatus() {

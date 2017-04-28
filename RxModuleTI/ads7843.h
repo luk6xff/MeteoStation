@@ -122,10 +122,10 @@ void ADS7843init(void);
 
 //*****************************************************************************
 // @brief reads a current touch point to result container
-// @param calibration_enabled - if true, status of touch (pen up/down - not matters)
+// @param raw_data_mode - if true data is read in raw mode
 // @return If read was succesfull or not.
 //*****************************************************************************
-bool ADS7843read(bool calibration_enabled);
+bool ADS7843read(bool rawDataMode);
 
 //*****************************************************************************
 // @brief checks if there are data available in the buffer (touchscreen has been enabled)
@@ -158,9 +158,10 @@ void ADS7843readRawXY(uint16_t *x, uint16_t *y);
 
 //*****************************************************************************
 // @brief Read the XY coordinate of touch point.
-// @retun true - if read while pendown is touching , false - otherwise
+// @param rawDataMode - reads raw data from ADC without Conversion by calib_coefficients
+// @retun true - if pendown is pressed, while reading , false - otherwise
 //*****************************************************************************
-bool ADS7843readPointXY(TouchPoint* touchPoint, bool calibrationEnabled);
+bool ADS7843readPointXY(TouchPoint* touchPoint, bool rawDataMode);
 
 
 uint16_t ADS7843fastMedian(uint16_t *samples);

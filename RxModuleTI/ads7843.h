@@ -121,10 +121,11 @@ typedef struct
 void ADS7843init(void);
 
 //*****************************************************************************
-// @brief reads a current touch point to resu;t container
+// @brief reads a current touch point to result container
+// @param calibration_enabled - if true, status of touch (pen up/down - not matters)
 // @return If read was succesfull or not.
 //*****************************************************************************
-bool ADS7843read();
+bool ADS7843read(bool calibration_enabled);
 
 //*****************************************************************************
 // @brief checks if there are data available in the buffer (touchscreen has been enabled)

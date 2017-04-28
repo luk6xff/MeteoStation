@@ -139,7 +139,7 @@ uint8_t confirmThreePointCalibration(tContext* ctx)
 		while (ADS7843getIntPinState()); //wait till we pen down the touch screen
 		if(!ADS7843getIntPinState()) //if touch panel is being touched
 		{
-			ADS7843read();
+			ADS7843read(false);
 			result = ADS7843getTouchedPoint();
 		}
 		delay_ms(delayMs);

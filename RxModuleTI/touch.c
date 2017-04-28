@@ -172,7 +172,7 @@ void TouchScreenTimer0AIntHandler(void)
 		}
 		if(touchCallback && ((m_WidgetPtrStatus == WIDGET_MSG_PTR_MOVE) || (lastWidgetPtrStatus != m_WidgetPtrStatus)))
 		{
-			ADS7843read();
+			ADS7843read(false);
 			touchCallback(m_WidgetPtrStatus, ADS7843getTouchedPoint().x, ADS7843getTouchedPoint().y);
 		}
 		lastWidgetPtrStatus = m_WidgetPtrStatus;

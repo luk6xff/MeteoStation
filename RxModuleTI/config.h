@@ -40,8 +40,8 @@ typedef struct
 	ConectionSetupState connectionSetupState;
 	uint8_t currentCity;
 	uint8_t currentWifiConfig;
-	uint8_t paramsVersion;
-	uint8_t isModified;
+	uint8_t params_version;
+	uint8_t is_modified;
 }ConfigFlashParameters;
 
 void configFlashInit(void);
@@ -66,26 +66,26 @@ ConfigFlashParameters* configFlashGetCurrent(void);
 
 typedef struct
 {
-	CalibCoefficients calibCoeffs;
-	uint8_t isValid; // 0 - default invalid, other - valid
+	CalibCoefficients calib_coeffs;
+	uint8_t is_valid; // 0 - default invalid, other - valid
 }TouchScreenConfigParameters;
 
 typedef struct
 {
-	char apSSID[MAX_PARAMETER_NAME_LENGTH];
-	char apWPA2pass[MAX_PARAMETER_NAME_LENGTH];
+	char ap_ssid[MAX_PARAMETER_NAME_LENGTH];
+	char ap_wpa2_pass[MAX_PARAMETER_NAME_LENGTH];
 }AccessPointConfigParameters;
 
 typedef struct
 {
-	TouchScreenConfigParameters touchScreenParams;
-	AccessPointConfigParameters wifiConfig[MAX_WIFI_CONFIGS];
-	char cityNames[MAX_CITIES][MAX_PARAMETER_NAME_LENGTH];
-	char openweatherDomain[MAX_PARAMETER_NAME_LENGTH + MAX_PARAMETER_NAME_LENGTH];
-	uint8_t updateWifiPeriodTime;  /*Time after which request to OpenWeatherMap is sent in seconds*/
-	uint8_t updateSensorPeriodTime;/*Time after which request to Sensor is sent in seconds*/
-	uint8_t paramsVersion; 		   /* First Time the value will be 0x00 -invalid, 0x01-defaults, 0x02 - updated */
-	uint8_t isModified;
+	TouchScreenConfigParameters touch_screen_params;
+	AccessPointConfigParameters wifi_config[MAX_WIFI_CONFIGS];
+	char city_names[MAX_CITIES][MAX_PARAMETER_NAME_LENGTH];
+	char openweather_domain[MAX_PARAMETER_NAME_LENGTH + MAX_PARAMETER_NAME_LENGTH];
+	uint8_t update_wifi_period_time;  /*Time after which request to OpenWeatherMap is sent in seconds*/
+	uint8_t update_sensor_period_time;/*Time after which request to Sensor is sent in seconds*/
+	uint8_t params_version; 		   /* First Time the value will be 0x00 -invalid, 0x01-defaults, 0x02 - updated */
+	uint8_t is_modified;
 }ConfigEepromParameters;
 
 /*

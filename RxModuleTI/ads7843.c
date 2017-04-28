@@ -118,9 +118,9 @@ void ADS7843init(void) {
 	ADS7843setIrqAndPowerDown();
 }
 
-bool ADS7843read()
+bool ADS7843read(bool calibration_enabled)
 {
-	ADS7843readPointXY(&m_currentTouchedPoint, false);
+	ADS7843readPointXY(&m_currentTouchedPoint, calibration_enabled);
 }
 
 bool ADS7843dataAvailable()

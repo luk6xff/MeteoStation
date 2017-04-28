@@ -21,23 +21,23 @@
 ////////////////////////////////////////////////////////////////////////
 // FLASH
 ////////////////////////////////////////////////////////////////////////
-static const ConfigFlashParameters defaultFlashSettings =
+static const ConfigFlashParameters default_flash_settings =
 {
 	{
-		0x00,	// wifiEnabled
+		0x00,	// wifi_enabled
 		0x00,	// sensorsEnabled
 		0x00,	// powerSavingEnabled
 		0x00,	// wifiConnectionState - WIFI_NOT_CONNECTED
 		0x00	// sensorConnectionState - SENSOR_NOT_CONNECTED
 	},
 	0x00, // currentCity
-	0x00, // currentWifiConfig
-	0x01, // paramsVersion
-	0x00  // isModified
+	0x00, // current_wifi_config
+	0x01, // params_version
+	0x00  // is_modified
 };
 
 
-static ConfigFlashParameters m_currentFlashParameters;
+static ConfigFlashParameters m_current_flash_parameters;
 
 void configInit(void)
 {
@@ -60,7 +60,7 @@ void configFlashInit(void)
 
 void configFlashLoadFactory(void)
 {
-	m_currentFlashParameters = defaultFlashSettings;
+	m_current_flash_parameters = default_flash_settings;
 }
 
 void configFlashLoad(void)
@@ -73,25 +73,25 @@ void configFlashLoad(void)
 	if(configBuffer)
 	{
 		//copy params from flash to RAM
-		m_currentFlashParameters = *(ConfigFlashParameters*)configBuffer;
+		m_current_flash_parameters = *(ConfigFlashParameters*)configBuffer;
 	}
 }
 
 void configFlashSaveDefaults(void)
 {
-	FlashPBSave((uint8_t*)&defaultFlashSettings);
+	FlashPBSave((uint8_t*)&default_flash_settings);
 }
 
 void configFlashSave(void)
 {
-	FlashPBSave((uint8_t*)&m_currentFlashParameters);
+	FlashPBSave((uint8_t*)&m_current_flash_parameters);
 }
 
 bool configFlashCheckAndCleanModified(ConfigFlashParameters * const ptr)
 {
-	if(ptr && ptr->isModified == 0x01)
+	if(ptr && ptr->is_modified == 0x01)
 	{
-		ptr->isModified = 0x00; //clear
+		ptr->is_modified = 0x00; //clear
 		return true;
 	}
 	return false;
@@ -99,53 +99,53 @@ bool configFlashCheckAndCleanModified(ConfigFlashParameters * const ptr)
 
 void configFlashSetModified(ConfigFlashParameters* const ptr)
 {
-	ptr->isModified = 0x01;
+	ptr->is_modified = 0x01;
 }
 
 bool configFlashIsInvalid(const ConfigFlashParameters * const ptr)
 {
-	return (ptr->paramsVersion == 0xFF || ptr->paramsVersion == 0x00);
+	return (ptr->params_version == 0xFF || ptr->params_version == 0x00);
 }
 
 ConfigFlashParameters* const configFlashGetDefaultSettings(void)
 {
-	return &defaultFlashSettings;
+	return &default_flash_settings;
 }
 
 ConfigFlashParameters* configFlashGetCurrent(void)
 {
-	return &m_currentFlashParameters;
+	return &m_current_flash_parameters;
 }
 
 
 ////////////////////////////////////////////////////////////////////////
 // EEPROM
 ////////////////////////////////////////////////////////////////////////
-static const ConfigEepromParameters defaultEepromSettings =
+static const ConfigEepromParameters default_eeprom_settings =
 {
 		{
 				{0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f},	// calibCoeffs
 				0x00,  									// isValid
 		},
-		.wifiConfig[0] = {
+		.wifi_config[0] = {
 				{"default"}, 							// apSSID
-				{"defaultPass"},						// isModified
+				{"defaultPass"},						// is_modified
 		},
-		.wifiConfig[1] = {
+		.wifi_config[1] = {
 				{"default"},
 				{"defaultPass"},
 		},
 		{
 				{"city"}, {"city"}, {"city"}			// cityNames
 		},
-		.openweatherDomain = {"https://api.openweathermap.org/"},
+		.openweather_domain = {"https://api.openweathermap.org/"},
 		60,												// updateWifiPeriodTime
 		60,												// updateSensorPeriodTime
-		0x01, 											// paramsVersion 0x00 and 0xFF means invalid one
-		0x00											// isModified
+		0x01, 											// params_version 0x00 and 0xFF means invalid one
+		0x00											// is_modified
 };
 
-static ConfigEepromParameters m_currentEepromParameters;
+static ConfigEepromParameters m_current_eeprom_parameters;
 
 bool configEepromInit(void)
 {
@@ -160,24 +160,24 @@ bool configEepromInit(void)
 
 void configEepromLoad(void)
 {
-	EEPROMRead((uint8_t*)&m_currentEepromParameters, EEPROM_START_ADDRESS, sizeof(ConfigEepromParameters));
+	EEPROMRead((uint8_t*)&m_current_eeprom_parameters, EEPROM_START_ADDRESS, sizeof(ConfigEepromParameters));
 }
 
 bool configEepromSaveDefaults(void)
 {
-	return 0 == EEPROMProgram((uint8_t*)&defaultEepromSettings, EEPROM_START_ADDRESS, sizeof(ConfigEepromParameters));
+	return 0 == EEPROMProgram((uint8_t*)&default_eeprom_settings, EEPROM_START_ADDRESS, sizeof(ConfigEepromParameters));
 }
 
 bool configEepromSave(void)
 {
-	return 0 == EEPROMProgram((uint8_t*)&m_currentEepromParameters, EEPROM_START_ADDRESS, sizeof(ConfigEepromParameters));
+	return 0 == EEPROMProgram((uint8_t*)&m_current_eeprom_parameters, EEPROM_START_ADDRESS, sizeof(ConfigEepromParameters));
 }
 
 bool configEepromCheckAndCleanModified(ConfigEepromParameters * const ptr)
 {
-	if(ptr && ptr->isModified == 0x01)
+	if(ptr && ptr->is_modified == 0x01)
 	{
-		ptr->isModified = 0x00; //clear
+		ptr->is_modified = 0x00; //clear
 		return true;
 	}
 	return false;
@@ -185,22 +185,22 @@ bool configEepromCheckAndCleanModified(ConfigEepromParameters * const ptr)
 
 void configEepromSetModified(ConfigEepromParameters* const ptr)
 {
-	ptr->isModified = 0x01;
+	ptr->is_modified = 0x01;
 }
 
 bool configEepromIsInvalid(const ConfigEepromParameters * const ptr)
 {
-	return (ptr->paramsVersion == 0xFF || ptr->paramsVersion == 0x00);
+	return (ptr->params_version == 0xFF || ptr->params_version == 0x00);
 }
 
 ConfigEepromParameters* const configEepromGetDefaultSettings(void)
 {
-	return &defaultEepromSettings;
+	return &default_eeprom_settings;
 }
 
 ConfigEepromParameters* configEepromGetCurrent(void)
 {
-	return &m_currentEepromParameters;
+	return &m_current_eeprom_parameters;
 }
 
 

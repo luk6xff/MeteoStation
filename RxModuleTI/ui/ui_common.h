@@ -31,21 +31,15 @@
 #include "../grlib/checkbox.h"
 #include "../grlib/container.h"
 #include "../grlib/radiobutton.h"
-#include "../grlib/slider.h"
 #include "../grlib/keyboard.h"
 
 #include "../system.h"
 #include "../ILI9320_driver.h"
 
-//*****************************************************************************
-// Define NULL, if not already defined.
-//*****************************************************************************
-#ifndef NULL
-#define NULL	((void *)0)
-#endif
-
 
 void uiInit(tContext* mainDrawingContext);
+void uiClearBackground(tContext* drawing_ctx);
+void uiFrameDraw(tContext* drawing_ctx, const char* app_name);
 tContext* uiGetMainDrawingContext();
 void uiDelay(uint32_t msDelay);
 uint32_t uiDelayCounterMsVal();

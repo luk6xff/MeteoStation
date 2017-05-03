@@ -19,6 +19,14 @@ typedef enum
 
 void esp8266Init();
 
+
+
+//
+//@brief returns pointer to a buffer which contains received data
+//@return pointer to received data buffer
+//
+uint8_t* esp8266GetRxBuffer(void);
+
 //
 //@brief send raw command
 //@param  rawCmd - raw command to be sent
@@ -26,6 +34,7 @@ void esp8266Init();
 //@return false-failed, true-success
 //
 bool esp8266CommandRAW(const char* rawCmd, const char*respStr);
+
 //
 //@brief send test command
 //@return false-failed, true-success

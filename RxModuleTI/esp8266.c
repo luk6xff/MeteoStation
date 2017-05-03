@@ -106,7 +106,6 @@ static void esp8266Delay(uint32_t msDelay)
 	uint32_t start = esp8266Milis();
 	while((esp8266Milis() - start) < msDelay)
 	{
-
 	}
 }
 
@@ -139,6 +138,11 @@ void esp8266Init()
 	esp8266TimerInit();
 }
 
+
+uint8_t* esp8266GetRxBuffer(void)
+{
+	return rxBuffer;
+}
 
 //*****************************************************************************
 //

@@ -8,6 +8,15 @@
 #ifndef SYSTEM_H_
 #define SYSTEM_H_
 
+
+
+//*****************************************************************************
+// Define NULL, if not already defined.
+//*****************************************************************************
+#ifndef NULL
+#define NULL	((void *)0)
+#endif
+
 //*****************************************************************************
 //
 // Defines some settings and configuration available for all modules

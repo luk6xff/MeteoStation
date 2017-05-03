@@ -17,9 +17,9 @@ typedef enum
 
 bool uiKeyboardInit();
 
-bool uiKeyboardCreate(char* param, Screens prevScreen,
+bool uiKeyboardCreate(char* param, Screens prevScreen, KeyboardAllowedChars charsAllowed,
 					  const char* retMsgBoxTitle, const char* retMsgBoxContent,
-					  void(*exitKeyboardCb)(const Screens prevWidget));
+					  void(*exitKeyboardCb)(const Screens prevWidget, bool save));
 
 void uiKeyboardSetAllowedCharsType(KeyboardAllowedChars type);
 

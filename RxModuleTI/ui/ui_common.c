@@ -30,7 +30,9 @@ typedef struct
 static uint8_t m_timerCbNum = 0;
 static TimerCallback* m_timerCb[UI_TIMER_CB_NUM];
 
+//*****************************************************************************
 //@brief Fires up/down the timer
+//*****************************************************************************
 static void uiTimerEnable(bool enable)
 {
 	if(enable)
@@ -41,7 +43,9 @@ static void uiTimerEnable(bool enable)
     TimerDisable(UI_TIMER_BASE, UI_TIMER_TYPE);
 }
 
+//*****************************************************************************
 //@brief Configures Timer2A as a 32-bit periodic timer
+//*****************************************************************************
 static void uiTimerInit()
 {
     SysCtlPeripheralEnable(UI_TIMER_SYSCTL_TIMER_TYPE);
@@ -59,7 +63,9 @@ static void uiTimerInit()
     ENABLE_ALL_INTERRUPTS();
 }
 
+//*****************************************************************************
 //@brief Timer2A interrupt handler
+//*****************************************************************************
 void UiTimer2AIntHandler(void)
 {
 	TimerIntClear(TIMER2_BASE, TIMER_TIMA_TIMEOUT);
@@ -76,7 +82,9 @@ void UiTimer2AIntHandler(void)
 	}
 }
 
+//*****************************************************************************
 //@brief Delay for all UI methods
+//*****************************************************************************
 void uiDelay(uint32_t msDelay)
 {
 	uint32_t start = m_msCounter;
@@ -85,14 +93,17 @@ void uiDelay(uint32_t msDelay)
 	}
 }
 
+//*****************************************************************************
 //@brief Returns current ms Timer2A counter value
+//*****************************************************************************
 uint32_t uiDelayCounterMsVal()
 {
 	return m_msCounter;
 }
 
-
-/*@brief Main init method which initializes all the UI components*/
+//*****************************************************************************
+// @brief Main init method which initializes all the UI components
+//*****************************************************************************
 void uiInit(tContext* mainDrawingContext)
 {
 	if(mainDrawingContext == NULL)
@@ -103,6 +114,47 @@ void uiInit(tContext* mainDrawingContext)
 	uiTimerInit();
 	uiMessageBoxInit(); //msgBox
 	uiKeyboardInit(); //keyboard
+}
+
+//*****************************************************************************
+// Clears the main screens background.
+//*****************************************************************************
+void uiClearBackground(tContext* drawing_ctx)
+{
+    static const tRectangle sRect =
+    {
+        BG_MIN_X,
+        BG_MIN_Y,
+        BG_MAX_X,
+        BG_MAX_Y,
+    };
+    GrRectFill(drawing_ctx, &sRect);
+}
+
+//*****************************************************************************
+// @brief draws the application banner
+//*****************************************************************************
+void uiFrameDraw(tContext* drawing_ctx, const char* app_name)
+{
+    tRectangle sRect;
+    // Fill the top 24 rows of the screen with blue to create the banner.
+    sRect.i16XMin = 0;
+    sRect.i16YMin = 0;
+    sRect.i16XMax = GrContextDpyWidthGet(drawing_ctx) - 1;
+    sRect.i16YMax = 23;
+    GrContextForegroundSet(drawing_ctx, ClrDarkBlue);
+    GrRectFill(drawing_ctx, &sRect);
+
+    // Put a Red box around the banner.
+    GrContextForegroundSet(drawing_ctx, ClrRed);
+    GrRectDraw(drawing_ctx, &sRect);
+
+    // Put the application name in the middle of the banner.
+    GrContextForegroundSet(drawing_ctx, ClrYellowGreen);
+    GrContextFontSet(drawing_ctx, &g_sFontCm20);
+    GrStringDrawCentered(drawing_ctx, app_name, -1,
+                         GrContextDpyWidthGet(drawing_ctx) / 2, 8, 0);
+
 }
 
 tContext* uiGetMainDrawingContext()

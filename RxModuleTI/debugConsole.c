@@ -103,7 +103,8 @@ static bool debugCommandDispatcherESP8266(const char* cmdAttrs, int cmdAttrsLen)
 			"CIFSR",
 			"CIPSTART",
 			"CIPCLOSE",
-			"CIPSEND"
+			"CIPSEND",
+			"CIPSTATUS",
 	};
 	const char* delim ="_|"; // TODO should be passed ?
 	bool resp = false;
@@ -332,12 +333,25 @@ static bool debugCommandDispatcherESP8266(const char* cmdAttrs, int cmdAttrsLen)
 		}
 	}
 
+	else if(strcmp(cmd, "CIPSTATUS") == 0)
+	{
+		if(esp8266CommandCIPSTATUS())
+		{
+			debugConsolePrintf("esp8266CommandCIPSTATUS success \n\r");
+		}
+		else
+		{
+			debugConsolePrintf("esp8266CommandCIPSTATUS fail \n\r");
+		}
+	}
+
 	freeAll:
 	for(int i = 0; i < tokensNum; ++i)
 	{
 	    free(tokens[i]);
 	}
     free(tokens);
+	debugConsolePrintf((char*)esp8266GetRxBuffer()); //print whole rx_buffer content
 	return resp;
 }
 

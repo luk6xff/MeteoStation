@@ -13,10 +13,10 @@
 #include "utils/ustdlib.h"
 
 #include "delay.h"
-#include "ILI9320_driver.h"
 #include "3PointCalibration.h"
 #include "config.h"
-#include "esp8266.h"
+#include "wifi.h"
+#include "ili9320_driver.h"
 #include "touch.h"
 #include "images.h"
 #include "system.h"
@@ -71,12 +71,7 @@ typedef enum
 // Connection  states
 //
 //*****************************************************************************
-typedef enum
-{
-	WIFI_NOT_CONNECTED,
-	WIFI_CONNECTED,
-	WIFI_WAIT_FOR_DATA,
-}WifiConnectionState;
+
 
 typedef enum
 {
@@ -562,7 +557,6 @@ void onConnToAP(tWidget *psWidget)
 		}
 		else
 		{
-			esp8266CommandCWMODE(ESP8266_MODE_CLIENT);
 			if(esp8266CommandCWJAP(m_app_ctx.eeprom_params.wifi_config[0].ap_ssid, m_app_ctx.eeprom_params.wifi_config[0].ap_wpa2_pass))
 			{
 				MAIN_DEBUG("Connected to AP: %s", m_app_ctx.eeprom_params.wifi_config[0].ap_ssid);
@@ -751,19 +745,6 @@ static void onParameterEdited(const Screens prevWidget, bool save)
 
 //*****************************************************************************
 //
-// The interrupt handler for the for Systick interrupt.
-//
-//*****************************************************************************
-static volatile uint32_t m_global_counter_sec = 0;
-void SysTickIntHandler(void)
-{
-	m_global_counter_sec++;
-}
-
-
-
-//*****************************************************************************
-//
 // The callback function that is called by the touch screen driver to indicate
 // activity on the touch screen.
 //
@@ -897,10 +878,37 @@ static void handleMovement(void)
 		}
 	}
 	m_swipe.swipeDirecttion = SWIPE_NONE;
-
 }
 
 
+
+
+//*****************************************************************************
+//
+// The interrupt handler for the for Systick interrupt.
+// m_global_counter_sec updated 5 times per second
+//
+//*****************************************************************************
+static volatile uint32_t m_global_counter_sec = 0;
+void SysTickIntHandler(void)
+{
+	m_global_counter_sec++;
+
+	//for tests
+/*
+	if(m_global_counter_sec % 100) //every 20s
+	{
+		if(esp8266CommandCIPSTATUS())
+		{
+			updateWifiConnectionStatus(WIFI_CONNECTED);
+		}
+		else
+		{
+			updateWifiConnectionStatus(WIFI_NOT_CONNECTED);
+		}
+	}
+	*/
+}
 
 
 
@@ -927,8 +935,9 @@ int main(void)
 	//Read Configuration
 	configInit();
 
-	//ESP8266
-	esp8266Init();
+	//Wifi client init
+	wifiInit(m_app_ctx.eeprom_params.wifi_config[m_app_ctx.flash_params.currentWifiConfig].ap_ssid,
+			 m_app_ctx.eeprom_params.wifi_config[m_app_ctx.flash_params.currentWifiConfig].ap_wpa2_pass);
 
 	//UI
     GrContextInit(&m_drawing_context, &g_ILI9320);

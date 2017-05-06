@@ -337,6 +337,12 @@ bool esp8266CommandCIFSR(void)
 	return esp8266WaitForResponse("OK", 5000);
 }
 
+bool esp8266CommandCIPSTATUS(void)
+{
+	esp8266SendATCommand("AT+CIPSTATUS");
+	return esp8266WaitForResponse("OK", 5000);
+}
+
 
 bool esp8266CommandCIPSTART(const char* ipAddr)
 {
@@ -364,7 +370,8 @@ bool esp8266CommandCIPSEND(const char* packet)
 		return false;
 	}
 	esp8266SendATCommand(packet);
-	return esp8266WaitForResponse("+IPD", 5000);
+	//return esp8266WaitForResponse("+IPD", 5000);
+	return esp8266WaitForResponse(">", 18000);
 }
 
 //

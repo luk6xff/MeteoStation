@@ -8,6 +8,9 @@
 #ifndef ESP8266_H_
 #define ESP8266_H_
 
+#include <stdint.h>
+#include <stdbool.h>
+
 typedef enum
 {
 	ESP8266_MODE_CLIENT = 1,
@@ -18,7 +21,6 @@ typedef enum
 
 
 void esp8266Init();
-
 
 
 //
@@ -53,6 +55,7 @@ bool esp8266CommandRST(void);
 //@return false-failed, true-success
 //
 bool esp8266CommandGMR(void);
+
 
 //
 //@brief sets Wifi mode
@@ -106,6 +109,13 @@ bool esp8266CommandCWSAP(const char* ssid, const char* password, uint8_t channel
 //@return false-failed, true-success
 //
 bool esp8266CommandCIFSR(void);
+
+//
+//@brief retrieves all information about connection
+//@return false-failed, true-success
+//
+bool esp8266CommandCIPSTATUS(void);
+
 
 //
 //@brief make TCP connection

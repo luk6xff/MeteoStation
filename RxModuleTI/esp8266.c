@@ -325,7 +325,7 @@ bool esp8266CommandCWQAP(void)
 bool esp8266CommandCWSAP(const char* ssid, const char* password, uint8_t channel, uint8_t encryptMode)
 {
 	esp8266ResetUartTxBuffer();
-	sprintf((char*)txBuffer, "AT+CWSAP=\"%s\",\"%s\",%d,%d\r\n", ssid, password, channel, encryptMode);
+	sprintf((char*)txBuffer, "AT+CWSAP=\"%s\",\"%s\",%d,%d", ssid, password, channel, encryptMode);
 	esp8266SendATCommand((char*)txBuffer);
 	return esp8266WaitForResponse("OK", 5000);
 }
@@ -347,7 +347,7 @@ bool esp8266CommandCIPSTATUS(void)
 bool esp8266CommandCIPSTART(const char* ipAddr)
 {
 	esp8266ResetUartTxBuffer();
-	sprintf((char*)txBuffer, "AT+CIPSTART=\"TCP\",\"%s\",80\r\n", ipAddr);
+	sprintf((char*)txBuffer, "AT+CIPSTART=\"TCP\",\"%s\",80", ipAddr);
 	esp8266SendATCommand((char*)txBuffer);
 	return esp8266WaitForResponse("OK", 8000);
 }
@@ -363,15 +363,15 @@ bool esp8266CommandCIPCLOSE()
 bool esp8266CommandCIPSEND(const char* packet)
 {
 	esp8266ResetUartTxBuffer();
-	sprintf((char*)txBuffer, "AT+CIPSEND=%d\r\n", strlen(packet));
+	sprintf((char*)txBuffer, "AT+CIPSEND=%d", strlen(packet));
 	esp8266SendATCommand((char*)txBuffer);
-	if(!esp8266WaitForResponse("OK", 1000))
+	if(!esp8266WaitForResponse(">", 2000))
 	{
 		return false;
 	}
 	esp8266SendATCommand(packet);
 	//return esp8266WaitForResponse("+IPD", 5000);
-	return esp8266WaitForResponse(">", 18000);
+	return esp8266WaitForResponse("+IPD", 10000);
 }
 
 //

@@ -48,10 +48,10 @@ extern "C"
 #define UART_BUFFERED 1
 #ifdef UART_BUFFERED
 #ifndef UART_RX_BUFFER_SIZE
-#define UART_RX_BUFFER_SIZE     256
+#define UART_RX_BUFFER_SIZE     512
 #endif
 #ifndef UART_TX_BUFFER_SIZE
-#define UART_TX_BUFFER_SIZE     256
+#define UART_TX_BUFFER_SIZE     512
 #endif
 #endif
 

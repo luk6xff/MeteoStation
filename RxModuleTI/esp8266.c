@@ -363,9 +363,10 @@ bool esp8266CommandCIPCLOSE()
 bool esp8266CommandCIPSEND(const char* packet)
 {
 	esp8266ResetUartTxBuffer();
-	sprintf((char*)txBuffer, "AT+CIPSEND=%d", strlen(packet));
+	sprintf((char*)txBuffer, "AT+CIPSEND=%d", strlen(packet)+2);
 	esp8266SendATCommand((char*)txBuffer);
-	if(!esp8266WaitForResponse(">", 2000))
+
+
 	{
 		return false;
 	}

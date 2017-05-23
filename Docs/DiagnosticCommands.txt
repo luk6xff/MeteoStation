@@ -14,16 +14,15 @@ C-ESP_CIPSEND_GET /get HTTP/1.1\r\nHost: 23.22.14.18\r\nConnection: keep-alive|
 C-ESP_CIPSEND_GET /get HTTP/1.1|
 C-ESP_CIPSEND_?|
 C-ESP_CIPCLOSE|                                     //close the TCP connection
-C-ESP_CIPSTART_httpbin.org|
-C-ESP_CIPSEND_/get|
-C-ESP_CIPSEND_GET /get HTTP/1.1\r\nHost:httpbin.org\r\nAccept:text/html|
 
-C-ESP_CIPSTART_wtfismyip.com|
-C-ESP_CIPSEND_GET /text|
+C-ESP_CIPSTART_httpbin.org|
+C-ESP_CIPSEND_GET /get HTTP/1.1|
+C-ESP_CIPSEND_GET /get HTTP/1.1\r\nHost:httpbin.org\r\nConnection:keep-alive|
+C-ESP_RAW| 
 
 C-ESP_CIPSTART_192.168.0.115|
-C-ESP_CIPSEND_>GET /asasa|
-C-ESP_CIPSEND|
+C-ESP_CIPSEND_GET / HTTP/1.1\r\nConnection:close\r\n|
+C-ESP_CIPCLOSE|
 
 /******api.openweathermap.org*****/
 ##Openweather igbt6 API Key: e95bbbe9f7314ea2a5ca1f60ee138eef
@@ -48,3 +47,5 @@ C-ESP_CIPSEND_GET /data/2.5/weather?units=metric&q=NowySacz&appid=e95bbbe9f7314e
 C-ESP_CIPSEND_GET /data/2.5/weather?units=metric&q=NowySacz&appid=e95bbbe9f7314ea2a5ca1f60ee138eef HTTP/1.1 Host: api.openweathermap.org Connection: close|
 C-ESP_CIPSEND_GET /data/2.5/forecast?units=metric&q=NowySacz&appid=e95bbbe9f7314ea2a5ca1f60ee138eef|
 C-ESP_CIPSEND_GET /data/2.5/forecast?id=2947416&appid=e95bbbe9f7314ea2a5ca1f60ee138eef\r\nHTTP/1.1\r\nHost:api.openweathermap.org|
+
+C-ESP_CIPSEND_GET /data/2.5/forecast?units=metric&q=NowySacz&appid=e95bbbe9f7314ea2a5ca1f60ee138eef HTTP/1.1|

@@ -11,7 +11,7 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
         self.send_header('Content-type','text/html')
         self.end_headers()
         # Send the html message
-        self.wfile.write("Hello World !")
+        self.wfile.write("Hello World !".encode('utf-8'))
         return
 
 try:

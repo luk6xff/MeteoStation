@@ -908,6 +908,17 @@ void SysTickIntHandler(void)
 		}
 	}
 	*/
+	if(m_global_counter_sec % 100) //every 20s
+	{
+		if(esp8266CommandCIPSTATUS())
+		{
+			updateWifiConnectionStatus(WIFI_CONNECTED);
+		}
+		else
+		{
+			updateWifiConnectionStatus(WIFI_NOT_CONNECTED);
+		}
+	}
 }
 
 

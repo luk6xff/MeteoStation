@@ -365,14 +365,12 @@ bool esp8266CommandCIPSEND(const char* packet)
 	esp8266ResetUartTxBuffer();
 	sprintf((char*)txBuffer, "AT+CIPSEND=%d", strlen(packet)+2);
 	esp8266SendATCommand((char*)txBuffer);
-
-
+	if(!esp8266WaitForResponse(">", 5000))
 	{
 		return false;
 	}
 	esp8266SendATCommand(packet);
-	//return esp8266WaitForResponse("+IPD", 5000);
-	return esp8266WaitForResponse("+IPD", 10000);
+	return esp8266WaitForResponse("+IPD", 5000);
 }
 
 //

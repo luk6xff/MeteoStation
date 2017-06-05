@@ -63,11 +63,19 @@ WifiConnectionState wifiGetConnectionStatus()
 
 bool wifiConnectToAp()
 {
+	if (!esp8266CommandRST())
+	{
+		return false;
+	}
 	return esp8266CommandCWJAP(wifi_ap_SSID_buf, wifi_ap_PASS_buf);
 }
 
 bool wifiDisconnectFromAp()
 {
+	if (!esp8266CommandAT())
+	{
+		return false;
+	}
 	return esp8266CommandCWQAP();
 }
 
@@ -77,20 +85,42 @@ bool wifiGetCurrentWeather(const char* city)
 	{
 		return false;
 	}
+
+	if (!esp8266CommandRST())
+	{
+		return false;
+	}
+
+	if (!esp8266CommandCIPSTART(openweather_server_name))
+	{
+		return false;
+	}
 	const char* url = build_url(openweather_weather_url, city, "e95bbbe9f7314ea2a5ca1f60ee138eef");
+
+	if (!esp8266CommandCIPSEND(url))
+	{
+		return false;
+	}
 	return true;
 }
 
+const char* wifiLastReceivedDataBuffer()
+{
+	return (const char*)esp8266GetRxBuffer();
+}
 
 static char* build_url(const char* request_url, const char* city, const char* openweather_api_key)
 {
+	//"GET /data/2.5/weather?q=NowySacz&appid=e95bbbe9f7314ea2a5ca1f60ee138eef\r\n"
 	static char request_buffer[256];
 	memset(request_buffer, '\0', sizeof(request_buffer));
+
 	uint8_t rlen = strlen(request_url);
 	uint8_t clen = strlen(city);
 	uint8_t klen = strlen(openweather_api_key);
-	uint8_t len = 0;
-	memcpy(request_buffer, request_url, rlen);
+	uint8_t len = 4;
+	memcpy(request_buffer, "GET ", len);
+	memcpy(&request_buffer[len], request_url, rlen);
 	len += rlen;
 	memcpy(&request_buffer[len], "&q=", 3);
 	len += 3;

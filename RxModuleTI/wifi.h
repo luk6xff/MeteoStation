@@ -27,12 +27,13 @@ bool wifiInit(const char* ssid, const char* pass);
 //
 void wifiSetApParameters(const char* ssid, const char* pass);
 
-
 bool wifiConnectToAp();
 
 bool wifiDisconnectFromAp();
 
 bool wifiGetCurrentWeather(const char* city);
+
+const char* wifiLastReceivedDataBuffer();
 
 WifiConnectionState wifiGetConnectionStatus();
 

@@ -22,6 +22,8 @@ C-ESP_RAW|
 
 C-ESP_CIPSTART_192.168.0.115|
 C-ESP_CIPSEND_GET / HTTP/1.1\r\nConnection:close\r\n|
+C-ESP_CIPSEND_GET / HTTP/1.1\r\n|
+C-ESP_CIPSEND_GET / HTTP/1.1|
 C-ESP_CIPCLOSE|
 
 /******api.openweathermap.org*****/
@@ -32,20 +34,11 @@ api.openweathermap.org/data/2.5/weather?q=NowySacz&units=metric&APPID=e95bbbe9f7
 api.openweathermap.org/data/2.5/forecast/city?q=NowySacz&units=metric&APPID=e95bbbe9f7314ea2a5ca1f60ee138eef 
 
 
-C-ESP_CIPSEND_GET http://api.openweathermap.org/data/2.5/forecast/daily?q=
-C-ESP_CIPSEND_http://api.openweathermap.org/data/2.5/weather?q=Nowy%20Sacz&mode=json&units=metric&APPID=e95bbbe9f7314ea2a5ca1f60ee138eef\r\nHost: api.openweathermap.org\r\nConnection: keep-alive\r\nHTTP/1.0\r\n\r\n|
-C-ESP_CIPSEND_GET http://api.openweathermap.org/data/2.5/weather?q=Nowy%20Sacz&mode=json&units=metric&APPID=e95bbbe9f7314ea2a5ca1f60ee138eef|
-
-C-ESP_CIPSEND_GET api.openweathermap.org/data/2.5/weather?units=metric&q=NowySacz&appid=e95bbbe9f7314ea2a5ca1f60ee138eef|
-
 C-ESP_CIPSTART_api.openweathermap.org|
-C-ESP_CIPSEND_http://api.openweathermap.org/data/2.5/weather?units=metric&q=NowySacz&appid=e95bbbe9f7314ea2a5ca1f60ee138eef|
-C-ESP_CIPSEND_/data/2.5/weather?units=metric&q=NowySacz&appid=e95bbbe9f7314ea2a5ca1f60ee138eef|
-C-ESP_CIPSEND_data/2.5/weather?units=metric&q=NowySacz&appid=e95bbbe9f7314ea2a5ca1f60ee138eef|
 C-ESP_CIPSEND_GET /data/2.5/weather?units=metric&q=NowySacz&appid=e95bbbe9f7314ea2a5ca1f60ee138eef|
+C-ESP_CIPSEND_GET /data/2.5/forecast?units=metric&q=NowySacz&APPID=e95bbbe9f7314ea2a5ca1f60ee138eef|
+C-ESP_RAW|
 
-C-ESP_CIPSEND_GET /data/2.5/weather?units=metric&q=NowySacz&appid=e95bbbe9f7314ea2a5ca1f60ee138eef HTTP/1.1 Host: api.openweathermap.org Connection: close|
-C-ESP_CIPSEND_GET /data/2.5/forecast?units=metric&q=NowySacz&appid=e95bbbe9f7314ea2a5ca1f60ee138eef|
-C-ESP_CIPSEND_GET /data/2.5/forecast?id=2947416&appid=e95bbbe9f7314ea2a5ca1f60ee138eef\r\nHTTP/1.1\r\nHost:api.openweathermap.org|
 
-C-ESP_CIPSEND_GET /data/2.5/forecast?units=metric&q=NowySacz&appid=e95bbbe9f7314ea2a5ca1f60ee138eef HTTP/1.1|
+C-ESP_CIPSTART_google.com|
+C-ESP_CIPSEND_GET / HTTP/1.1\r\nHost: google.com:80\r\n\r\n|

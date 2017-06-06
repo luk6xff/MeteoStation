@@ -83,9 +83,8 @@ typedef enum
 static const char* const connStateDesc[] = {
 		"NOT_CONNECTED",
 		"CONNECTED",
-		"WAIT_FOR_DATA",
-		"Connect",
 		"Disconnect"
+		"Connect",
 };
 
 typedef struct
@@ -150,8 +149,6 @@ typedef struct
 {
 	ConfigFlashParameters flash_params;
 	ConfigEepromParameters eeprom_params;
-	WifiConnectionState wifi_state;
-	SensorConnectionState sensor_state;
 	Screens current_screen;
 	bool swipe_enabled;
 
@@ -517,74 +514,66 @@ void onConnCheckBoxChange(tWidget *widget, uint32_t enabled)
 
     for(idx = 0; idx < NUM_CONN_CHECKBOXES; ++idx)
     {
-    	if(widget == &g_connCheckBoxes[idx].sBase)
+    	if (widget == &g_connCheckBoxes[idx].sBase)
     	{
     		break;
     	}
     }
     //not found
-    if(idx == NUM_CONN_CHECKBOXES)
+    if (idx == NUM_CONN_CHECKBOXES)
     {
     	return;
     }
     CanvasImageSet(g_connCheckBoxIndicators + idx,
     			   enabled ? g_pui8LightOn : g_pui8LightOff);
     WidgetPaint((tWidget *)(g_connCheckBoxIndicators + idx));
-    if(strcmp(g_connCheckBoxes[idx].pcText, "WIFI") == 0)
+    if (strcmp(g_connCheckBoxes[idx].pcText, "WIFI") == 0)
     {
     		m_app_ctx.flash_params.connectionSetupState.wifiEnabled = enabled;
     }
-    else if(strcmp(g_connCheckBoxes[idx].pcText, "Sensors") == 0)
+    else if (strcmp(g_connCheckBoxes[idx].pcText, "Sensors") == 0)
     {
     		m_app_ctx.flash_params.connectionSetupState.sensorsEnabled = enabled;
     }
-    else if(strcmp(g_connCheckBoxes[idx].pcText, "PowerSaving") == 0)
+    else if (strcmp(g_connCheckBoxes[idx].pcText, "PowerSaving") == 0)
     {
     		m_app_ctx.flash_params.connectionSetupState.powerSavingEnabled = enabled;
     }
+    //TODO save flash changes
 }
 
 void onConnToAP(tWidget *psWidget)
 {
-	if(!m_app_ctx.flash_params.connectionSetupState.wifiEnabled  )
+	if (!m_app_ctx.flash_params.connectionSetupState.wifiEnabled  )
 		return;
-	WifiConnectionState state = m_app_ctx.wifi_state;
-	if(state == WIFI_NOT_CONNECTED)
+
+	if (wifiGetConnectionStatus() == WIFI_NOT_CONNECTED)
 	{
-		if(!esp8266CommandAT())
+		if(wifiConnectToAp())
 		{
-			MAIN_DEBUG("ESP8266 not responding, check hardware!");
+			MAIN_DEBUG("Connected to AP: %s", m_app_ctx.eeprom_params.wifi_config[0].ap_ssid);
 		}
 		else
 		{
-			if(esp8266CommandCWJAP(m_app_ctx.eeprom_params.wifi_config[0].ap_ssid, m_app_ctx.eeprom_params.wifi_config[0].ap_wpa2_pass))
-			{
-				MAIN_DEBUG("Connected to AP: %s", m_app_ctx.eeprom_params.wifi_config[0].ap_ssid);
-				state = WIFI_CONNECTED;
-			}
-			else
-			{
-				MAIN_DEBUG("Cannot connect to AP: %s",  m_app_ctx.eeprom_params.wifi_config[0].ap_ssid);
-			}
+			MAIN_DEBUG("Cannot connect to AP: %s",  m_app_ctx.eeprom_params.wifi_config[0].ap_ssid);
 		}
+
 	}
-	else if(state == WIFI_CONNECTED)
+	else if (wifiGetConnectionStatus())
 	{
-		if(esp8266CommandCWQAP())
+		if (wifiDisconnectFromAp())
 		{
 			MAIN_DEBUG("Disconnected from AP: %s",  m_app_ctx.eeprom_params.wifi_config[0].ap_ssid);
-			state = WIFI_NOT_CONNECTED;
 		}
 		else
 		{
 			MAIN_DEBUG("ESP8266 not responding, check hardware!");
 		}
 	}
-	updateWifiConnectionStatus(state);
+	updateWifiConnectionStatus(wifiGetConnectionStatus());
 }
 
 
-//TODO
 void onWifiSetup(tWidget *psWidget)
 {
 	MAIN_DEBUG("onWifiSetup pressed");
@@ -609,41 +598,38 @@ void onOthersSetup(tWidget *psWidget)
 
 static void updateWifiConnectionStatus(WifiConnectionState state)
 {
-	//if(state == m_app_ctx.wifi_state)
-	//{
-	//	return;
-	//}
-	switch (state) {
-		case WIFI_NOT_CONNECTED:
-			if(m_app_ctx.current_screen == SCREEN_CONN_SETTINGS)
-			{
-			    GrContextFontSet(&m_drawing_context, &g_sFontCm12);
-			    GrContextForegroundSet(&m_drawing_context, ClrWhite);
-			    GrStringDrawCentered(&m_drawing_context, connStateDesc[WIFI_NOT_CONNECTED], -1, 250, 130, true);
-			    g_connToApButton.pcText = connStateDesc[WIFI_WAIT_FOR_DATA+1];
-			}
-			break;
-		case WIFI_CONNECTED:
-			if(m_app_ctx.current_screen == SCREEN_CONN_SETTINGS)
-			{
-			    GrContextFontSet(&m_drawing_context, &g_sFontCm16);
-			    GrContextForegroundSet(&m_drawing_context, ClrWhite);
-			    GrStringDrawCentered(&m_drawing_context, connStateDesc[WIFI_CONNECTED], -1, 250, 130, true);
-			    g_connToApButton.pcText = connStateDesc[WIFI_WAIT_FOR_DATA+2];
-			}
-			break;
-		case WIFI_WAIT_FOR_DATA:
-			if(m_app_ctx.current_screen == SCREEN_CONN_SETTINGS)
-			{
-			    GrContextFontSet(&m_drawing_context, &g_sFontCm16);
-			    GrContextForegroundSet(&m_drawing_context, ClrWhite);
-			    GrStringDrawCentered(&m_drawing_context, connStateDesc[WIFI_WAIT_FOR_DATA], -1, 250, 130, true);
-			}
-			break;
-		default:
-			break;
+	if (m_app_ctx.flash_params.connectionSetupState.wifiConnectionState != state)
+	{
+		switch (state) {
+			case WIFI_NOT_CONNECTED:
+				if(m_app_ctx.current_screen == SCREEN_CONN_SETTINGS)
+				{
+					GrContextFontSet(&m_drawing_context, &g_sFontCm12);
+					GrContextForegroundSet(&m_drawing_context, ClrWhite);
+					GrStringDrawCentered(&m_drawing_context, connStateDesc[WIFI_NOT_CONNECTED], -1, 250, 130, true);
+					g_connToApButton.pcText = connStateDesc[WIFI_NOT_CONNECTED+2];
+				}
+				break;
+			case WIFI_CONNECTED:
+				if(m_app_ctx.current_screen == SCREEN_CONN_SETTINGS)
+				{
+					GrContextFontSet(&m_drawing_context, &g_sFontCm16);
+					GrContextForegroundSet(&m_drawing_context, ClrWhite);
+					GrStringDrawCentered(&m_drawing_context, connStateDesc[WIFI_CONNECTED], -1, 250, 130, true);
+					g_connToApButton.pcText = connStateDesc[WIFI_CONNECTED+2];
+				}
+				break;
+			default:
+				break;
+		}
+
+		if (state == WIFI_NOT_CONNECTED || state == WIFI_CONNECTED)
+		{
+			m_app_ctx.flash_params.connectionSetupState.wifiConnectionState = state;
+			configFlashSetModified(&m_app_ctx.flash_params);
+			saveApplicationContextToMemory();
+		}
 	}
-	m_app_ctx.flash_params.connectionSetupState.wifiConnectionState = state;
 }
 
 static void updateSensorConnectionStatus(SensorConnectionState state)
@@ -889,35 +875,18 @@ static void handleMovement(void)
 // m_global_counter_sec updated 5 times per second
 //
 //*****************************************************************************
+// period notifiers
+// @brief new weather data from wifi
+static volatile bool m_get_new_temp_data = false;
+// @brief global counter
 static volatile uint32_t m_global_counter_sec = 0;
 void SysTickIntHandler(void)
 {
+	static volatile uint32_t m_global_counter_sec = 0;
 	m_global_counter_sec++;
-
-	//for tests
-/*
-	if(m_global_counter_sec % 100) //every 20s
+	if((m_global_counter_sec % 100) == 0 && !m_get_new_temp_data) //every 20s
 	{
-		if(esp8266CommandCIPSTATUS())
-		{
-			updateWifiConnectionStatus(WIFI_CONNECTED);
-		}
-		else
-		{
-			updateWifiConnectionStatus(WIFI_NOT_CONNECTED);
-		}
-	}
-	*/
-	if(m_global_counter_sec % 100) //every 20s
-	{
-		if(esp8266CommandCIPSTATUS())
-		{
-			updateWifiConnectionStatus(WIFI_CONNECTED);
-		}
-		else
-		{
-			updateWifiConnectionStatus(WIFI_NOT_CONNECTED);
-		}
+		m_get_new_temp_data = true;
 	}
 }
 
@@ -992,7 +961,25 @@ int main(void)
 		}
 
 #endif
+		if (m_get_new_temp_data)
+		{
+			if (m_app_ctx.flash_params.connectionSetupState.wifiEnabled)
+			{
+				if (wifiCheckApConnectionStatus())
+				{
+					updateWifiConnectionStatus(wifiGetConnectionStatus());
+				}
+				if (wifiGetCurrentWeather(m_app_ctx.eeprom_params.city_names[m_app_ctx.flash_params.currentCity]))
+				{
 
+				}
+				else
+				{
+
+				}
+			}
+			m_get_new_temp_data = false;
+		}
 		if(!ADS7843getIntPinState()) // if touch panel is being touched)
 		{
 			if(touch_screen_pressed_time == 0) // first press

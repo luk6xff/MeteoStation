@@ -42,9 +42,6 @@
 //! - UART1RX - PE4
 //! - UART1TX - PE5
 
-#define TX_BUF_SIZE 256
-#define RX_BUF_SIZE 512
-
 
 //Function prototypes
 static bool esp8266WaitForResponse(const char* resp, uint16_t msTimeout);
@@ -56,8 +53,8 @@ static void esp8266SendATCommand(const char* cmd);
 static volatile uint32_t ms_counter= 0;
 static volatile uint16_t rxBufferCounter= 0;
 static volatile bool rxDataAvailable = false;
-static uint8_t rxBuffer[RX_BUF_SIZE];
-static uint8_t txBuffer[TX_BUF_SIZE];
+static uint8_t rxBuffer[ESP8266_RX_BUF_SIZE];
+static uint8_t txBuffer[ESP8266_TX_BUF_SIZE];
 
 //sets Timer for ESP8266
 static void esp8266UartSetup(void) {
@@ -152,7 +149,7 @@ uint8_t* esp8266GetRxBuffer(void)
 static void esp8266ResetUartRxBuffer(void)
 {
 	rxBufferCounter = 0;
-	memset((void*)rxBuffer, '\0', RX_BUF_SIZE);
+	memset((void*)rxBuffer, '\0', ESP8266_RX_BUF_SIZE);
 }
 
 static bool esp8266isDataInRxBufferAvaialble(void)
@@ -162,7 +159,7 @@ static bool esp8266isDataInRxBufferAvaialble(void)
 
 static void esp8266ResetUartTxBuffer(void)
 {
-	memset((void*)txBuffer, '\0', TX_BUF_SIZE);
+	memset((void*)txBuffer, '\0', ESP8266_TX_BUF_SIZE);
 }
 
 static void esp8266SetUartTxBuffer(const char* strToCopy)
@@ -176,7 +173,7 @@ static bool esp8266SearchForResponseString(const char* resp)
 	bool res = false;
 	uint16_t length = 0;
 	uint16_t expectedLength = strlen(resp);
-	for(uint16_t i = 0; i<RX_BUF_SIZE && rxBuffer[i] != '\0' ; ++i)
+	for(uint16_t i = 0; i<ESP8266_RX_BUF_SIZE && rxBuffer[i] != '\0' ; ++i)
 	{
 
 		if(rxBuffer[i] == *resp)
@@ -365,12 +362,12 @@ bool esp8266CommandCIPSEND(const char* packet)
 	esp8266ResetUartTxBuffer();
 	sprintf((char*)txBuffer, "AT+CIPSEND=%d", strlen(packet)+2);
 	esp8266SendATCommand((char*)txBuffer);
-	if(!esp8266WaitForResponse(">", 5000))
+	if(!esp8266WaitForResponse(">", 4000))
 	{
 		return false;
 	}
 	esp8266SendATCommand(packet);
-	return esp8266WaitForResponse("+IPD", 5000);
+	return esp8266WaitForResponse("+IPD", 4000);
 }
 
 //
@@ -395,7 +392,7 @@ void Esp8266Uart5IntHandler(void)
 		}
 		else
 		{
-			rxBuffer[rxBufferCounter++ % RX_BUF_SIZE] = recvChr;
+			rxBuffer[rxBufferCounter++ % ESP8266_RX_BUF_SIZE] = recvChr;
 		}
 	}
 	rxDataAvailable = true;

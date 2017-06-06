@@ -14,7 +14,8 @@ typedef enum
 {
 	WIFI_NOT_CONNECTED,
 	WIFI_CONNECTED,
-	WIFI_WAIT_FOR_DATA,
+	WIFI_TRANSMISSION_CREATED,
+	WIFI_TRANSMISSION_ENDED,
 }WifiConnectionState;
 
 
@@ -33,9 +34,13 @@ bool wifiDisconnectFromAp();
 
 bool wifiGetCurrentWeather(const char* city);
 
-const char* wifiLastReceivedDataBuffer();
+bool wifiCheckApConnectionStatus();
 
 WifiConnectionState wifiGetConnectionStatus();
+
+
+const char* wifiSsidParam();
+const char* wifiPassParam();
 
 
 #endif /* WIFI_H_ */

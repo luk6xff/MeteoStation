@@ -11,6 +11,12 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+
+
+#define ESP8266_TX_BUF_SIZE 256
+#define ESP8266_RX_BUF_SIZE 1024
+
+
 typedef enum
 {
 	ESP8266_MODE_CLIENT = 1,

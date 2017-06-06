@@ -7,18 +7,8 @@ C-ESP_CWQAP|
 C-ESP_CIPSTATUS|
 C-ESP_RAW|                                          //get raw data (flush rx buffer)
 C-ESP_CIFSR|                                        //get local ip
-
-C-ESP_CIPSTART_23.22.14.18|                         //create TCP connection to http://httpbin.org server
-C-ESP_CIPSEND_GET /get HTTP/1.1\r\nHost: 23.22.14.18\r\nAccept: text/html|
-C-ESP_CIPSEND_GET /get HTTP/1.1\r\nHost: 23.22.14.18\r\nConnection: keep-alive|
-C-ESP_CIPSEND_GET /get HTTP/1.1|
-C-ESP_CIPSEND_?|
 C-ESP_CIPCLOSE|                                     //close the TCP connection
 
-C-ESP_CIPSTART_httpbin.org|
-C-ESP_CIPSEND_GET /get HTTP/1.1|
-C-ESP_CIPSEND_GET /get HTTP/1.1\r\nHost:httpbin.org\r\nConnection:keep-alive|
-C-ESP_RAW| 
 
 C-ESP_CIPSTART_192.168.0.115|
 C-ESP_CIPSEND_GET / HTTP/1.1\r\nConnection:close\r\n|
@@ -38,7 +28,4 @@ C-ESP_CIPSTART_api.openweathermap.org|
 C-ESP_CIPSEND_GET /data/2.5/weather?units=metric&q=NowySacz&appid=e95bbbe9f7314ea2a5ca1f60ee138eef|
 C-ESP_CIPSEND_GET /data/2.5/forecast?units=metric&q=NowySacz&APPID=e95bbbe9f7314ea2a5ca1f60ee138eef|
 C-ESP_RAW|
-
-
-C-ESP_CIPSTART_google.com|
-C-ESP_CIPSEND_GET / HTTP/1.1\r\nHost: google.com:80\r\n\r\n|
+C-ESP_CIPCLOSE|

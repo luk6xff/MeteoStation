@@ -10,9 +10,10 @@
 #include "wifi.h"
 #include "esp8266.h"
 #include "config.h"
+#include "delay.h"
 #include "tiny-json.h"
 
-#define AP_PARAMS_MAX_LENGTH MAX_CONFIG_PARAM_NAME_LENGTH
+#define AP_PARAMS_MAX_LENGTH CONFIG_MAX_PARAM_NAME_LENGTH
 
 
 const char* openweather_server_name = "api.openweathermap.org";
@@ -24,7 +25,7 @@ static char wifi_ap_SSID_buf[AP_PARAMS_MAX_LENGTH];
 static char wifi_ap_PASS_buf[AP_PARAMS_MAX_LENGTH];
 
 static WifiConnectionState m_current_state;
-
+static WifiWeatherDataModel m_last_result;
 
 //
 //forward declarations
@@ -56,11 +57,6 @@ void wifiSetApParameters(const char* ssid, const char* pass)
 	memset(wifi_ap_PASS_buf, '\0', sizeof(wifi_ap_PASS_buf));
 	memcpy(wifi_ap_SSID_buf, ssid, sizeof(wifi_ap_SSID_buf)-1);
 	memcpy(wifi_ap_PASS_buf, pass, sizeof(wifi_ap_PASS_buf)-1);
-}
-
-WifiConnectionState wifiGetConnectionStatus()
-{
-	return m_current_state;
 }
 
 bool wifiConnectToAp()
@@ -115,6 +111,16 @@ bool wifiGetCurrentWeather(const char* city)
 	}
 	delay_ms(100); //to finish download
 	return wifi_parse_weather_response(esp8266GetRxBuffer(), ESP8266_RX_BUF_SIZE);
+}
+
+WifiConnectionState wifiGetConnectionStatus()
+{
+	return m_current_state;
+}
+
+WifiWeatherDataModel wifiGetWeatherResultData()
+{
+	return m_last_result;
 }
 
 const char* wifiSsidParam()
@@ -176,13 +182,13 @@ static bool wifi_parse_weather_response(const uint8_t* resp_buf, uint16_t buf_le
 {
 	if (!resp_buf)
 	{
-		return false;
+    	goto FAIL;
 	}
 	const uint8_t * const p = strstr(resp_buf, "+IPD,");
 	const uint8_t * const r = strstr(resp_buf, "CLOSED");
     if (!p || !r)
     {
-    	return false;
+    	goto FAIL;
     }
     uint16_t len = 0;
     uint8_t ch = '\0';
@@ -195,16 +201,118 @@ static bool wifi_parse_weather_response(const uint8_t* resp_buf, uint16_t buf_le
     		len = len*10 + ch - '0';
     	}
     }
-    json_t mem[120];
-    json_t const* json = json_create(&p[shift], mem, sizeof mem / sizeof *mem );
-    if ( !json ) {
-    	return false;
+    json_t pool[50];
+    json_t const* parent = json_create(&p[shift], pool, sizeof pool / sizeof *pool );
+    if (!parent)
+    {
+    	goto FAIL;
     }
-    json_t const* main = json_getProperty( json, "main" );
-    if ( !main || JSON_TEXT != json_getType( main ) ) {
-    	return false;
+
+    json_t const* main_ = json_getProperty(parent, "main");
+    if (!main_ || JSON_OBJ != json_getType(main_))
+    {
+    	goto FAIL;
     }
+    else
+    {
+        json_t const* temp = json_getProperty(main_, "temp");
+        if ( !temp || JSON_INTEGER != json_getType(temp))
+        {
+        	goto FAIL;
+        }
+        else
+        {
+        	m_last_result.temperature = (int)json_getInteger(temp);
+        }
+
+        json_t const* pressure = json_getProperty(main_, "pressure");
+        if ( !pressure || JSON_INTEGER != json_getType(pressure))
+        {
+        	goto FAIL;
+        }
+        else
+        {
+        	m_last_result.pressure = (int)json_getInteger(pressure);
+        }
+
+        json_t const* humidity = json_getProperty(main_, "humidity");
+        if ( !humidity || JSON_INTEGER != json_getType(humidity))
+        {
+        	goto FAIL;
+        }
+        else
+        {
+        	m_last_result.humidity = (int)json_getInteger(humidity);
+        }
+    }
+    //wind
+    json_t const* wind = json_getProperty(parent, "wind");
+    if (!wind || JSON_OBJ != json_getType(wind))
+    {
+    	goto FAIL;
+    }
+    else
+    {
+        json_t const* speed = json_getProperty(wind, "speed");
+        if ( !speed || JSON_REAL != json_getType(speed))
+        {
+        	goto FAIL;
+        }
+        else
+        {
+        	m_last_result.wind_speed = (int)json_getInteger(speed);
+        }
+
+        json_t const* deg = json_getProperty(wind, "deg");
+        if ( !deg || JSON_INTEGER != json_getType(deg))
+        {
+        	goto FAIL;
+        }
+        else
+        {
+        	m_last_result.wind_direction = (int)json_getInteger(deg);
+        }
+    }
+
+    //weather condition
+	json_t const* weather = json_getProperty(parent, "weather");
+	if (!weather || JSON_ARRAY != json_getType(weather))
+	{
+		goto FAIL;
+	}
+	else
+	{
+	   json_t const* weather_cond;
+	   uint8_t idx = 0;
+	   for(weather_cond = json_getChild(weather); weather_cond != 0; weather_cond = json_getSibling(weather_cond))
+	   {
+		   if (JSON_OBJ == json_getType(weather_cond))
+		   {
+
+				json_t const* weather_id = json_getProperty(weather_cond, "id");
+		        if ( !weather_id || JSON_INTEGER != json_getType(weather_id))
+		        {
+		        	goto FAIL;
+		        }
+		        else
+		        {
+		        	m_last_result.weather_cond_code[idx++] = (int)json_getInteger(weather_id);
+		        }
+		   }
+		   else
+		   {
+			   goto FAIL;
+		   }
+		   if (idx > 2)
+		   {
+			   break;
+		   }
+	   }
+	}
 	return true;
+
+FAIL:
+	return false;
 }
 
 

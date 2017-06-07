@@ -32,7 +32,7 @@
 // Sun Image
 //
 //*****************************************************************************
-const uint8_t g_pui8SunImage[] =
+const uint8_t img_sun[] =
 {
     IMAGE_FMT_8BPP_COMP,
     128, 0,
@@ -1105,7 +1105,7 @@ const uint8_t g_pui8SunImage[] =
 // Cloudy Image
 //
 //*****************************************************************************
-const uint8_t g_pui8CloudyImage[] =
+const uint8_t img_cloudy[] =
 {
     IMAGE_FMT_8BPP_COMP,
     128, 0,
@@ -1923,7 +1923,7 @@ const uint8_t g_pui8CloudyImage[] =
 // Rain Image
 //
 //*****************************************************************************
-const uint8_t g_pui8RainImage[] =
+const uint8_t img_rain[] =
 {
     IMAGE_FMT_8BPP_COMP,
     128, 0,
@@ -2917,7 +2917,7 @@ const uint8_t g_pui8RainImage[] =
 // Thunderstorm Image
 //
 //*****************************************************************************
-const uint8_t g_pui8ThuderStormImage[] =
+const uint8_t img_thunderStorm[] =
 {
     IMAGE_FMT_8BPP_COMP,
     128, 0,
@@ -3915,7 +3915,7 @@ const uint8_t g_pui8ThuderStormImage[] =
 // Snow Image
 //
 //*****************************************************************************
-const uint8_t g_pui8SnowImage[] =
+const uint8_t img_snow[] =
 {
     IMAGE_FMT_8BPP_COMP,
     128, 0,
@@ -4911,7 +4911,7 @@ const uint8_t g_pui8SnowImage[] =
 // Moon Image
 //
 //*****************************************************************************
-const uint8_t g_pui8MoonImage[] =
+const uint8_t img_moon[] =
 {
     IMAGE_FMT_8BPP_COMP,
     128, 0,
@@ -6102,7 +6102,7 @@ const uint8_t g_pui8MoonImage[] =
 // This is the image of a red LED that is turned off.
 //
 //*****************************************************************************
-const uint8_t g_pui8LightOff[] =
+const uint8_t img_lightOff[] =
 {
     IMAGE_FMT_4BPP_COMP,
     20, 0,
@@ -6149,7 +6149,7 @@ const uint8_t g_pui8LightOff[] =
 // This is the image of a red LED that is turned on.
 //
 //*****************************************************************************
-const uint8_t g_pui8LightOn[] =
+const uint8_t img_lightOn[] =
 {
     IMAGE_FMT_4BPP_COMP,
     20, 0,

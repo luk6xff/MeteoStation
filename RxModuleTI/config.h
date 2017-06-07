@@ -59,7 +59,7 @@ ConfigFlashParameters* configFlashGetCurrent(void);
 //EEPROM stored parameters
 ////////////////////////////////////////////////////////////////////////
 #define MAX_CITIES 3
-#define MAX_CONFIG_PARAM_NAME_LENGTH 20
+#define CONFIG_MAX_PARAM_NAME_LENGTH 20
 #define MAX_WIFI_CONFIGS 2
 
 #define  EEPROM_START_ADDRESS 0x0000
@@ -72,16 +72,16 @@ typedef struct
 
 typedef struct
 {
-	char ap_ssid[MAX_CONFIG_PARAM_NAME_LENGTH];
-	char ap_wpa2_pass[MAX_CONFIG_PARAM_NAME_LENGTH];
+	char ap_ssid[CONFIG_MAX_PARAM_NAME_LENGTH];
+	char ap_wpa2_pass[CONFIG_MAX_PARAM_NAME_LENGTH];
 }AccessPointConfigParameters;
 
 typedef struct
 {
 	TouchScreenConfigParameters touch_screen_params;
 	AccessPointConfigParameters wifi_config[MAX_WIFI_CONFIGS];
-	char city_names[MAX_CITIES][MAX_CONFIG_PARAM_NAME_LENGTH];
-	char openweather_domain[MAX_CONFIG_PARAM_NAME_LENGTH + MAX_CONFIG_PARAM_NAME_LENGTH];
+	char city_names[MAX_CITIES][CONFIG_MAX_PARAM_NAME_LENGTH];
+	char openweather_domain[CONFIG_MAX_PARAM_NAME_LENGTH + CONFIG_MAX_PARAM_NAME_LENGTH];
 	uint8_t update_wifi_period_time;  /*Time after which request to OpenWeatherMap is sent in seconds*/
 	uint8_t update_sensor_period_time;/*Time after which request to Sensor is sent in seconds*/
 	uint8_t params_version; 		   /* First Time the value will be 0x00 -invalid, 0x01-defaults, 0x02 - updated */

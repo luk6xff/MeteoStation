@@ -25,14 +25,14 @@
 #ifndef __IMAGES_H__
 #define __IMAGES_H__
 
-extern const uint8_t g_pui8SunImage[];
-extern const uint8_t g_pui8MoonImage[];
-extern const uint8_t g_pui8CloudyImage[];
-extern const uint8_t g_pui8RainImage[];
-extern const uint8_t g_pui8ThuderStormImage[];
-extern const uint8_t g_pui8SnowImage[];
-extern const uint8_t g_ui8Logo[];
-extern const uint8_t g_pui8LightOff[];
-extern const uint8_t g_pui8LightOn[];
+extern const uint8_t img_sun[];
+extern const uint8_t img_Moon[];
+extern const uint8_t img_cloudy[];
+extern const uint8_t img_rain[];
+extern const uint8_t img_thunderStorm[];
+extern const uint8_t img_snow[];
+
+extern const uint8_t img_lightOff[];
+extern const uint8_t img_lightOn[];
 
 #endif

@@ -19,6 +19,18 @@ typedef enum
 }WifiConnectionState;
 
 
+typedef struct
+{
+	int temperature;
+	int pressure;
+	unsigned int humidity;
+	int wind_speed;
+	int wind_direction;
+	unsigned int sunrise_time;  // not used
+	unsigned int sunset_time;   // not used
+	int weather_cond_code[3]; //max 3 codes
+}WifiWeatherDataModel;
+
 bool wifiInit(const char* ssid, const char* pass);
 
 //
@@ -38,6 +50,7 @@ bool wifiCheckApConnectionStatus();
 
 WifiConnectionState wifiGetConnectionStatus();
 
+WifiWeatherDataModel wifiGetWeatherResultData();
 
 const char* wifiSsidParam();
 const char* wifiPassParam();

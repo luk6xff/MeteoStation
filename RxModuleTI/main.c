@@ -101,10 +101,10 @@ typedef struct
 // Forward reference to all used widget structures.
 //
 //*****************************************************************************
-extern tCanvasWidget g_screenMainBackground;
-extern tCanvasWidget g_screenWifiSetupBackground;
-extern tCanvasWidget g_screenSensorSetupBackground;
-extern tCanvasWidget g_settingsPanel;
+extern tCanvasWidget ui_screenMainBackground;
+extern tCanvasWidget ui_screenWifiSetupBackground;
+extern tCanvasWidget ui_screenSensorSetupBackground;
+extern tCanvasWidget ui_screenSettingsBackground;
 
 
 //*****************************************************************************
@@ -119,12 +119,12 @@ extern tCanvasWidget g_settingsPanel;
 //*****************************************************************************
 typedef struct
 {
-	#define  MIN_SWIPE_DIFFERENCE 60
-	#define  LAST_VAL_BUF_SIZE 10
+	#define  SWIPE_MIN_DIFFERENCE 60
+	#define  SWIPE_LAST_VAL_BUF_SIZE 10
 	int32_t initX;
 	int32_t initY;
-	int32_t bufX[LAST_VAL_BUF_SIZE];
-	int32_t bufY[LAST_VAL_BUF_SIZE];
+	int32_t bufX[SWIPE_LAST_VAL_BUF_SIZE];
+	int32_t bufY[SWIPE_LAST_VAL_BUF_SIZE];
 	uint8_t sampleNum;
 	bool swipeStarted;
 	bool swipeOnGoing;
@@ -168,19 +168,19 @@ static AppContext m_app_ctx;
 static ScreenContainer m_screens[SCREEN_NUM_OF_SCREENS] =
 {
     {
-        (tWidget *)&g_screenMainBackground,
+        (tWidget *)&ui_screenMainBackground,
         SCREEN_MAIN, SCREEN_CONN_SETTINGS, SCREEN_MAIN, SCREEN_MAIN
     },
     {
-        (tWidget *)&g_settingsPanel,
+        (tWidget *)&ui_screenSettingsBackground,
         SCREEN_MAIN, SCREEN_CONN_SETTINGS, SCREEN_CONN_SETTINGS, SCREEN_CONN_SETTINGS
     },
     {
-        (tWidget *)&g_screenWifiSetupBackground,
+        (tWidget *)&ui_screenWifiSetupBackground,
 		SCREEN_CONN_SETTINGS, SCREEN_CONN_SETTINGS, SCREEN_CONN_SETTINGS, SCREEN_CONN_SETTINGS
     },
     {
-        (tWidget *)&g_screenSensorSetupBackground,
+        (tWidget *)&ui_screenSensorSetupBackground,
 		SCREEN_CONN_SETTINGS, SCREEN_CONN_SETTINGS, SCREEN_CONN_SETTINGS, SCREEN_CONN_SETTINGS
     }
 };
@@ -306,7 +306,6 @@ static bool setTouchScreenCalibration()
 		ADS7843setCalibrationCoefficients(&cfg->touch_screen_params.calib_coeffs);
 	}
 
-
 	if(!intsOff)
 	{
 		ENABLE_ALL_INTERRUPTS();
@@ -316,42 +315,49 @@ static bool setTouchScreenCalibration()
 
 
 // Main page widgets
-char g_pcTempHighLow[40]="--/--C";
-Canvas(g_sTempHighLow, &g_screenMainBackground, 0, 0,
+static char ui_tempHighLowBuf[30]="--/--C";
+Canvas(ui_tempHighLowCanvas, &ui_screenMainBackground, 0, 0,
        &g_ILI9320, 120, 195, 70, 30,
        CANVAS_STYLE_FILL | CANVAS_STYLE_TEXT | CANVAS_STYLE_TEXT_LEFT |
        CANVAS_STYLE_TEXT_TOP | CANVAS_STYLE_TEXT_OPAQUE, BG_COLOR_MAIN,
-       ClrWhite, ClrWhite, g_psFontCmss20, g_pcTempHighLow, 0, 0);
+       ClrWhite, ClrWhite, g_psFontCmss20, ui_tempHighLowBuf, 0, 0);
 
-char g_pcTemp[40]="--C";
-Canvas(g_sTemp, &g_screenMainBackground, &g_sTempHighLow, 0,
+static char ui_tempBuf[30]="--C";
+Canvas(ui_tempCanvas, &ui_screenMainBackground, &ui_tempHighLowCanvas, 0,
        &g_ILI9320, 20, 175, 100, 50,
        CANVAS_STYLE_FILL | CANVAS_STYLE_TEXT | CANVAS_STYLE_TEXT_RIGHT |
        CANVAS_STYLE_TEXT_TOP | CANVAS_STYLE_TEXT_OPAQUE, BG_COLOR_MAIN,
-       ClrWhite, ClrWhite, g_psFontCmss48, g_pcTemp, 0, 0);
+       ClrWhite, ClrWhite, g_psFontCmss48, ui_tempBuf, 0, 0);
 
-char g_pcHumidity[40]="Cisnienie: ----hPa";
-Canvas(g_sHumidity, &g_screenMainBackground, &g_sTemp, 0,
+static char ui_pressureBuf[30]="Pressure: ----hPa";
+Canvas(ui_pressureCanvas, &ui_screenMainBackground, &ui_tempCanvas, 0,
        &g_ILI9320, 20, 140, 160, 25,
        CANVAS_STYLE_FILL | CANVAS_STYLE_TEXT | CANVAS_STYLE_TEXT_LEFT |
        CANVAS_STYLE_TEXT_OPAQUE, BG_COLOR_MAIN, ClrWhite, ClrWhite,
-       g_psFontCmss20, g_pcHumidity, 0, 0);
+       g_psFontCmss20, ui_pressureBuf, 0, 0);
 
-char g_pcStatus[40];
-Canvas(g_sStatus, &g_screenMainBackground, &g_sHumidity, 0,
+static char ui_humidityBuf[30]="Humidity: ---%";
+Canvas(ui_humidityCanvas, &ui_screenMainBackground, &ui_pressureCanvas, 0,
+       &g_ILI9320, 20, 105, 160, 25,
+       CANVAS_STYLE_FILL | CANVAS_STYLE_TEXT | CANVAS_STYLE_TEXT_LEFT |
+       CANVAS_STYLE_TEXT_OPAQUE, BG_COLOR_MAIN, ClrWhite, ClrWhite,
+       g_psFontCmss20, ui_humidityBuf, 0, 0);
+
+static char ui_statusBuf[30];
+Canvas(ui_statusCanvas, &ui_screenMainBackground, &ui_humidityCanvas, 0,
        &g_ILI9320, 20, 110, 160, 25,
        CANVAS_STYLE_FILL | CANVAS_STYLE_TEXT | CANVAS_STYLE_TEXT_LEFT |
        CANVAS_STYLE_TEXT_OPAQUE, BG_COLOR_MAIN, ClrWhite, ClrWhite,
-       g_psFontCmss20, g_pcStatus, 0, 0);
+       g_psFontCmss20, ui_statusBuf, 0, 0);
 
-char g_pcCity[40];
-Canvas(g_sCityName, &g_screenMainBackground, &g_sStatus, 0,
+static char ui_cityBuf[30];
+Canvas(ui_cityCanvas, &ui_screenMainBackground, &ui_statusCanvas, 0,
        &g_ILI9320, 20, 40, 240, 25,
        CANVAS_STYLE_FILL | CANVAS_STYLE_TEXT | CANVAS_STYLE_TEXT_LEFT |
        CANVAS_STYLE_TEXT_OPAQUE, BG_COLOR_MAIN, ClrWhite, ClrWhite,
-       g_psFontCmss20, g_pcCity, 0, 0);
+       g_psFontCmss20, ui_cityBuf, 0, 0);
 
-Canvas(g_screenMainBackground, WIDGET_ROOT, 0, &g_sCityName,
+Canvas(ui_screenMainBackground, WIDGET_ROOT, 0, &ui_cityCanvas,
        &g_ILI9320, BG_MIN_X, BG_MIN_Y,
        BG_MAX_X - BG_MIN_X,
        BG_MAX_Y - BG_MIN_Y, CANVAS_STYLE_FILL,
@@ -365,32 +371,32 @@ Canvas(g_screenMainBackground, WIDGET_ROOT, 0, &g_sCityName,
 //*****************************************************************************
 
 // The text entry button for the custom city.
-RectangularButton(g_wifiApSsid, &g_screenWifiSetupBackground, 0, 0,
+RectangularButton(ui_wifiApSsid, &ui_screenWifiSetupBackground, 0, 0,
        &g_ILI9320, 118, 30, 190, 28,
        PB_STYLE_FILL | PB_STYLE_TEXT, ClrLightGrey,
        ClrLightGrey, ClrWhite, ClrGray, g_psFontCmss14,
 	   m_app_ctx.eeprom_params.wifi_config[0].ap_ssid, 0, 0, 0 ,0 , onSsidEntry);
 
-RectangularButton(g_wifiApPass, &g_screenWifiSetupBackground, &g_wifiApSsid, 0,
+RectangularButton(ui_wifiApPass, &ui_screenWifiSetupBackground, &ui_wifiApSsid, 0,
        &g_ILI9320, 118, 70, 190, 28,
        PB_STYLE_FILL | PB_STYLE_TEXT, ClrLightGrey,
        ClrLightGrey, ClrWhite, ClrGray, g_psFontCmss14,
 	   m_app_ctx.eeprom_params.wifi_config[0].ap_wpa2_pass, 0, 0, 0 ,0 , onPassEntry);
 
-RectangularButton(g_wifiCustomCity, &g_screenWifiSetupBackground, &g_wifiApPass, 0,
+RectangularButton(ui_wifiCustomCity, &ui_screenWifiSetupBackground, &ui_wifiApPass, 0,
        &g_ILI9320, 118, 110, 190, 28,
        PB_STYLE_FILL | PB_STYLE_TEXT, ClrLightGrey,
        ClrLightGrey, ClrWhite, ClrGray, g_psFontCmss14,
 	   m_app_ctx.eeprom_params.city_names[0], 0, 0, 0 ,0 , onCityEntry);
 
-RectangularButton(g_wifiUpdateTime, &g_screenWifiSetupBackground, &g_wifiCustomCity, 0,
+RectangularButton(ui_wifiUpdateTime, &ui_screenWifiSetupBackground, &ui_wifiCustomCity, 0,
        &g_ILI9320, 118, 150, 190, 28,
        PB_STYLE_FILL | PB_STYLE_TEXT, ClrLightGrey,
        ClrLightGrey, ClrWhite, ClrGray, g_psFontCmss14,
        0, 0, 0, 0 ,0 , onUpdateTimeEntry);
 
 /* the WIFIsettings panel. */
-Canvas(g_screenWifiSetupBackground, WIDGET_ROOT, 0, &g_wifiUpdateTime/*&g_screenWifiSetupIPAddr*/,
+Canvas(ui_screenWifiSetupBackground, WIDGET_ROOT, 0, &ui_wifiUpdateTime,
        &g_ILI9320, BG_MIN_X, BG_MIN_Y,
        BG_MAX_X - BG_MIN_X, BG_MAX_Y - BG_MIN_Y,
        CANVAS_STYLE_FILL | CANVAS_STYLE_TEXT_RIGHT |
@@ -404,13 +410,12 @@ Canvas(g_screenWifiSetupBackground, WIDGET_ROOT, 0, &g_wifiUpdateTime/*&g_screen
 //*****************************************************************************
 /* the Sensor settings panel. */
 //TODO
-Canvas(g_screenSensorSetupBackground, WIDGET_ROOT, 0, 0,
+Canvas(ui_screenSensorSetupBackground, WIDGET_ROOT, 0, 0,
        &g_ILI9320, BG_MIN_X, BG_MIN_Y,
        BG_MAX_X - BG_MIN_X, BG_MAX_Y - BG_MIN_Y,
        CANVAS_STYLE_FILL | CANVAS_STYLE_TEXT_RIGHT |
        CANVAS_STYLE_TEXT_TOP, BG_COLOR_MAIN, ClrWhite, ClrBlueViolet, 0,
        0, 0, 0);
-
 
 //*****************************************************************************
 //
@@ -429,13 +434,13 @@ tCanvasWidget g_connCheckBoxIndicators[] =
 {
     CanvasStruct(&g_panelConnContainers, g_connCheckBoxIndicators + 1, 0,
                  &g_ILI9320, 160, 52, 20, 20,
-                 CANVAS_STYLE_IMG, 0, 0, 0, 0, 0, g_pui8LightOff, 0),
+                 CANVAS_STYLE_IMG, 0, 0, 0, 0, 0, img_lightOff, 0),
     CanvasStruct(&g_panelConnContainers, g_connCheckBoxIndicators + 2, 0,
                  &g_ILI9320, 160, 92, 20, 20,
-                 CANVAS_STYLE_IMG, 0, 0, 0, 0, 0, g_pui8LightOff, 0),
+                 CANVAS_STYLE_IMG, 0, 0, 0, 0, 0, img_lightOff, 0),
     CanvasStruct(&g_panelConnContainers, 0, 0,
                  &g_ILI9320, 160, 132, 20, 20,
-                 CANVAS_STYLE_IMG, 0, 0, 0, 0, 0, g_pui8LightOff, 0),
+                 CANVAS_STYLE_IMG, 0, 0, 0, 0, 0, img_lightOff, 0),
 };
 tCheckBoxWidget g_connCheckBoxes[] =
 {
@@ -488,21 +493,21 @@ RectangularButton(g_othersSettingsButton, g_panelConnContainers+2, 0, 0,
 				  "Others setup", 0, 0, 0 ,0 , onOthersSetup);
 
 tContainerWidget g_panelConnContainers[] = {
-		ContainerStruct(&g_settingsPanel, g_panelConnContainers + 1, g_connCheckBoxes,
+		ContainerStruct(&ui_screenSettingsBackground, g_panelConnContainers + 1, g_connCheckBoxes,
 						&g_ILI9320, 8, 24, 180, 148,
 						CTR_STYLE_OUTLINE | CTR_STYLE_TEXT, 0, ClrGray, ClrSilver,
 						g_psFontCm16, "Connection Setup"),
-		ContainerStruct(&g_settingsPanel, g_panelConnContainers + 2, &g_connToApButton,
+		ContainerStruct(&ui_screenSettingsBackground, g_panelConnContainers + 2, &g_connToApButton,
 						&g_ILI9320, 188, 24, 136-8-4, 148,
 						CTR_STYLE_OUTLINE | CTR_STYLE_TEXT, 0, ClrGray, ClrSilver,
 						g_psFontCm16, "Connect to AP"),
-		ContainerStruct(&g_settingsPanel, 0, &g_wifiSettingsButton,
+		ContainerStruct(&ui_screenSettingsBackground, 0, &g_wifiSettingsButton,
 						&g_ILI9320, 8, 173, 320-8-4, 55,
 						CTR_STYLE_OUTLINE, 0, ClrGray, ClrSilver,
 						g_psFontCm12, NULL),
 };
 
-Canvas(g_settingsPanel, WIDGET_ROOT, 0, g_panelConnContainers,
+Canvas(ui_screenSettingsBackground, WIDGET_ROOT, 0, g_panelConnContainers,
        &g_ILI9320, BG_MIN_X, BG_MIN_Y,
        BG_MAX_X - BG_MIN_X,
        BG_MAX_Y - BG_MIN_Y, CANVAS_STYLE_FILL,
@@ -525,21 +530,24 @@ void onConnCheckBoxChange(tWidget *widget, uint32_t enabled)
     	return;
     }
     CanvasImageSet(g_connCheckBoxIndicators + idx,
-    			   enabled ? g_pui8LightOn : g_pui8LightOff);
+    			   enabled ? img_lightOn : img_lightOff);
     WidgetPaint((tWidget *)(g_connCheckBoxIndicators + idx));
     if (strcmp(g_connCheckBoxes[idx].pcText, "WIFI") == 0)
     {
-    		m_app_ctx.flash_params.connectionSetupState.wifiEnabled = enabled;
+		m_app_ctx.flash_params.connectionSetupState.wifiEnabled = enabled;
+		configFlashSetModified(&m_app_ctx.flash_params);
     }
     else if (strcmp(g_connCheckBoxes[idx].pcText, "Sensors") == 0)
     {
-    		m_app_ctx.flash_params.connectionSetupState.sensorsEnabled = enabled;
+		m_app_ctx.flash_params.connectionSetupState.sensorsEnabled = enabled;
+		configFlashSetModified(&m_app_ctx.flash_params);
     }
     else if (strcmp(g_connCheckBoxes[idx].pcText, "PowerSaving") == 0)
     {
-    		m_app_ctx.flash_params.connectionSetupState.powerSavingEnabled = enabled;
+		m_app_ctx.flash_params.connectionSetupState.powerSavingEnabled = enabled;
+		configFlashSetModified(&m_app_ctx.flash_params);
     }
-    //TODO save flash changes
+    saveApplicationContextToMemory();
 }
 
 void onConnToAP(tWidget *psWidget)
@@ -646,12 +654,12 @@ static void onWifiEnable(tWidget *psWidget)
 	if(m_app_ctx.flash_params.connectionSetupState.wifiEnabled)
 	{
 		m_app_ctx.flash_params.connectionSetupState.wifiEnabled = false;
-		PushButtonTextColorSet(&g_wifiCustomCity, ClrGray);
+		PushButtonTextColorSet(&ui_wifiCustomCity, ClrGray);
 	}
 	else
 	{
 		m_app_ctx.flash_params.connectionSetupState.wifiEnabled  = true;
-		PushButtonTextColorSet(&g_wifiCustomCity, ClrBlack);
+		PushButtonTextColorSet(&ui_wifiCustomCity, ClrBlack);
 	}
 }
 
@@ -731,6 +739,22 @@ static void onParameterEdited(const Screens prevWidget, bool save)
 
 //*****************************************************************************
 //
+// @brief Update temperature parameters on the main screen.
+//
+//*****************************************************************************
+static void updateWeatherUi(WifiWeatherDataModel data)
+{
+	//sprintf(ui_tempHighLowBuf, "--/--C";
+
+	sprintf(ui_humidityBuf, "Humidity: %d %s", data.humidity, "%");
+	sprintf(ui_pressureBuf, "Pressure: %d hPa", data.pressure);
+	sprintf(ui_tempBuf,"%d C", data.temperature);
+	WidgetPaint(WIDGET_ROOT);
+}
+
+
+//*****************************************************************************
+//
 // The callback function that is called by the touch screen driver to indicate
 // activity on the touch screen.
 //
@@ -755,8 +779,8 @@ static int32_t touchScreenCallback(uint32_t msg, int32_t x, int32_t y)
             	}
             	else
             	{	++m_swipe.sampleNum;
-            		m_swipe.bufX[m_swipe.sampleNum % LAST_VAL_BUF_SIZE] = x;
-            		m_swipe.bufY[m_swipe.sampleNum % LAST_VAL_BUF_SIZE] = y;
+            		m_swipe.bufX[m_swipe.sampleNum % SWIPE_LAST_VAL_BUF_SIZE] = x;
+            		m_swipe.bufY[m_swipe.sampleNum % SWIPE_LAST_VAL_BUF_SIZE] = y;
             	}
 
                 break;
@@ -768,8 +792,8 @@ static int32_t touchScreenCallback(uint32_t msg, int32_t x, int32_t y)
             	if(m_swipe.swipeStarted || m_swipe.swipeOnGoing)
             	{
             		++m_swipe.sampleNum;
-            		m_swipe.bufX[m_swipe.sampleNum % LAST_VAL_BUF_SIZE] = x;
-            		m_swipe.bufY[m_swipe.sampleNum % LAST_VAL_BUF_SIZE] = y;
+            		m_swipe.bufX[m_swipe.sampleNum % SWIPE_LAST_VAL_BUF_SIZE] = x;
+            		m_swipe.bufY[m_swipe.sampleNum % SWIPE_LAST_VAL_BUF_SIZE] = y;
 					m_swipe.swipeOnGoing = true;
             	}
                 break;
@@ -781,8 +805,8 @@ static int32_t touchScreenCallback(uint32_t msg, int32_t x, int32_t y)
             	if(m_swipe.swipeOnGoing)
             	{
             		//checks on last gathered data for now
-            		int32_t xLastVal = m_swipe.bufX[m_swipe.sampleNum % LAST_VAL_BUF_SIZE];
-            		int32_t yLastVal = m_swipe.bufY[m_swipe.sampleNum % LAST_VAL_BUF_SIZE];
+            		int32_t xLastVal = m_swipe.bufX[m_swipe.sampleNum % SWIPE_LAST_VAL_BUF_SIZE];
+            		int32_t yLastVal = m_swipe.bufY[m_swipe.sampleNum % SWIPE_LAST_VAL_BUF_SIZE];
             		bool xLessThanInit = xLastVal < m_swipe.initX;
             		bool yLessThanInit = yLastVal < m_swipe.initY;
             		swipeDiffX = ((xLastVal - m_swipe.initX)>0) ? (xLastVal - m_swipe.initX) : (m_swipe.initX - xLastVal);
@@ -791,22 +815,22 @@ static int32_t touchScreenCallback(uint32_t msg, int32_t x, int32_t y)
             		if(swipeDiffX > swipeDiffY )
             		{
 
-            			if(!xLessThanInit && (swipeDiffX > MIN_SWIPE_DIFFERENCE))
+            			if(!xLessThanInit && (swipeDiffX > SWIPE_MIN_DIFFERENCE))
 						{
 							m_swipe.swipeDirecttion = SWIPE_RIGHT;
 						}
-						else if(xLessThanInit && (swipeDiffX > MIN_SWIPE_DIFFERENCE))
+						else if(xLessThanInit && (swipeDiffX > SWIPE_MIN_DIFFERENCE))
 						{
 							m_swipe.swipeDirecttion = SWIPE_LEFT;
 						}
             		}
             		else
             		{
-						if(!yLessThanInit && (swipeDiffY > MIN_SWIPE_DIFFERENCE))
+						if(!yLessThanInit && (swipeDiffY > SWIPE_MIN_DIFFERENCE))
 						{
 							m_swipe.swipeDirecttion = SWIPE_DOWN;
 						}
-						else if(yLessThanInit && (swipeDiffY > MIN_SWIPE_DIFFERENCE))
+						else if(yLessThanInit && (swipeDiffY > SWIPE_MIN_DIFFERENCE))
 						{
 							m_swipe.swipeDirecttion = SWIPE_UP;
 						}
@@ -923,7 +947,6 @@ int main(void)
     GrContextInit(&m_drawing_context, &g_ILI9320);
     uiInit(&m_drawing_context);
     uiFrameDraw(&m_drawing_context, "Meteo Ubiad Stacja");
-    m_app_ctx.current_screen = SCREEN_WIFI_SETTINGS;
     WidgetAdd(WIDGET_ROOT, m_screens[m_app_ctx.current_screen].widget);
     WidgetPaint(WIDGET_ROOT);
 
@@ -949,7 +972,7 @@ int main(void)
         handleMovement();
         // Process any messages in the widget message queue.
         WidgetMessageQueueProcess();
-#if 0
+#if 0 //paint all places where finger touched
 		if(!ADS7843getIntPinState()) //if touch panel is being touched
 		{
 			ADS7843read();
@@ -963,19 +986,22 @@ int main(void)
 #endif
 		if (m_get_new_temp_data)
 		{
-			if (m_app_ctx.flash_params.connectionSetupState.wifiEnabled)
+			if(m_app_ctx.current_screen == SCREEN_MAIN)
 			{
-				if (wifiCheckApConnectionStatus())
+				if (m_app_ctx.flash_params.connectionSetupState.wifiEnabled)
 				{
-					updateWifiConnectionStatus(wifiGetConnectionStatus());
-				}
-				if (wifiGetCurrentWeather(m_app_ctx.eeprom_params.city_names[m_app_ctx.flash_params.currentCity]))
-				{
+					if (wifiCheckApConnectionStatus())
+					{
+						updateWifiConnectionStatus(wifiGetConnectionStatus());
+					}
+					if (wifiGetCurrentWeather(m_app_ctx.eeprom_params.city_names[m_app_ctx.flash_params.currentCity]))
+					{
+						updateWeatherUi(wifiGetWeatherResultData());
+					}
+					else
+					{
 
-				}
-				else
-				{
-
+					}
 				}
 			}
 			m_get_new_temp_data = false;
@@ -986,7 +1012,7 @@ int main(void)
 			{
 				touch_screen_pressed_time = m_global_counter_sec;
 			}
-			if((m_global_counter_sec - touch_screen_pressed_time) > 50) // if > ~10s do scrreen calibration
+			if((m_global_counter_sec - touch_screen_pressed_time) > 50) // if > ~10s do screen calibration
 			{
 				DISABLE_ALL_INTERRUPTS();
 				uiClearBackground(&m_drawing_context);

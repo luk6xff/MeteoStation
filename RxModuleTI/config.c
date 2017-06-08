@@ -35,6 +35,7 @@ static const ConfigFlashParameters default_flash_settings =
 	0x00  // is_modified
 };
 
+static uint8_t active_flash_block = 0;
 
 static ConfigFlashParameters m_current_flash_parameters;
 
@@ -52,7 +53,7 @@ void configFlashInit(void)
 {
     // Verify that the parameter block structure matches the FLASH parameter
     // block size.
-    ASSERT(sizeof(ConfigParameters) == FLASH_PB_SIZE);
+    ASSERT(sizeof(ConfigFlashParameters) == FLASH_PB_SIZE);
     // Initialize the flash parameter block driver.
     FlashPBInit(FLASH_PB_START, FLASH_PB_END, FLASH_PB_SIZE);
 }

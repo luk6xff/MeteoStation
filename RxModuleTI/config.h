@@ -18,13 +18,11 @@
 ////////////////////////////////////////////////////////////////////////
 
 // Define the size of the flash program blocks for saving configuration data.
-#define FLASH_PB_START          0x3FF00
-#define FLASH_PB_END            FLASH_PB_START + 0xFF
-//#define FLASH_PB_START          0x20000
-//#define FLASH_PB_END            FLASH_PB_START + 0x4000
+#define FLASH_PB_START          0x3FC00
+#define FLASH_PB_END            FLASH_PB_START + 0x3FF
 // The size of the parameter block to save.  This must be a power of 2,
 // and should be large enough to contain the ConfigFlashParameters structure.
-#define FLASH_PB_SIZE           256
+#define FLASH_PB_SIZE           64 // 16 blocks 128B of 1KB
 
 typedef struct
 {

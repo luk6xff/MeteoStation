@@ -207,6 +207,7 @@ static void updateSensorConnectionStatus(SensorConnectionState state);
 
 static bool saveApplicationContextToMemory()
 {
+	DISABLE_ALL_INTERRUPTS();
 	bool ret = false;
 	if(configFlashCheckAndCleanModified(&m_app_ctx.flash_params))
 	{
@@ -221,6 +222,7 @@ static bool saveApplicationContextToMemory()
 		configEepromSave();
 		ret = true;
 	}
+	ENABLE_ALL_INTERRUPTS();
 	return ret;
 }
 
@@ -314,28 +316,28 @@ static bool setTouchScreenCalibration()
 
 
 // Main page widgets
-static char ui_tempHighLowBuf[30]="--/--C";
+static char ui_tempHighLowBuf[30];
 Canvas(ui_tempHighLowCanvas, &ui_screenMainBackground, 0, 0,
        &g_ILI9320, 120, 195, 70, 30,
        CANVAS_STYLE_FILL | CANVAS_STYLE_TEXT | CANVAS_STYLE_TEXT_LEFT |
        CANVAS_STYLE_TEXT_TOP | CANVAS_STYLE_TEXT_OPAQUE, BG_COLOR_MAIN,
        ClrWhite, ClrWhite, g_psFontCmss20, ui_tempHighLowBuf, 0, 0);
 
-static char ui_tempBuf[30]="--C";
+static char ui_tempBuf[30];
 Canvas(ui_tempCanvas, &ui_screenMainBackground, &ui_tempHighLowCanvas, 0,
        &g_ILI9320, 20, 175, 100, 50,
        CANVAS_STYLE_FILL | CANVAS_STYLE_TEXT | CANVAS_STYLE_TEXT_RIGHT |
        CANVAS_STYLE_TEXT_TOP | CANVAS_STYLE_TEXT_OPAQUE, BG_COLOR_MAIN,
        ClrWhite, ClrWhite, g_psFontCmss48, ui_tempBuf, 0, 0);
 
-static char ui_pressureBuf[30]="Pressure: ----hPa";
+static char ui_pressureBuf[30];
 Canvas(ui_pressureCanvas, &ui_screenMainBackground, &ui_tempCanvas, 0,
        &g_ILI9320, 20, 140, 160, 25,
        CANVAS_STYLE_FILL | CANVAS_STYLE_TEXT | CANVAS_STYLE_TEXT_LEFT |
        CANVAS_STYLE_TEXT_OPAQUE, BG_COLOR_MAIN, ClrWhite, ClrWhite,
        g_psFontCmss20, ui_pressureBuf, 0, 0);
 
-static char ui_humidityBuf[30]="Humidity: ---%";
+static char ui_humidityBuf[30];
 Canvas(ui_humidityCanvas, &ui_screenMainBackground, &ui_pressureCanvas, 0,
        &g_ILI9320, 20, 105, 160, 25,
        CANVAS_STYLE_FILL | CANVAS_STYLE_TEXT | CANVAS_STYLE_TEXT_LEFT |
@@ -427,43 +429,42 @@ void onWifiSetup(tWidget *psWidget);
 void onSensorSetup(tWidget *psWidget);
 void onOthersSetup(tWidget *psWidget);
 
-tContainerWidget g_panelConnContainers[];
-tPushButtonWidget g_connTestButton;
-tCanvasWidget g_connCheckBoxIndicators[] =
+tContainerWidget ui_settingsPanelContainers[];
+tCanvasWidget ui_settingsCheckBoxIndicators[] =
 {
-    CanvasStruct(&g_panelConnContainers, g_connCheckBoxIndicators + 1, 0,
+    CanvasStruct(&ui_settingsPanelContainers, ui_settingsCheckBoxIndicators + 1, 0,
                  &g_ILI9320, 160, 52, 20, 20,
                  CANVAS_STYLE_IMG, 0, 0, 0, 0, 0, img_lightOff, 0),
-    CanvasStruct(&g_panelConnContainers, g_connCheckBoxIndicators + 2, 0,
+    CanvasStruct(&ui_settingsPanelContainers, ui_settingsCheckBoxIndicators + 2, 0,
                  &g_ILI9320, 160, 92, 20, 20,
                  CANVAS_STYLE_IMG, 0, 0, 0, 0, 0, img_lightOff, 0),
-    CanvasStruct(&g_panelConnContainers, 0, 0,
+    CanvasStruct(&ui_settingsPanelContainers, 0, 0,
                  &g_ILI9320, 160, 132, 20, 20,
                  CANVAS_STYLE_IMG, 0, 0, 0, 0, 0, img_lightOff, 0),
 };
-tCheckBoxWidget g_connCheckBoxes[] =
+tCheckBoxWidget ui_settingsCheckBoxes[] =
 {
-		CheckBoxStruct(g_panelConnContainers, g_connCheckBoxes + 1, 0,
+		CheckBoxStruct(ui_settingsPanelContainers, ui_settingsCheckBoxes + 1, 0,
                       &g_ILI9320, 10, 40, 110, 45,
 					  CB_STYLE_FILL | CB_STYLE_TEXT, 20,
 					  0, ClrSilver, ClrSilver, g_psFontCm16,
                       "WIFI", 0, onConnCheckBoxChange),
-		CheckBoxStruct(g_panelConnContainers, g_connCheckBoxes + 2, 0,
+		CheckBoxStruct(ui_settingsPanelContainers, ui_settingsCheckBoxes + 2, 0,
                       &g_ILI9320, 10, 80, 110, 45,
 					  CB_STYLE_FILL | CB_STYLE_TEXT, 20,
 					  0, ClrSilver, ClrSilver, g_psFontCm16,
                       "Sensors", 0, onConnCheckBoxChange),
-		CheckBoxStruct(g_panelConnContainers, g_connCheckBoxIndicators, 0,
+		CheckBoxStruct(ui_settingsPanelContainers, ui_settingsCheckBoxIndicators, 0,
                       &g_ILI9320, 10, 120, 120, 45,
 					  CB_STYLE_FILL | CB_STYLE_TEXT, 20,
 					  0, ClrSilver, ClrSilver, g_psFontCm16,
                       "PowerSaving", 0, onConnCheckBoxChange)
 };
 
-#define NUM_CONN_CHECKBOXES  (sizeof(g_connCheckBoxes) / sizeof(g_connCheckBoxes[0]))
+#define UI_SETTINGS_NUM_CONN_CHECKBOXES  (sizeof(ui_settingsCheckBoxes) / sizeof(ui_settingsCheckBoxes[0]))
 
 /* Connect Button*/
-RectangularButton(g_connToApButton, g_panelConnContainers+1, 0, 0,
+RectangularButton(ui_settingsConnectToApButton, ui_settingsPanelContainers+1, 0, 0,
 				  &g_ILI9320, 200, 52, 100, 28,
 				  PB_STYLE_FILL | PB_STYLE_TEXT | PB_STYLE_OUTLINE,
 				  ClrGreen, ClrRed, ClrSilver, ClrWhite, g_psFontCmss14,
@@ -471,42 +472,42 @@ RectangularButton(g_connToApButton, g_panelConnContainers+1, 0, 0,
 
 
 /* Setup Buttons*/
-extern tPushButtonWidget g_sensorSettingsButton;
-extern tPushButtonWidget g_othersSettingsButton;
-RectangularButton(g_wifiSettingsButton, g_panelConnContainers+2, &g_sensorSettingsButton, 0,
+extern tPushButtonWidget ui_settingsSensorButton;
+extern tPushButtonWidget ui_settingsOtherSettingsButton;
+RectangularButton(ui_settingsWifiSettingsButton, ui_settingsPanelContainers+2, &ui_settingsSensorButton, 0,
 				  &g_ILI9320, 20, 185, 80, 35,
 				  PB_STYLE_FILL | PB_STYLE_TEXT | PB_STYLE_OUTLINE,
 				  ClrGreen, ClrRed, ClrSilver, ClrWhite, g_psFontCm12,
 				  "WIFI setup", 0, 0, 0 ,0 , onWifiSetup);
 
-RectangularButton(g_sensorSettingsButton, g_panelConnContainers+2, &g_othersSettingsButton, 0,
+RectangularButton(ui_settingsSensorButton, ui_settingsPanelContainers+2, &ui_settingsOtherSettingsButton, 0,
 				  &g_ILI9320, 115, 185, 80, 35,
 				  PB_STYLE_FILL | PB_STYLE_TEXT | PB_STYLE_OUTLINE,
 				  ClrGreen, ClrRed, ClrSilver, ClrWhite, g_psFontCm12,
 				  "Sensor setup", 0, 0, 0 ,0 , onSensorSetup);
 
-RectangularButton(g_othersSettingsButton, g_panelConnContainers+2, 0, 0,
+RectangularButton(ui_settingsOtherSettingsButton, ui_settingsPanelContainers+2, 0, 0,
 				  &g_ILI9320, 210, 185, 80, 35,
 				  PB_STYLE_FILL | PB_STYLE_TEXT | PB_STYLE_OUTLINE,
 				  ClrGreen, ClrRed, ClrSilver, ClrWhite, g_psFontCm12,
 				  "Others setup", 0, 0, 0 ,0 , onOthersSetup);
 
-tContainerWidget g_panelConnContainers[] = {
-		ContainerStruct(&ui_screenSettingsBackground, g_panelConnContainers + 1, g_connCheckBoxes,
+tContainerWidget ui_settingsPanelContainers[] = {
+		ContainerStruct(&ui_screenSettingsBackground, ui_settingsPanelContainers + 1, ui_settingsCheckBoxes,
 						&g_ILI9320, 8, 24, 180, 148,
 						CTR_STYLE_OUTLINE | CTR_STYLE_TEXT, 0, ClrGray, ClrSilver,
 						g_psFontCm16, "Connection Setup"),
-		ContainerStruct(&ui_screenSettingsBackground, g_panelConnContainers + 2, &g_connToApButton,
+		ContainerStruct(&ui_screenSettingsBackground, ui_settingsPanelContainers + 2, &ui_settingsConnectToApButton,
 						&g_ILI9320, 188, 24, 136-8-4, 148,
 						CTR_STYLE_OUTLINE | CTR_STYLE_TEXT, 0, ClrGray, ClrSilver,
 						g_psFontCm16, "Connect to AP"),
-		ContainerStruct(&ui_screenSettingsBackground, 0, &g_wifiSettingsButton,
+		ContainerStruct(&ui_screenSettingsBackground, 0, &ui_settingsWifiSettingsButton,
 						&g_ILI9320, 8, 173, 320-8-4, 55,
 						CTR_STYLE_OUTLINE, 0, ClrGray, ClrSilver,
 						g_psFontCm12, NULL),
 };
 
-Canvas(ui_screenSettingsBackground, WIDGET_ROOT, 0, g_panelConnContainers,
+Canvas(ui_screenSettingsBackground, WIDGET_ROOT, 0, ui_settingsPanelContainers,
        &g_ILI9320, BG_MIN_X, BG_MIN_Y,
        BG_MAX_X - BG_MIN_X,
        BG_MAX_Y - BG_MIN_Y, CANVAS_STYLE_FILL,
@@ -516,37 +517,37 @@ void onConnCheckBoxChange(tWidget *widget, uint32_t enabled)
 {
     uint32_t idx;
 
-    for(idx = 0; idx < NUM_CONN_CHECKBOXES; ++idx)
+    for(idx = 0; idx < UI_SETTINGS_NUM_CONN_CHECKBOXES; ++idx)
     {
-    	if (widget == &g_connCheckBoxes[idx].sBase)
+    	if (widget == &ui_settingsCheckBoxes[idx].sBase)
     	{
     		break;
     	}
     }
     //not found
-    if (idx == NUM_CONN_CHECKBOXES)
+    if (idx == UI_SETTINGS_NUM_CONN_CHECKBOXES)
     {
     	return;
     }
-    CanvasImageSet(g_connCheckBoxIndicators + idx,
+    CanvasImageSet(ui_settingsCheckBoxIndicators + idx,
     			   enabled ? img_lightOn : img_lightOff);
-    WidgetPaint((tWidget *)(g_connCheckBoxIndicators + idx));
-    if (strcmp(g_connCheckBoxes[idx].pcText, "WIFI") == 0)
+    WidgetPaint((tWidget *)(ui_settingsCheckBoxIndicators + idx));
+    if (strcmp(ui_settingsCheckBoxes[idx].pcText, "WIFI") == 0)
     {
 		m_app_ctx.flash_params.connectionSetupState.wifiEnabled = enabled;
 		configFlashSetModified(&m_app_ctx.flash_params);
     }
-    else if (strcmp(g_connCheckBoxes[idx].pcText, "Sensors") == 0)
+    else if (strcmp(ui_settingsCheckBoxes[idx].pcText, "Sensors") == 0)
     {
 		m_app_ctx.flash_params.connectionSetupState.sensorsEnabled = enabled;
 		configFlashSetModified(&m_app_ctx.flash_params);
     }
-    else if (strcmp(g_connCheckBoxes[idx].pcText, "PowerSaving") == 0)
+    else if (strcmp(ui_settingsCheckBoxes[idx].pcText, "PowerSaving") == 0)
     {
 		m_app_ctx.flash_params.connectionSetupState.powerSavingEnabled = enabled;
 		configFlashSetModified(&m_app_ctx.flash_params);
     }
-    //saveApplicationContextToMemory(); TODO
+    saveApplicationContextToMemory();
 }
 
 void onConnToAP(tWidget *psWidget)
@@ -613,7 +614,7 @@ static void updateWifiConnectionStatus(WifiConnectionState state)
 				GrContextFontSet(&m_drawing_context, &g_sFontCm12);
 				GrContextForegroundSet(&m_drawing_context, ClrWhite);
 				GrStringDrawCentered(&m_drawing_context, connStateDesc[WIFI_NOT_CONNECTED], -1, 250, 130, true);
-				g_connToApButton.pcText = connStateDesc[WIFI_NOT_CONNECTED+2];
+				ui_settingsConnectToApButton.pcText = connStateDesc[WIFI_NOT_CONNECTED+2];
 			}
 			break;
 		case WIFI_CONNECTED:
@@ -624,7 +625,7 @@ static void updateWifiConnectionStatus(WifiConnectionState state)
 				GrContextFontSet(&m_drawing_context, &g_sFontCm16);
 				GrContextForegroundSet(&m_drawing_context, ClrWhite);
 				GrStringDrawCentered(&m_drawing_context, connStateDesc[WIFI_CONNECTED], -1, 250, 130, true);
-				g_connToApButton.pcText = connStateDesc[WIFI_CONNECTED+2];
+				ui_settingsConnectToApButton.pcText = connStateDesc[WIFI_CONNECTED+2];
 			}
 			break;
 		default:
@@ -659,7 +660,7 @@ static void onCityEntry(tWidget *psWidget)
 	m_app_ctx.swipe_enabled = false;
 	WidgetRemove(m_screens[m_app_ctx.current_screen].widget);
 	configEepromSetModified(&m_app_ctx.eeprom_params); // param in eeprom will be modified
-	uiKeyboardCreate(m_app_ctx.eeprom_params.city_names[0], m_app_ctx.current_screen,
+	uiKeyboardCreate(m_app_ctx.eeprom_params.city_names[m_app_ctx.flash_params.currentCity], m_app_ctx.current_screen,
 					AlphaNumeric, "Save the city", "Wanna save the city?",
 					onParameterEdited);
 	// Activate the keyboard.
@@ -721,67 +722,102 @@ static void onParameterEdited(const Screens prevWidget, bool save)
 }
 
 
+
+//*****************************************************************************
+//
+// @brief Update screens with settings, data and other values
+//
+//*****************************************************************************
+static void ui_updateScreen()
+{
+    switch (m_app_ctx.current_screen)
+    {
+    	case SCREEN_MAIN:
+    		break;
+    	case SCREEN_CONN_SETTINGS:
+    		if (m_app_ctx.flash_params.connectionSetupState.wifiEnabled)
+    		{
+    			CheckBoxFillOn(&ui_settingsCheckBoxes[0]);
+    		    CanvasImageSet(&ui_settingsCheckBoxIndicators[0], img_lightOn);
+    		}
+    		else
+    		{
+    			CheckBoxFillOff(&ui_settingsCheckBoxes[0]);
+    		    CanvasImageSet(&ui_settingsCheckBoxIndicators[0], img_lightOff);
+    		}
+		    WidgetPaint((tWidget *)(&ui_settingsCheckBoxes[0]));
+		    WidgetPaint((tWidget *)(&ui_settingsCheckBoxIndicators[0]));
+    		break;
+    	default:
+    		break;
+    }
+
+}
+
 //*****************************************************************************
 //
 // @brief Update weather parameters coming from WIFI on the main screen.
 //
 //*****************************************************************************
-static void updateWifiWeatherUi(WifiWeatherDataModel data, bool isActive)
+static void ui_updateWifiWeather(WifiWeatherDataModel data, bool isActive)
 {
 	if (isActive)
 	{
 		sprintf(ui_humidityBuf, "Humidity: %d %s", data.humidity, "%");
 		sprintf(ui_pressureBuf, "Pressure: %d hPa", data.pressure);
 		sprintf(ui_tempBuf,"%d C", data.temperature);
+
+		if(data.current_time >data.sunrise_time && data.current_time < data.sunset_time) //day
+		{
+			GrTransparentImageDraw(&m_drawing_context, img_sun, 185, 80, 0);
+		}
+		else //night
+		{
+			GrTransparentImageDraw(&m_drawing_context, img_moon, 185, 80, 0);
+		}
+		// convert codes weather conditions codes to images as described at:
+		// https://openweathermap.org/weather-conditions
+		for (size_t i = 0; i < 3; ++i)
+		{
+			if (data.weather_cond_code[i] == -1)
+			{
+				continue;
+			}
+			//thunder storm
+			if (data.weather_cond_code[i] >= 200 && data.weather_cond_code[i] < 300)
+			{
+				GrTransparentImageDraw(&m_drawing_context, img_thunderStorm, 185, 80, 0);
+			}
+			//rain
+			else if ((data.weather_cond_code[i] >= 300 && data.weather_cond_code[i] < 400) &&
+					(data.weather_cond_code[i] >= 500 && data.weather_cond_code[i] < 500))
+			{
+				GrTransparentImageDraw(&m_drawing_context, img_rain, 185, 80, 0);
+			}
+			//snow
+			else if (data.weather_cond_code[i] >= 600 && data.weather_cond_code[i] < 700)
+			{
+				GrTransparentImageDraw(&m_drawing_context, img_snow, 185, 80, 0);
+			}
+			//clouds
+			else if (data.weather_cond_code[i] >= 700 && data.weather_cond_code[i] < 1000)
+			{
+				GrTransparentImageDraw(&m_drawing_context, img_cloudy, 185, 80, 0);
+			}
+		}
 	}
 	else
 	{
 		sprintf(ui_humidityBuf, "Humidity: -- %s", "%");
 		sprintf(ui_pressureBuf, "Pressure: --- hPa");
 		sprintf(ui_tempBuf,"--- C");
+		GrContextFontSet(&m_drawing_context, g_psFontCmss48);
+		GrContextForegroundSet(&m_drawing_context, ClrWhite);
+		GrStringDrawCentered(&m_drawing_context,"----", -1, 240, 150, true);
 	}
 	WidgetPaint((tWidget*)&ui_humidityCanvas);
 	WidgetPaint((tWidget*)&ui_pressureCanvas);
 	WidgetPaint((tWidget*)&ui_tempCanvas);
-
-	if(data.current_time >data.sunrise_time && data.current_time < data.sunset_time) //day
-	{
-		GrTransparentImageDraw(&m_drawing_context, img_sun, 185, 80, 0);
-	}
-	else //night
-	{
-		GrTransparentImageDraw(&m_drawing_context, img_moon, 185, 80, 0);
-	}
-	// convert codes weather conditions codes to images as described at:
-	// https://openweathermap.org/weather-conditions
-	for (size_t i = 0; i < 3; ++i)
-	{
-		if (data.weather_cond_code[i] == -1)
-		{
-			continue;
-		}
-		//thunder storm
-		if (data.weather_cond_code[i] >= 200 && data.weather_cond_code[i] < 300)
-		{
-			GrTransparentImageDraw(&m_drawing_context, img_thunderStorm, 185, 80, 0);
-		}
-		//rain
-		else if ((data.weather_cond_code[i] >= 300 && data.weather_cond_code[i] < 400) &&
-				(data.weather_cond_code[i] >= 500 && data.weather_cond_code[i] < 500))
-		{
-			GrTransparentImageDraw(&m_drawing_context, img_rain, 185, 80, 0);
-		}
-		//snow
-		else if (data.weather_cond_code[i] >= 600 && data.weather_cond_code[i] < 700)
-		{
-			GrTransparentImageDraw(&m_drawing_context, img_snow, 185, 80, 0);
-		}
-		//clouds
-		else if (data.weather_cond_code[i] >= 700 && data.weather_cond_code[i] < 1000)
-		{
-			GrTransparentImageDraw(&m_drawing_context, img_cloudy, 185, 80, 0);
-		}
-	}
 }
 
 
@@ -916,7 +952,7 @@ static void handleMovement(void)
             WidgetAdd(WIDGET_ROOT, m_screens[newScreenIdx].widget);
             WidgetPaint(WIDGET_ROOT);
             m_app_ctx.current_screen = newScreenIdx;
-
+            ui_updateScreen();
 		}
 	}
 	m_swipe.swipeDirecttion = SWIPE_NONE;
@@ -981,6 +1017,7 @@ int main(void)
     uiFrameDraw(&m_drawing_context, "Meteo Ubiad Stacja");
     WidgetAdd(WIDGET_ROOT, m_screens[m_app_ctx.current_screen].widget);
     WidgetPaint(WIDGET_ROOT);
+    ui_updateWifiWeather(wifiGetWeatherResultData(), false);
 
 	//touchScreenControler
 	touchScreenInit();
@@ -1028,11 +1065,11 @@ int main(void)
 				{
 					if (wifiGetCurrentWeather(m_app_ctx.eeprom_params.city_names[m_app_ctx.flash_params.currentCity]))
 					{
-						updateWifiWeatherUi(wifiGetWeatherResultData(), true);
+						ui_updateWifiWeather(wifiGetWeatherResultData(), true);
 					}
 					else
 					{
-						updateWifiWeatherUi(wifiGetWeatherResultData(), false);
+						ui_updateWifiWeather(wifiGetWeatherResultData(), false);
 					}
 				}
 			}

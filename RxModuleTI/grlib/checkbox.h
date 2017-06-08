@@ -676,6 +676,41 @@ tCheckBoxWidget;
 
 //*****************************************************************************
 //
+//! sets a check box widget selected.
+//!
+//! \param psWidget is a pointer to the check box widget to modify.
+//!
+//!
+//! \return None.
+//
+//*****************************************************************************
+#define CheckBoxSelectedOn(psWidget)                                          \
+        do                                                                    \
+        {                                                                     \
+            tCheckBoxWidget *psW = psWidget;                                  \
+            psW->ui16Style |= CB_STYLE_SELECTED;                              \
+        }                                                                     \
+        while(0)
+//*****************************************************************************
+//*****************************************************************************
+//
+//! sets a check box widget not selected.
+//!
+//! \param psWidget is a pointer to the check box widget to modify.
+//!
+//!
+//! \return None.
+//
+//*****************************************************************************
+#define CheckBoxSelectedOff(psWidget)                                         \
+        do                                                                    \
+        {                                                                     \
+            tCheckBoxWidget *psW = psWidget;                                  \
+            psW->ui16Style &= ~(CB_STYLE_SELECTED);                           \
+        }                                                                     \
+        while(0)
+//*****************************************************************************
+//
 // Prototypes for the check box widget APIs.
 //
 //*****************************************************************************

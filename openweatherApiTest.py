@@ -24,4 +24,5 @@ def getRequest(host, port, path=None, raw=False):
 
 #getRequest("api.openweathermap.org", 80, "data/2.5/weather?units=metric&q=NowySacz&appid=e95bbbe9f7314ea2a5ca1f60ee138eef\r\n") #working
 #getRequest("api.openweathermap.org", 80, "GET /data/2.5/weather?units=metric&q=NowySacz&appid=e95bbbe9f7314ea2a5ca1f60ee138eef\r\nHTTP/1.1\r\n\r\n", True) #working
-getRequest("api.openweathermap.org", 80, "GET /data/2.5/weather?q=paris&appid=e95bbbe9f7314ea2a5ca1f60ee138eef\r\n", True)
+getRequest("api.openweathermap.org", 80, "GET /data/2.5/weather?q=nowysacz&appid=e95bbbe9f7314ea2a5ca1f60ee138eef\r\n", True)
+getRequest("api.openweathermap.org", 80, "GET /data/2.5/weather?q=krakow&appid=e95bbbe9f7314ea2a5ca1f60ee138eef\r\n", True)

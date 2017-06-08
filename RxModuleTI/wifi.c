@@ -32,9 +32,11 @@ static WifiWeatherDataModel m_last_result;
 //
 static char* wifi_build_url(const char* request_url, const char* city, const char* openweather_api_key);
 static bool wifi_parse_weather_response(const uint8_t* resp_buf, uint16_t buf_len);
+static void wifi_set_result_invalid();
 
 bool wifiInit(const char* ssid, const char* pass)
 {
+	wifi_set_result_invalid();
 	//ESP8266
 	esp8266Init();
 	if (!ssid || !pass || strcmp(ssid, "default") == 0 || strcmp(pass, "default") == 0)
@@ -93,6 +95,7 @@ bool wifiDisconnectFromAp()
 
 bool wifiGetCurrentWeather(const char* city)
 {
+	wifi_set_result_invalid();
 	if(!m_current_state == WIFI_CONNECTED)
 	{
 		return false;
@@ -206,9 +209,6 @@ static bool wifi_parse_weather_response(const uint8_t* resp_buf, uint16_t buf_le
     	}
     }
 
-    //reset last results
-    memset(&m_last_result, -1, sizeof(WifiWeatherDataModel));
-
     //create no more than 50 fields expected
     json_t pool[50];
     json_t const* parent = json_create(&p[shift], pool, sizeof pool / sizeof *pool );
@@ -259,14 +259,14 @@ static bool wifi_parse_weather_response(const uint8_t* resp_buf, uint16_t buf_le
     json_t const* wind = json_getProperty(parent, "wind");
     if (!wind || JSON_OBJ != json_getType(wind))
     {
-    	goto FAIL;
+    	//just skip
     }
     else
     {
         json_t const* speed = json_getProperty(wind, "speed");
         if ( !speed || JSON_REAL != json_getType(speed))
         {
-        	goto FAIL;
+        	//just skip
         }
         else
         {
@@ -276,7 +276,7 @@ static bool wifi_parse_weather_response(const uint8_t* resp_buf, uint16_t buf_le
         json_t const* deg = json_getProperty(wind, "deg");
         if ( !deg || JSON_INTEGER != json_getType(deg))
         {
-        	goto FAIL;
+        	//just skip
         }
         else
         {
@@ -359,9 +359,11 @@ static bool wifi_parse_weather_response(const uint8_t* resp_buf, uint16_t buf_le
 		   }
 	   }
 	}
+	m_last_result.is_valid = 0;
 	return true;
 
 FAIL:
+	m_last_result.is_valid = -1;
 	return false;
 }
 
@@ -387,5 +389,11 @@ static char* wifi_build_url(const char* request_url, const char* city, const cha
 	len += 7;
 	memcpy(&request_buffer[len], openweather_api_key, klen);
 	return request_buffer;
+}
+
+static void wifi_set_result_invalid()
+{
+    //reset last results
+    memset(&m_last_result, -1, sizeof(WifiWeatherDataModel));
 }
 

@@ -30,6 +30,7 @@ typedef struct
 	unsigned int sunrise_time;
 	unsigned int sunset_time;
 	int weather_cond_code[3];   //max 3 codes
+	int is_valid;
 }WifiWeatherDataModel;
 
 bool wifiInit(const char* ssid, const char* pass);

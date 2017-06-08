@@ -5,7 +5,7 @@ C-ESP_CWMODE_1|
 C-ESP_CWJAP_INTEHNET_Faza939290|
 C-ESP_CWQAP|
 C-ESP_CIPSTATUS|
-C-ESP_RAW|                                          //get raw data (flush rx buffer)
+C-ESP_CIPSEND_GET /data/2.5/weather?units=metric&q=NowySacz&appid=e95bbbe9f7314ea2a5ca1f60ee138eef|                                          //get raw data (flush rx buffer)
 C-ESP_CIFSR|                                        //get local ip
 C-ESP_CIPCLOSE|                                     //close the TCP connection
 
@@ -19,7 +19,7 @@ C-ESP_CIPCLOSE|
 /******api.openweathermap.org*****/
 ##Openweather igbt6 API Key: e95bbbe9f7314ea2a5ca1f60ee138eef
 1. Weather
-api.openweathermap.org/data/2.5/weather?q=NowySacz&units=metric&APPID=e95bbbe9f7314ea2a5ca1f60ee138eef
+api.openweathermap.org/data/2.5/weather?q=Warszawa&units=metric&APPID=e95bbbe9f7314ea2a5ca1f60ee138eef
 2. Forecast
 api.openweathermap.org/data/2.5/forecast/city?q=NowySacz&units=metric&APPID=e95bbbe9f7314ea2a5ca1f60ee138eef 
 

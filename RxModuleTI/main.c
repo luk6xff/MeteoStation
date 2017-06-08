@@ -199,12 +199,9 @@ static int32_t touchScreenCallback(uint32_t msg, int32_t x, int32_t y);
 
 //*****************************************************************************
 //
-// Setters for App Context params
+// Private methods
 //
 //*****************************************************************************
-static void updateWifiConnectionStatus(WifiConnectionState state);
-static void updateSensorConnectionStatus(SensorConnectionState state);
-
 static bool saveApplicationContextToMemory()
 {
 	DISABLE_ALL_INTERRUPTS();
@@ -467,8 +464,8 @@ tCheckBoxWidget ui_settingsCheckBoxes[] =
 RectangularButton(ui_settingsConnectToApButton, ui_settingsPanelContainers+1, 0, 0,
 				  &g_ILI9320, 200, 52, 100, 28,
 				  PB_STYLE_FILL | PB_STYLE_TEXT | PB_STYLE_OUTLINE,
-				  ClrGreen, ClrRed, ClrSilver, ClrWhite, g_psFontCmss14,
-				  "State", 0, 0, 0 ,0 , onConnToAP);
+				  ClrGreen, ClrRed, ClrSilver, ClrWhite, g_psFontCm12,
+				  "WIFI ON/OFF", 0, 0, 0 ,0 , onConnToAP);
 
 
 /* Setup Buttons*/
@@ -578,7 +575,6 @@ void onConnToAP(tWidget *psWidget)
 			MAIN_DEBUG("ESP8266 not responding, check hardware!");
 		}
 	}
-	updateWifiConnectionStatus(wifiGetConnectionStatus());
 }
 
 
@@ -602,50 +598,6 @@ void onSensorSetup(tWidget *psWidget)
 void onOthersSetup(tWidget *psWidget)
 {
 	MAIN_DEBUG("onOthersSetup pressed");
-}
-
-static void updateWifiConnectionStatus(WifiConnectionState state)
-{
-	switch (state)
-	{
-		case WIFI_NOT_CONNECTED:
-			if(m_app_ctx.current_screen == SCREEN_CONN_SETTINGS)
-			{
-				GrContextFontSet(&m_drawing_context, &g_sFontCm12);
-				GrContextForegroundSet(&m_drawing_context, ClrWhite);
-				GrStringDrawCentered(&m_drawing_context, connStateDesc[WIFI_NOT_CONNECTED], -1, 250, 130, true);
-				ui_settingsConnectToApButton.pcText = connStateDesc[WIFI_NOT_CONNECTED+2];
-			}
-			break;
-		case WIFI_CONNECTED:
-		case WIFI_TRANSMISSION_CREATED:
-		case WIFI_TRANSMISSION_ENDED:
-			if(m_app_ctx.current_screen == SCREEN_CONN_SETTINGS)
-			{
-				GrContextFontSet(&m_drawing_context, &g_sFontCm16);
-				GrContextForegroundSet(&m_drawing_context, ClrWhite);
-				GrStringDrawCentered(&m_drawing_context, connStateDesc[WIFI_CONNECTED], -1, 250, 130, true);
-				ui_settingsConnectToApButton.pcText = connStateDesc[WIFI_CONNECTED+2];
-			}
-			break;
-		default:
-			break;
-	}
-
-	if (m_app_ctx.flash_params.connectionSetupState.wifiConnectionState != state)
-	{
-		if (state == WIFI_NOT_CONNECTED || state == WIFI_CONNECTED)
-		{
-			m_app_ctx.flash_params.connectionSetupState.wifiConnectionState = state;
-			configFlashSetModified(&m_app_ctx.flash_params);
-			saveApplicationContextToMemory();
-		}
-	}
-}
-
-static void updateSensorConnectionStatus(SensorConnectionState state)
-{
-
 }
 
 
@@ -733,93 +685,134 @@ static void ui_updateScreen()
     switch (m_app_ctx.current_screen)
     {
     	case SCREEN_MAIN:
+    	{
+    		WifiWeatherDataModel data = wifiGetWeatherResultData();
+    		if (data.is_valid == 0)
+    		{
+
+    			sprintf(ui_humidityBuf, "Humidity: %d %s", data.humidity, "%");
+    			sprintf(ui_pressureBuf, "Pressure: %d hPa", data.pressure);
+    			sprintf(ui_tempBuf,"%d C", data.temperature);
+
+    			if(data.current_time >data.sunrise_time && data.current_time < data.sunset_time) //day
+    			{
+    				GrTransparentImageDraw(&m_drawing_context, img_sun, 185, 80, 0);
+    			}
+    			else //night
+    			{
+    				GrTransparentImageDraw(&m_drawing_context, img_moon, 185, 80, 0);
+    			}
+    			// convert codes weather conditions codes to images as described at:
+    			// https://openweathermap.org/weather-conditions
+    			for (size_t i = 0; i < 3; ++i)
+    			{
+    				if (data.weather_cond_code[i] == -1)
+    				{
+    					continue;
+    				}
+    				//thunder storm
+    				if (data.weather_cond_code[i] >= 200 && data.weather_cond_code[i] < 300)
+    				{
+    					GrTransparentImageDraw(&m_drawing_context, img_thunderStorm, 185, 80, 0);
+    				}
+    				//rain
+    				else if ((data.weather_cond_code[i] >= 300 && data.weather_cond_code[i] < 400) &&
+    						(data.weather_cond_code[i] >= 500 && data.weather_cond_code[i] < 500))
+    				{
+    					GrTransparentImageDraw(&m_drawing_context, img_rain, 185, 80, 0);
+    				}
+    				//snow
+    				else if (data.weather_cond_code[i] >= 600 && data.weather_cond_code[i] < 700)
+    				{
+    					GrTransparentImageDraw(&m_drawing_context, img_snow, 185, 80, 0);
+    				}
+    				//clouds
+    				else if (data.weather_cond_code[i] >= 700 && data.weather_cond_code[i] < 1000)
+    				{
+    					GrTransparentImageDraw(&m_drawing_context, img_cloudy, 185, 80, 0);
+    				}
+    			}
+    		}
+    		else
+    		{
+        		WidgetPaint(WIDGET_ROOT); //clear images
+    			sprintf(ui_humidityBuf, "Humidity: -- %s", "%");
+    			sprintf(ui_pressureBuf, "Pressure: --- hPa");
+    			sprintf(ui_tempBuf,"--- C");
+    			GrContextFontSet(&m_drawing_context, g_psFontCmss48);
+    			GrContextForegroundSet(&m_drawing_context, ClrWhite);
+    			GrStringDrawCentered(&m_drawing_context,"----", -1, 240, 150, true);
+    		}
+    		WidgetPaint((tWidget*)&ui_humidityCanvas);
+    		WidgetPaint((tWidget*)&ui_pressureCanvas);
+    		WidgetPaint((tWidget*)&ui_tempCanvas);
     		break;
+    	}
     	case SCREEN_CONN_SETTINGS:
+    	{
     		if (m_app_ctx.flash_params.connectionSetupState.wifiEnabled)
     		{
-    			CheckBoxFillOn(&ui_settingsCheckBoxes[0]);
+    			CheckBoxSelectedOn(&ui_settingsCheckBoxes[0]);
     		    CanvasImageSet(&ui_settingsCheckBoxIndicators[0], img_lightOn);
     		}
     		else
     		{
-    			CheckBoxFillOff(&ui_settingsCheckBoxes[0]);
+    			CheckBoxSelectedOff(&ui_settingsCheckBoxes[0]);
     		    CanvasImageSet(&ui_settingsCheckBoxIndicators[0], img_lightOff);
     		}
-		    WidgetPaint((tWidget *)(&ui_settingsCheckBoxes[0]));
-		    WidgetPaint((tWidget *)(&ui_settingsCheckBoxIndicators[0]));
+
+    		if (m_app_ctx.flash_params.connectionSetupState.sensorsEnabled)
+    		{
+    			CheckBoxSelectedOn(&ui_settingsCheckBoxes[1]);
+    		    CanvasImageSet(&ui_settingsCheckBoxIndicators[1], img_lightOn);
+    		}
+    		else
+    		{
+    			CheckBoxSelectedOff(&ui_settingsCheckBoxes[1]);
+    		    CanvasImageSet(&ui_settingsCheckBoxIndicators[1], img_lightOff);
+    		}
+
+    		if (m_app_ctx.flash_params.connectionSetupState.powerSavingEnabled)
+    		{
+    			CheckBoxSelectedOn(&ui_settingsCheckBoxes[2]);
+    		    CanvasImageSet(&ui_settingsCheckBoxIndicators[2], img_lightOn);
+    		}
+    		else
+    		{
+    			CheckBoxSelectedOff(&ui_settingsCheckBoxes[2]);
+    		    CanvasImageSet(&ui_settingsCheckBoxIndicators[2], img_lightOff);
+    		}
+    		for (size_t i = 0; i < 3; ++i)
+    		{
+    			WidgetPaint((tWidget *)(&ui_settingsCheckBoxes[i]));
+    			WidgetPaint((tWidget *)(&ui_settingsCheckBoxIndicators[i]));
+    		}
+
+    		//connection status
+    		switch (wifiGetConnectionStatus())
+			{
+				case WIFI_NOT_CONNECTED:
+					GrContextFontSet(&m_drawing_context, &g_sFontCm12);
+					GrContextForegroundSet(&m_drawing_context, ClrWhite);
+					GrStringDrawCentered(&m_drawing_context, connStateDesc[WIFI_NOT_CONNECTED], -1, 250, 130, true);
+					break;
+				case WIFI_CONNECTED:
+				case WIFI_TRANSMISSION_CREATED:
+				case WIFI_TRANSMISSION_ENDED:
+					GrContextFontSet(&m_drawing_context, &g_sFontCm16);
+					GrContextForegroundSet(&m_drawing_context, ClrWhite);
+					GrStringDrawCentered(&m_drawing_context, connStateDesc[WIFI_CONNECTED], -1, 250, 130, true);
+					break;
+				default:
+					break;
+			}
     		break;
+    	}
     	default:
     		break;
     }
 
 }
-
-//*****************************************************************************
-//
-// @brief Update weather parameters coming from WIFI on the main screen.
-//
-//*****************************************************************************
-static void ui_updateWifiWeather(WifiWeatherDataModel data, bool isActive)
-{
-	if (isActive)
-	{
-		sprintf(ui_humidityBuf, "Humidity: %d %s", data.humidity, "%");
-		sprintf(ui_pressureBuf, "Pressure: %d hPa", data.pressure);
-		sprintf(ui_tempBuf,"%d C", data.temperature);
-
-		if(data.current_time >data.sunrise_time && data.current_time < data.sunset_time) //day
-		{
-			GrTransparentImageDraw(&m_drawing_context, img_sun, 185, 80, 0);
-		}
-		else //night
-		{
-			GrTransparentImageDraw(&m_drawing_context, img_moon, 185, 80, 0);
-		}
-		// convert codes weather conditions codes to images as described at:
-		// https://openweathermap.org/weather-conditions
-		for (size_t i = 0; i < 3; ++i)
-		{
-			if (data.weather_cond_code[i] == -1)
-			{
-				continue;
-			}
-			//thunder storm
-			if (data.weather_cond_code[i] >= 200 && data.weather_cond_code[i] < 300)
-			{
-				GrTransparentImageDraw(&m_drawing_context, img_thunderStorm, 185, 80, 0);
-			}
-			//rain
-			else if ((data.weather_cond_code[i] >= 300 && data.weather_cond_code[i] < 400) &&
-					(data.weather_cond_code[i] >= 500 && data.weather_cond_code[i] < 500))
-			{
-				GrTransparentImageDraw(&m_drawing_context, img_rain, 185, 80, 0);
-			}
-			//snow
-			else if (data.weather_cond_code[i] >= 600 && data.weather_cond_code[i] < 700)
-			{
-				GrTransparentImageDraw(&m_drawing_context, img_snow, 185, 80, 0);
-			}
-			//clouds
-			else if (data.weather_cond_code[i] >= 700 && data.weather_cond_code[i] < 1000)
-			{
-				GrTransparentImageDraw(&m_drawing_context, img_cloudy, 185, 80, 0);
-			}
-		}
-	}
-	else
-	{
-		sprintf(ui_humidityBuf, "Humidity: -- %s", "%");
-		sprintf(ui_pressureBuf, "Pressure: --- hPa");
-		sprintf(ui_tempBuf,"--- C");
-		GrContextFontSet(&m_drawing_context, g_psFontCmss48);
-		GrContextForegroundSet(&m_drawing_context, ClrWhite);
-		GrStringDrawCentered(&m_drawing_context,"----", -1, 240, 150, true);
-	}
-	WidgetPaint((tWidget*)&ui_humidityCanvas);
-	WidgetPaint((tWidget*)&ui_pressureCanvas);
-	WidgetPaint((tWidget*)&ui_tempCanvas);
-}
-
 
 //*****************************************************************************
 //
@@ -992,7 +985,7 @@ int main(void)
 	//FPU
 	FPUEnable();
 	FPULazyStackingEnable();
-	// Setup the system clock to run at 80 Mhz from PLL with crystal reference
+	// Setup the system clock to run at 80 MHz from PLL with crystal reference
 	SysCtlClockSet(SYSCTL_SYSDIV_2_5 | SYSCTL_USE_PLL | SYSCTL_OSC_MAIN | SYSCTL_XTAL_16MHZ);
 
 	//Reads from non-volatile memory
@@ -1017,7 +1010,7 @@ int main(void)
     uiFrameDraw(&m_drawing_context, "Meteo Ubiad Stacja");
     WidgetAdd(WIDGET_ROOT, m_screens[m_app_ctx.current_screen].widget);
     WidgetPaint(WIDGET_ROOT);
-    ui_updateWifiWeather(wifiGetWeatherResultData(), false);
+    ui_updateScreen();
 
 	//touchScreenControler
 	touchScreenInit();
@@ -1059,20 +1052,30 @@ int main(void)
 			{
 				if (wifiCheckApConnectionStatus())
 				{
-					updateWifiConnectionStatus(wifiGetConnectionStatus());
+					WifiConnectionState state = wifiGetConnectionStatus();
+					if (m_app_ctx.flash_params.connectionSetupState.wifiConnectionState != state)
+					{
+						if (state == WIFI_NOT_CONNECTED || state == WIFI_CONNECTED)
+						{
+							m_app_ctx.flash_params.connectionSetupState.wifiConnectionState = state;
+							configFlashSetModified(&m_app_ctx.flash_params);
+							saveApplicationContextToMemory();
+						}
+					}
 				}
 				if(m_app_ctx.current_screen == SCREEN_MAIN)
 				{
 					if (wifiGetCurrentWeather(m_app_ctx.eeprom_params.city_names[m_app_ctx.flash_params.currentCity]))
 					{
-						ui_updateWifiWeather(wifiGetWeatherResultData(), true);
+						MAIN_DEBUG("wifiGetCurrentWeather failed\n\r");
 					}
 					else
 					{
-						ui_updateWifiWeather(wifiGetWeatherResultData(), false);
+						MAIN_DEBUG("wifiGetCurrentWeather succeed\n\r");
 					}
 				}
 			}
+			ui_updateScreen();
 			m_get_new_temp_data = false;
 		}
 		if(!ADS7843getIntPinState()) // if touch panel is being touched)

@@ -77,8 +77,6 @@ static void esp8266UartSetup(void) {
 	// Enable the  UART5 RX interrupts.
 	IntEnable(INT_UART5);
 	UARTIntEnable(UART5_BASE, UART_INT_RX | UART_INT_RT);
-	//enable all
-	ENABLE_ALL_INTERRUPTS();
 }
 
 
@@ -114,7 +112,6 @@ static void esp8266TimerInit()
     TimerConfigure(TIMER1_BASE, TIMER_CFG_32_BIT_PER_UP);
     // Set the Timer1A load value to 1ms.
     TimerLoadSet(TIMER1_BASE, TIMER_A, SysCtlClockGet() / 1000); //1 [ms]
-    ENABLE_ALL_INTERRUPTS();
 
     // Configure the Timer1A interrupt for timer timeout.
     TimerIntEnable(TIMER1_BASE, TIMER_TIMA_TIMEOUT);
@@ -133,6 +130,8 @@ void esp8266Init()
 {
 	esp8266UartSetup();
 	esp8266TimerInit();
+	//enable all
+	ENABLE_ALL_INTERRUPTS();
 }
 
 

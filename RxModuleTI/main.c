@@ -49,8 +49,6 @@ static inline void MAIN_DEBUG(const char* fmt, ...)
 
 
 
-
-
 //*****************************************************************************
 //
 // Main State machine states
@@ -192,7 +190,6 @@ static ScreenContainer m_screens[SCREEN_NUM_OF_SCREENS] =
 // Methods forward declarations.
 //
 //*****************************************************************************
-static void onWifiEnable(tWidget *psWidget);
 static void onCityEntry(tWidget *psWidget);
 static void onSsidEntry(tWidget *psWidget);
 static void onPassEntry(tWidget *psWidget);
@@ -237,6 +234,7 @@ static bool readConfigAndSetAppContext()
 	// reads configuration from flash/eeprom
 	configInit();
 
+	//configFlashSetInvalid(configFlashGetCurrent());  //new memory layout introduced - comment it out later
 	if(configFlashIsInvalid(configFlashGetCurrent()))
 	{
 		configFlashSaveDefaults();
@@ -247,6 +245,7 @@ static bool readConfigAndSetAppContext()
 		memcpy(&m_app_ctx.flash_params, configFlashGetCurrent(), sizeof(ConfigFlashParameters));
 	}
 
+	//configEepromSetInvalid(configEepromGetCurrent()); //new memory layout introduced - comment it out later
 	if(configEepromIsInvalid(configEepromGetCurrent()))
 	{
 		configEepromSaveDefaults();
@@ -375,13 +374,13 @@ RectangularButton(ui_wifiApSsid, &ui_screenWifiSetupBackground, 0, 0,
        &g_ILI9320, 118, 30, 190, 28,
        PB_STYLE_FILL | PB_STYLE_TEXT, ClrLightGrey,
        ClrLightGrey, ClrWhite, ClrGray, g_psFontCmss14,
-	   m_app_ctx.eeprom_params.wifi_config[0].ap_ssid, 0, 0, 0 ,0 , onSsidEntry);
+	   m_app_ctx.eeprom_params.wifi_config.ap_ssid, 0, 0, 0 ,0 , onSsidEntry);
 
 RectangularButton(ui_wifiApPass, &ui_screenWifiSetupBackground, &ui_wifiApSsid, 0,
        &g_ILI9320, 118, 70, 190, 28,
        PB_STYLE_FILL | PB_STYLE_TEXT, ClrLightGrey,
        ClrLightGrey, ClrWhite, ClrGray, g_psFontCmss14,
-	   m_app_ctx.eeprom_params.wifi_config[0].ap_wpa2_pass, 0, 0, 0 ,0 , onPassEntry);
+	   m_app_ctx.eeprom_params.wifi_config.ap_wpa2_pass, 0, 0, 0 ,0 , onPassEntry);
 
 RectangularButton(ui_wifiCustomCity, &ui_screenWifiSetupBackground, &ui_wifiApPass, 0,
        &g_ILI9320, 118, 110, 190, 28,
@@ -547,7 +546,7 @@ void onConnCheckBoxChange(tWidget *widget, uint32_t enabled)
 		m_app_ctx.flash_params.connectionSetupState.powerSavingEnabled = enabled;
 		configFlashSetModified(&m_app_ctx.flash_params);
     }
-    saveApplicationContextToMemory();
+    //saveApplicationContextToMemory(); TODO
 }
 
 void onConnToAP(tWidget *psWidget)
@@ -559,11 +558,11 @@ void onConnToAP(tWidget *psWidget)
 	{
 		if(wifiConnectToAp())
 		{
-			MAIN_DEBUG("Connected to AP: %s", m_app_ctx.eeprom_params.wifi_config[0].ap_ssid);
+			MAIN_DEBUG("Connected to AP: %s", m_app_ctx.eeprom_params.wifi_config.ap_ssid);
 		}
 		else
 		{
-			MAIN_DEBUG("Cannot connect to AP: %s",  m_app_ctx.eeprom_params.wifi_config[0].ap_ssid);
+			MAIN_DEBUG("Cannot connect to AP: %s",  m_app_ctx.eeprom_params.wifi_config.ap_ssid);
 		}
 
 	}
@@ -571,7 +570,7 @@ void onConnToAP(tWidget *psWidget)
 	{
 		if (wifiDisconnectFromAp())
 		{
-			MAIN_DEBUG("Disconnected from AP: %s",  m_app_ctx.eeprom_params.wifi_config[0].ap_ssid);
+			MAIN_DEBUG("Disconnected from AP: %s",  m_app_ctx.eeprom_params.wifi_config.ap_ssid);
 		}
 		else
 		{
@@ -606,31 +605,34 @@ void onOthersSetup(tWidget *psWidget)
 
 static void updateWifiConnectionStatus(WifiConnectionState state)
 {
+	switch (state)
+	{
+		case WIFI_NOT_CONNECTED:
+			if(m_app_ctx.current_screen == SCREEN_CONN_SETTINGS)
+			{
+				GrContextFontSet(&m_drawing_context, &g_sFontCm12);
+				GrContextForegroundSet(&m_drawing_context, ClrWhite);
+				GrStringDrawCentered(&m_drawing_context, connStateDesc[WIFI_NOT_CONNECTED], -1, 250, 130, true);
+				g_connToApButton.pcText = connStateDesc[WIFI_NOT_CONNECTED+2];
+			}
+			break;
+		case WIFI_CONNECTED:
+		case WIFI_TRANSMISSION_CREATED:
+		case WIFI_TRANSMISSION_ENDED:
+			if(m_app_ctx.current_screen == SCREEN_CONN_SETTINGS)
+			{
+				GrContextFontSet(&m_drawing_context, &g_sFontCm16);
+				GrContextForegroundSet(&m_drawing_context, ClrWhite);
+				GrStringDrawCentered(&m_drawing_context, connStateDesc[WIFI_CONNECTED], -1, 250, 130, true);
+				g_connToApButton.pcText = connStateDesc[WIFI_CONNECTED+2];
+			}
+			break;
+		default:
+			break;
+	}
+
 	if (m_app_ctx.flash_params.connectionSetupState.wifiConnectionState != state)
 	{
-		switch (state) {
-			case WIFI_NOT_CONNECTED:
-				if(m_app_ctx.current_screen == SCREEN_CONN_SETTINGS)
-				{
-					GrContextFontSet(&m_drawing_context, &g_sFontCm12);
-					GrContextForegroundSet(&m_drawing_context, ClrWhite);
-					GrStringDrawCentered(&m_drawing_context, connStateDesc[WIFI_NOT_CONNECTED], -1, 250, 130, true);
-					g_connToApButton.pcText = connStateDesc[WIFI_NOT_CONNECTED+2];
-				}
-				break;
-			case WIFI_CONNECTED:
-				if(m_app_ctx.current_screen == SCREEN_CONN_SETTINGS)
-				{
-					GrContextFontSet(&m_drawing_context, &g_sFontCm16);
-					GrContextForegroundSet(&m_drawing_context, ClrWhite);
-					GrStringDrawCentered(&m_drawing_context, connStateDesc[WIFI_CONNECTED], -1, 250, 130, true);
-					g_connToApButton.pcText = connStateDesc[WIFI_CONNECTED+2];
-				}
-				break;
-			default:
-				break;
-		}
-
 		if (state == WIFI_NOT_CONNECTED || state == WIFI_CONNECTED)
 		{
 			m_app_ctx.flash_params.connectionSetupState.wifiConnectionState = state;
@@ -643,24 +645,6 @@ static void updateWifiConnectionStatus(WifiConnectionState state)
 static void updateSensorConnectionStatus(SensorConnectionState state)
 {
 
-}
-
-
-
-
-static void onWifiEnable(tWidget *psWidget)
-
-{
-	if(m_app_ctx.flash_params.connectionSetupState.wifiEnabled)
-	{
-		m_app_ctx.flash_params.connectionSetupState.wifiEnabled = false;
-		PushButtonTextColorSet(&ui_wifiCustomCity, ClrGray);
-	}
-	else
-	{
-		m_app_ctx.flash_params.connectionSetupState.wifiEnabled  = true;
-		PushButtonTextColorSet(&ui_wifiCustomCity, ClrBlack);
-	}
 }
 
 
@@ -687,7 +671,7 @@ static void onSsidEntry(tWidget *psWidget)
 	m_app_ctx.swipe_enabled = false;
 	WidgetRemove(m_screens[m_app_ctx.current_screen].widget);
 	configEepromSetModified(&m_app_ctx.eeprom_params); // param in eeprom will be modified
-	uiKeyboardCreate(m_app_ctx.eeprom_params.wifi_config[0].ap_ssid, m_app_ctx.current_screen,
+	uiKeyboardCreate(m_app_ctx.eeprom_params.wifi_config.ap_ssid, m_app_ctx.current_screen,
 					AlphaNumeric, "Save the ap ssid", "Wanna save the AP SSID?",
 					onParameterEdited);
 	m_app_ctx.current_screen = SCREEN_KEYBOARD;
@@ -698,7 +682,7 @@ static void onPassEntry(tWidget *psWidget)
 	m_app_ctx.swipe_enabled = false;
 	WidgetRemove(m_screens[m_app_ctx.current_screen].widget);
 	configEepromSetModified(&m_app_ctx.eeprom_params); // param in eeprom will be modified
-	uiKeyboardCreate(m_app_ctx.eeprom_params.wifi_config[0].ap_wpa2_pass, m_app_ctx.current_screen,
+	uiKeyboardCreate(m_app_ctx.eeprom_params.wifi_config.ap_wpa2_pass, m_app_ctx.current_screen,
 					AlphaNumeric,"Save the AP pass", "Wanna save the AP password?",
 					onParameterEdited);
 	m_app_ctx.current_screen = SCREEN_KEYBOARD;
@@ -739,17 +723,65 @@ static void onParameterEdited(const Screens prevWidget, bool save)
 
 //*****************************************************************************
 //
-// @brief Update temperature parameters on the main screen.
+// @brief Update weather parameters coming from WIFI on the main screen.
 //
 //*****************************************************************************
-static void updateWeatherUi(WifiWeatherDataModel data)
+static void updateWifiWeatherUi(WifiWeatherDataModel data, bool isActive)
 {
-	//sprintf(ui_tempHighLowBuf, "--/--C";
+	if (isActive)
+	{
+		sprintf(ui_humidityBuf, "Humidity: %d %s", data.humidity, "%");
+		sprintf(ui_pressureBuf, "Pressure: %d hPa", data.pressure);
+		sprintf(ui_tempBuf,"%d C", data.temperature);
+	}
+	else
+	{
+		sprintf(ui_humidityBuf, "Humidity: -- %s", "%");
+		sprintf(ui_pressureBuf, "Pressure: --- hPa");
+		sprintf(ui_tempBuf,"--- C");
+	}
+	WidgetPaint((tWidget*)&ui_humidityCanvas);
+	WidgetPaint((tWidget*)&ui_pressureCanvas);
+	WidgetPaint((tWidget*)&ui_tempCanvas);
 
-	sprintf(ui_humidityBuf, "Humidity: %d %s", data.humidity, "%");
-	sprintf(ui_pressureBuf, "Pressure: %d hPa", data.pressure);
-	sprintf(ui_tempBuf,"%d C", data.temperature);
-	WidgetPaint(WIDGET_ROOT);
+	if(data.current_time >data.sunrise_time && data.current_time < data.sunset_time) //day
+	{
+		GrTransparentImageDraw(&m_drawing_context, img_sun, 185, 80, 0);
+	}
+	else //night
+	{
+		GrTransparentImageDraw(&m_drawing_context, img_moon, 185, 80, 0);
+	}
+	// convert codes weather conditions codes to images as described at:
+	// https://openweathermap.org/weather-conditions
+	for (size_t i = 0; i < 3; ++i)
+	{
+		if (data.weather_cond_code[i] == -1)
+		{
+			continue;
+		}
+		//thunder storm
+		if (data.weather_cond_code[i] >= 200 && data.weather_cond_code[i] < 300)
+		{
+			GrTransparentImageDraw(&m_drawing_context, img_thunderStorm, 185, 80, 0);
+		}
+		//rain
+		else if ((data.weather_cond_code[i] >= 300 && data.weather_cond_code[i] < 400) &&
+				(data.weather_cond_code[i] >= 500 && data.weather_cond_code[i] < 500))
+		{
+			GrTransparentImageDraw(&m_drawing_context, img_rain, 185, 80, 0);
+		}
+		//snow
+		else if (data.weather_cond_code[i] >= 600 && data.weather_cond_code[i] < 700)
+		{
+			GrTransparentImageDraw(&m_drawing_context, img_snow, 185, 80, 0);
+		}
+		//clouds
+		else if (data.weather_cond_code[i] >= 700 && data.weather_cond_code[i] < 1000)
+		{
+			GrTransparentImageDraw(&m_drawing_context, img_cloudy, 185, 80, 0);
+		}
+	}
 }
 
 
@@ -940,8 +972,8 @@ int main(void)
 	configInit();
 
 	//Wifi client init
-	wifiInit(m_app_ctx.eeprom_params.wifi_config[m_app_ctx.flash_params.currentWifiConfig].ap_ssid,
-			 m_app_ctx.eeprom_params.wifi_config[m_app_ctx.flash_params.currentWifiConfig].ap_wpa2_pass);
+	wifiInit(m_app_ctx.eeprom_params.wifi_config.ap_ssid,
+			 m_app_ctx.eeprom_params.wifi_config.ap_wpa2_pass);
 
 	//UI
     GrContextInit(&m_drawing_context, &g_ILI9320);
@@ -959,19 +991,19 @@ int main(void)
 	//do touch screen calibration if needed
 	setTouchScreenCalibration();
 
-	//Enable all interrupts
-	ENABLE_ALL_INTERRUPTS();
-
 	// Enable the SysTick and its Interrupt.
 	SysTickPeriodSet(SysCtlClockGet()); //1 [s];
 	SysTickIntEnable();
 	SysTickEnable();
 
-	while (1) {
+	//Enable all interrupts
+	ENABLE_ALL_INTERRUPTS();
+
+	while (1)
+	{
 
         handleMovement();
-        // Process any messages in the widget message queue.
-        WidgetMessageQueueProcess();
+
 #if 0 //paint all places where finger touched
 		if(!ADS7843getIntPinState()) //if touch panel is being touched
 		{
@@ -986,21 +1018,21 @@ int main(void)
 #endif
 		if (m_get_new_temp_data)
 		{
-			if(m_app_ctx.current_screen == SCREEN_MAIN)
+			if (m_app_ctx.flash_params.connectionSetupState.wifiEnabled)
 			{
-				if (m_app_ctx.flash_params.connectionSetupState.wifiEnabled)
+				if (wifiCheckApConnectionStatus())
 				{
-					if (wifiCheckApConnectionStatus())
-					{
-						updateWifiConnectionStatus(wifiGetConnectionStatus());
-					}
+					updateWifiConnectionStatus(wifiGetConnectionStatus());
+				}
+				if(m_app_ctx.current_screen == SCREEN_MAIN)
+				{
 					if (wifiGetCurrentWeather(m_app_ctx.eeprom_params.city_names[m_app_ctx.flash_params.currentCity]))
 					{
-						updateWeatherUi(wifiGetWeatherResultData());
+						updateWifiWeatherUi(wifiGetWeatherResultData(), true);
 					}
 					else
 					{
-
+						updateWifiWeatherUi(wifiGetWeatherResultData(), false);
 					}
 				}
 			}
@@ -1028,6 +1060,9 @@ int main(void)
 			touch_screen_pressed_time = 0;
 		}
 		debugCommandReceived();
+
+        // Process any messages in the widget message queue.
+        WidgetMessageQueueProcess();
 	}
 
 }

@@ -37,7 +37,11 @@ bool wifiInit(const char* ssid, const char* pass)
 {
 	//ESP8266
 	esp8266Init();
-	if(!ssid || !pass || !esp8266CommandAT())
+	if (!ssid || !pass || strcmp(ssid, "default") == 0 || strcmp(pass, "default") == 0)
+	{
+		return false;
+	}
+	if (!esp8266CommandAT())
 	{
 		return false;
 	}
@@ -49,7 +53,7 @@ bool wifiInit(const char* ssid, const char* pass)
 
 void wifiSetApParameters(const char* ssid, const char* pass)
 {
-	if(!ssid || !pass)
+	if (!ssid || !pass)
 	{
 		return;
 	}
@@ -201,6 +205,11 @@ static bool wifi_parse_weather_response(const uint8_t* resp_buf, uint16_t buf_le
     		len = len*10 + ch - '0';
     	}
     }
+
+    //reset last results
+    memset(&m_last_result, -1, sizeof(WifiWeatherDataModel));
+
+    //create no more than 50 fields expected
     json_t pool[50];
     json_t const* parent = json_create(&p[shift], pool, sizeof pool / sizeof *pool );
     if (!parent)
@@ -245,6 +254,7 @@ static bool wifi_parse_weather_response(const uint8_t* resp_buf, uint16_t buf_le
         	m_last_result.humidity = (int)json_getInteger(humidity);
         }
     }
+
     //wind
     json_t const* wind = json_getProperty(parent, "wind");
     if (!wind || JSON_OBJ != json_getType(wind))
@@ -271,6 +281,46 @@ static bool wifi_parse_weather_response(const uint8_t* resp_buf, uint16_t buf_le
         else
         {
         	m_last_result.wind_direction = (int)json_getInteger(deg);
+        }
+    }
+
+    //current time
+    json_t const* current_time = json_getProperty(parent, "dt");
+    if (!current_time || JSON_INTEGER != json_getType(current_time))
+    {
+    	goto FAIL;
+    }
+    else
+    {
+    	m_last_result.current_time = (unsigned int)json_getInteger(current_time);
+    }
+
+    //sunrise/sunset times
+    json_t const* sys = json_getProperty(parent, "sys");
+    if (!sys || JSON_OBJ != json_getType(sys))
+    {
+    	goto FAIL;
+    }
+    else
+    {
+        json_t const* sunrise_time = json_getProperty(sys, "sunrise");
+        if ( !sunrise_time || JSON_INTEGER != json_getType(sunrise_time))
+        {
+        	goto FAIL;
+        }
+        else
+        {
+        	m_last_result.sunrise_time = (unsigned int)json_getInteger(sunrise_time);
+        }
+
+        json_t const* sunset_time = json_getProperty(sys, "sunset");
+        if ( !sunset_time || JSON_INTEGER != json_getType(sunset_time))
+        {
+        	goto FAIL;
+        }
+        else
+        {
+        	m_last_result.sunset_time = (unsigned int)json_getInteger(sunset_time);
         }
     }
 

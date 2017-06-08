@@ -39,7 +39,6 @@ typedef struct
 {
 	ConectionSetupState connectionSetupState;
 	uint8_t currentCity;
-	uint8_t currentWifiConfig;
 	uint8_t params_version;
 	uint8_t is_modified;
 }ConfigFlashParameters;
@@ -49,8 +48,9 @@ void configFlashLoadFactory(void);
 void configFlashLoad(void);
 void configFlashSaveDefaults(void);
 void configFlashSave(void);
-bool configFlashCheckAndCleanModified(ConfigFlashParameters * const ptr);
 void configFlashSetModified(ConfigFlashParameters* const ptr);
+bool configFlashCheckAndCleanModified(ConfigFlashParameters * const ptr);
+bool configFlashSetInvalid(ConfigFlashParameters* const ptr);
 bool configFlashIsInvalid(const ConfigFlashParameters * const ptr);
 ConfigFlashParameters* const configFlashGetDefaultSettings(void);
 ConfigFlashParameters* configFlashGetCurrent(void);
@@ -60,7 +60,6 @@ ConfigFlashParameters* configFlashGetCurrent(void);
 ////////////////////////////////////////////////////////////////////////
 #define MAX_CITIES 3
 #define CONFIG_MAX_PARAM_NAME_LENGTH 20
-#define MAX_WIFI_CONFIGS 2
 
 #define  EEPROM_START_ADDRESS 0x0000
 
@@ -79,9 +78,8 @@ typedef struct
 typedef struct
 {
 	TouchScreenConfigParameters touch_screen_params;
-	AccessPointConfigParameters wifi_config[MAX_WIFI_CONFIGS];
+	AccessPointConfigParameters wifi_config;
 	char city_names[MAX_CITIES][CONFIG_MAX_PARAM_NAME_LENGTH];
-	char openweather_domain[CONFIG_MAX_PARAM_NAME_LENGTH + CONFIG_MAX_PARAM_NAME_LENGTH];
 	uint8_t update_wifi_period_time;  /*Time after which request to OpenWeatherMap is sent in seconds*/
 	uint8_t update_sensor_period_time;/*Time after which request to Sensor is sent in seconds*/
 	uint8_t params_version; 		   /* First Time the value will be 0x00 -invalid, 0x01-defaults, 0x02 - updated */
@@ -97,8 +95,9 @@ void configEepromLoad(void);
 bool configEepromInit(void);
 bool configEepromSaveDefaults(void);
 bool configEepromSave(void);
-bool configEepromCheckAndCleanModified(ConfigEepromParameters * const ptr);
 void configEepromSetModified(ConfigEepromParameters* const ptr);
+bool configEepromCheckAndCleanModified(ConfigEepromParameters * const ptr);
+bool configEepromSetInvalid(ConfigEepromParameters * const ptr);
 bool configEepromIsInvalid(const ConfigEepromParameters * const ptr);
 ConfigEepromParameters* const configEepromGetDefaultSettings(void);
 ConfigEepromParameters* configEepromGetCurrent(void);

@@ -31,7 +31,6 @@ static const ConfigFlashParameters default_flash_settings =
 		0x00	// sensorConnectionState - SENSOR_NOT_CONNECTED
 	},
 	0x00, // currentCity
-	0x00, // current_wifi_config
 	0x01, // params_version
 	0x00  // is_modified
 };
@@ -87,6 +86,11 @@ void configFlashSave(void)
 	FlashPBSave((uint8_t*)&m_current_flash_parameters);
 }
 
+void configFlashSetModified(ConfigFlashParameters* const ptr)
+{
+	ptr->is_modified = 0x01;
+}
+
 bool configFlashCheckAndCleanModified(ConfigFlashParameters * const ptr)
 {
 	if(ptr && ptr->is_modified == 0x01)
@@ -97,9 +101,14 @@ bool configFlashCheckAndCleanModified(ConfigFlashParameters * const ptr)
 	return false;
 }
 
-void configFlashSetModified(ConfigFlashParameters* const ptr)
+bool configFlashSetInvalid(ConfigFlashParameters* const ptr)
 {
-	ptr->is_modified = 0x01;
+	if(!ptr)
+	{
+		return false;
+	}
+	ptr->params_version = 0xFF;
+	return true;
 }
 
 bool configFlashIsInvalid(const ConfigFlashParameters * const ptr)
@@ -127,18 +136,13 @@ static const ConfigEepromParameters default_eeprom_settings =
 				{0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f},	// calibCoeffs
 				0x00,  									// isValid
 		},
-		.wifi_config[0] = {
+		.wifi_config = {
 				{"default"}, 							// apSSID
-				{"defaultPass"},						// is_modified
-		},
-		.wifi_config[1] = {
-				{"default"},
-				{"defaultPass"},
+				{"default"},						    // apPass
 		},
 		{
 				{"city"}, {"city"}, {"city"}			// cityNames
 		},
-		.openweather_domain = {"https://api.openweathermap.org/"},
 		60,												// updateWifiPeriodTime
 		60,												// updateSensorPeriodTime
 		0x01, 											// params_version 0x00 and 0xFF means invalid one
@@ -173,6 +177,11 @@ bool configEepromSave(void)
 	return 0 == EEPROMProgram((uint8_t*)&m_current_eeprom_parameters, EEPROM_START_ADDRESS, sizeof(ConfigEepromParameters));
 }
 
+void configEepromSetModified(ConfigEepromParameters* const ptr)
+{
+	ptr->is_modified = 0x01;
+}
+
 bool configEepromCheckAndCleanModified(ConfigEepromParameters * const ptr)
 {
 	if(ptr && ptr->is_modified == 0x01)
@@ -183,9 +192,14 @@ bool configEepromCheckAndCleanModified(ConfigEepromParameters * const ptr)
 	return false;
 }
 
-void configEepromSetModified(ConfigEepromParameters* const ptr)
+bool configEepromSetInvalid(ConfigEepromParameters * const ptr)
 {
-	ptr->is_modified = 0x01;
+	if(!ptr)
+	{
+		return false;
+	}
+	ptr->params_version = 0xFF;
+	return true;
 }
 
 bool configEepromIsInvalid(const ConfigEepromParameters * const ptr)

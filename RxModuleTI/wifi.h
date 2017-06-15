@@ -9,6 +9,7 @@
 #define WIFI_H_
 
 #include <stdbool.h>
+#include "time_lib.h"
 
 typedef enum
 {
@@ -46,13 +47,17 @@ bool wifiConnectToAp();
 
 bool wifiDisconnectFromAp();
 
-bool wifiGetCurrentWeather(const char* city);
+bool wifiFetchCurrentWeather(const char* city);
+
+bool wifiFetchCurrentNtpTime();
 
 bool wifiCheckApConnectionStatus();
 
 WifiConnectionState wifiGetConnectionStatus();
 
 WifiWeatherDataModel wifiGetWeatherResultData();
+
+timeData_t wifiGetTimeResultData();
 
 const char* wifiSsidParam();
 const char* wifiPassParam();

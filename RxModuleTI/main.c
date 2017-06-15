@@ -1028,7 +1028,7 @@ int main(void)
 
 	//Enable all interrupts
 	ENABLE_ALL_INTERRUPTS();
-
+	m_app_ctx.flash_params.connectionSetupState.wifiEnabled = true; //FOR DEBUG
 	while (1)
 	{
 
@@ -1065,7 +1065,7 @@ int main(void)
 				}
 				if(m_app_ctx.current_screen == SCREEN_MAIN)
 				{
-					if (wifiGetCurrentWeather(m_app_ctx.eeprom_params.city_names[m_app_ctx.flash_params.currentCity]))
+					if (!wifiFetchCurrentWeather(m_app_ctx.eeprom_params.city_names[m_app_ctx.flash_params.currentCity]))
 					{
 						MAIN_DEBUG("wifiGetCurrentWeather failed\n\r");
 					}
@@ -1073,6 +1073,14 @@ int main(void)
 					{
 						MAIN_DEBUG("wifiGetCurrentWeather succeed\n\r");
 					}
+				}
+				if (!wifiFetchCurrentNtpTime())
+				{
+					MAIN_DEBUG("wifiFetchCurrentNtpTime failed\n\r");
+				}
+				else
+				{
+					MAIN_DEBUG("NtpTime: %d\n\r", wifiGetTimeResultData());
 				}
 			}
 			ui_updateScreen();

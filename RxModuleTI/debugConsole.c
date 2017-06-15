@@ -295,13 +295,48 @@ static bool debugCommandDispatcherESP8266(const char* cmdAttrs, int cmdAttrsLen)
 	{
 		if(tokensNum == 2)
 		{
-			if(esp8266CommandCIPSTART(tokens[1]))
+
+			if(esp8266CommandCIPSTART(ESP8266_PROTOCOL_TCP, tokens[2], 80))
 			{
 				debugConsolePrintf("esp8266CommandCIPSTART %s success \n\r", tokens[1]);
 			}
 			else
 			{
 				debugConsolePrintf("esp8266CommandCIPSTART %s fail \n\r", tokens[1]);
+			}
+		}
+		else if(tokensNum == 3)
+		{
+			Esp8266Protocol proto = ESP8266_PROTOCOL_TCP;
+			if(strcmp(tokens[1], "UDP") == 0)
+			{
+				proto = ESP8266_PROTOCOL_UDP;
+			}
+			if(esp8266CommandCIPSTART(proto, tokens[2], 80))
+			{
+				debugConsolePrintf("esp8266CommandCIPSTART %s %s success \n\r", tokens[1], tokens[2]);
+			}
+			else
+			{
+				debugConsolePrintf("esp8266CommandCIPSTART %s %sfail \n\r", tokens[1], tokens[2]);
+			}
+		}
+		else if(tokensNum == 4)
+		{
+			Esp8266Protocol proto = ESP8266_PROTOCOL_TCP;
+			if(strcmp(tokens[1], "UDP") == 0)
+			{
+				proto = ESP8266_PROTOCOL_UDP;
+			}
+			uint16_t portNum = (uint16_t)atoi(tokens[3]);
+
+			if(esp8266CommandCIPSTART(proto, tokens[2], portNum))
+			{
+				debugConsolePrintf("esp8266CommandCIPSTART %s %s success \n\r", tokens[1], tokens[2]);
+			}
+			else
+			{
+				debugConsolePrintf("esp8266CommandCIPSTART %s %sfail \n\r", tokens[1], tokens[2]);
 			}
 		}
 	}
@@ -322,7 +357,7 @@ static bool debugCommandDispatcherESP8266(const char* cmdAttrs, int cmdAttrsLen)
 	{
 		if(tokensNum == 2)
 		{
-			if(esp8266CommandCIPSEND(tokens[1]))
+			if(esp8266CommandCIPSEND(tokens[1], 0))
 			{
 				debugConsolePrintf("esp8266CommandCIPSEND %s success \n\r", tokens[1]);
 			}

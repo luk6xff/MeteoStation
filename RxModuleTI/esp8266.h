@@ -26,6 +26,14 @@ typedef enum
 }Esp8266WifiMode;
 
 
+typedef enum
+{
+	ESP8266_PROTOCOL_TCP = 0,
+	ESP8266_PROTOCOL_UDP = 1,
+	ESP8266_PROTOCOL_NUM
+}Esp8266Protocol;
+
+
 void esp8266Init();
 
 
@@ -125,10 +133,12 @@ bool esp8266CommandCIPSTATUS(void);
 
 //
 //@brief make TCP connection
+//@param  proto - protocol type TCP or UDP supported
 //@param  ipAddr - IP address or webpage addr as a string
+//@param  portNum - Number of TCP/UDP port
 //@return false-failed, true-success
 //
-bool esp8266CommandCIPSTART(const char* ipAddr);
+bool esp8266CommandCIPSTART(Esp8266Protocol proto, const char* ipAddr, uint16_t portNum);
 
 
 //
@@ -141,8 +151,9 @@ bool esp8266CommandCIPCLOSE();
 //
 //@brief send a TCP packet to the connected server
 //@param  packet - data packet
+//@param  packetLen - data packet len, if 0 - length will be computed by strlen
 //@return false-failed, true-success
 //
-bool esp8266CommandCIPSEND(const char* packet);
+bool esp8266CommandCIPSEND(const char* packet, uint16_t packetLen);
 
 #endif /* ESP8266_H_ */

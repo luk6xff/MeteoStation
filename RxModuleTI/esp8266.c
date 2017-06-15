@@ -45,7 +45,7 @@
 
 //Function prototypes
 static bool esp8266WaitForResponse(const char* resp, uint16_t msTimeout);
-static void esp8266UartSend(const char* dataBuffer);
+static void esp8266UartSend(const char* dataBuffer, const uint16_t dataBufferLen);
 static void esp8266SendATCommand(const char* cmd);
 
 //data types
@@ -221,13 +221,25 @@ static bool esp8266WaitForResponse(const char* resp, uint16_t msTimeout)
 // Send a string to the UART.
 //
 //*****************************************************************************
-static void esp8266UartSend(const char* dataBuffer)
+static void esp8266UartSend(const char* dataBuffer, const uint16_t dataBufferLen)
 {
 
 	while (UARTBusy(UART5_BASE));
-	while (*dataBuffer != '\0')
+	uint16_t dataLen = dataBufferLen;
+	if (dataLen == 0)
 	{
-		UARTCharPut(UART5_BASE, *dataBuffer++);
+		while (*dataBuffer != '\0')
+		{
+			UARTCharPut(UART5_BASE, *dataBuffer++);
+		}
+	}
+	else
+	{
+		while (dataLen > 0)
+		{
+			UARTCharPut(UART5_BASE, *dataBuffer++);
+			dataLen--;
+		}
 	}
 }
 
@@ -235,8 +247,8 @@ static void esp8266SendATCommand(const char* cmd)
 {
 	DISABLE_ALL_INTERRUPTS();
 	esp8266ResetUartRxBuffer();
-	esp8266UartSend(cmd);
-	esp8266UartSend((const char*)"\r\n"); //CR LF
+	esp8266UartSend(cmd, 0);
+	esp8266UartSend((const char*)"\r\n", 0); //CR LF
 	ENABLE_ALL_INTERRUPTS();
 }
 
@@ -340,10 +352,25 @@ bool esp8266CommandCIPSTATUS(void)
 }
 
 
-bool esp8266CommandCIPSTART(const char* ipAddr)
+bool esp8266CommandCIPSTART(Esp8266Protocol proto, const char* ipAddr, uint16_t portNum)
 {
+	if (proto >= ESP8266_PROTOCOL_NUM)
+	{
+		return false;
+	}
+	char protocol[4] = {'\0'};
+	switch (proto)
+	{
+		case ESP8266_PROTOCOL_UDP:
+			memcpy(protocol, "UDP", 3);
+			break;
+		case ESP8266_PROTOCOL_TCP:
+		default:
+			memcpy(protocol, "TCP", 3);
+			break;
+	}
 	esp8266ResetUartTxBuffer();
-	sprintf((char*)txBuffer, "AT+CIPSTART=\"TCP\",\"%s\",80", ipAddr);
+	sprintf((char*)txBuffer, "AT+CIPSTART=\"%s\",\"%s\",%d",protocol, ipAddr, portNum);
 	esp8266SendATCommand((char*)txBuffer);
 	return esp8266WaitForResponse("OK", 8000);
 }
@@ -356,16 +383,23 @@ bool esp8266CommandCIPCLOSE()
 }
 
 
-bool esp8266CommandCIPSEND(const char* packet)
+bool esp8266CommandCIPSEND(const char* packet, uint16_t packetLen)
 {
 	esp8266ResetUartTxBuffer();
-	sprintf((char*)txBuffer, "AT+CIPSEND=%d", strlen(packet)+2);
+	if (packetLen == 0)
+	{
+		sprintf((char*)txBuffer, "AT+CIPSEND=%d", strlen(packet));
+	}
+	else
+	{
+		sprintf((char*)txBuffer, "AT+CIPSEND=%d", packetLen);
+	}
 	esp8266SendATCommand((char*)txBuffer);
 	if(!esp8266WaitForResponse(">", 4000))
 	{
 		return false;
 	}
-	esp8266SendATCommand(packet);
+	esp8266UartSend(packet, packetLen);
 	return esp8266WaitForResponse("+IPD", 4000);
 }
 

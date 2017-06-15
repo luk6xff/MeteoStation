@@ -16,9 +16,15 @@
 #define AP_PARAMS_MAX_LENGTH CONFIG_MAX_PARAM_NAME_LENGTH
 
 
-const char* openweather_server_name = "api.openweathermap.org";
-const char* openweather_forecast_url = "/data/2.5/forecast?units=metric";
-const char* openweather_weather_url = "/data/2.5/weather?units=metric";
+static const char* openweather_server_name = "api.openweathermap.org";
+static const uint16_t openweather_server_port = 80;
+static const char* openweather_forecast_url = "/data/2.5/forecast?units=metric";
+static const char* openweather_weather_url = "/data/2.5/weather?units=metric";
+static const char* openweather_weather_api_key = "e95bbbe9f7314ea2a5ca1f60ee138eef";
+
+static const char* ntp_servers_name[] = {"0.pool.ntp.org", "1.pool.ntp.org", "2.pool.ntp.org", "3.pool.ntp.org"};
+static const uint16_t ntp_server_port = 123;
+#define NTP_PACKET_SIZE  48 // NTP time is in the first 48 bytes of message
 
 
 static char wifi_ap_SSID_buf[AP_PARAMS_MAX_LENGTH];
@@ -30,13 +36,15 @@ static WifiWeatherDataModel m_last_result;
 //
 //forward declarations
 //
-static char* wifi_build_url(const char* request_url, const char* city, const char* openweather_api_key);
-static bool wifi_parse_weather_response(const uint8_t* resp_buf, uint16_t buf_len);
-static void wifi_set_result_invalid();
+static char* wifi_weather_build_url(const char* request_url, const char* city, const char* openweather_api_key);
+static bool wifi_weather_parse_response(const uint8_t* resp_buf, uint16_t buf_len);
+static void wifi_weather_set_result_invalid();
+static bool wifi_ntp_parse_response(const uint8_t* resp_buf, uint16_t buf_len);
+static char* wifi_ntp_build_url();
 
 bool wifiInit(const char* ssid, const char* pass)
 {
-	wifi_set_result_invalid();
+	wifi_weather_set_result_invalid();
 	//ESP8266
 	esp8266Init();
 	if (!ssid || !pass || strcmp(ssid, "default") == 0 || strcmp(pass, "default") == 0)
@@ -93,10 +101,10 @@ bool wifiDisconnectFromAp()
 	return false;
 }
 
-bool wifiGetCurrentWeather(const char* city)
+bool wifiFetchCurrentWeather(const char* city)
 {
-	wifi_set_result_invalid();
-	if(!m_current_state == WIFI_CONNECTED)
+	wifi_weather_set_result_invalid();
+	if (!m_current_state == WIFI_CONNECTED)
 	{
 		return false;
 	}
@@ -106,18 +114,47 @@ bool wifiGetCurrentWeather(const char* city)
 		return false;
 	}
 
-	if (!esp8266CommandCIPSTART(openweather_server_name))
+	esp8266CommandCIPCLOSE();
+
+	if (!esp8266CommandCIPSTART(ESP8266_PROTOCOL_TCP, openweather_server_name, openweather_server_port))
 	{
 		return false;
 	}
-	const char* url = wifi_build_url(openweather_weather_url, city, "e95bbbe9f7314ea2a5ca1f60ee138eef");
+	const char* url = wifi_weather_build_url(openweather_weather_url, city, openweather_weather_api_key);
 
-	if (!esp8266CommandCIPSEND(url))
+	if (!esp8266CommandCIPSEND(url, 0))
 	{
 		return false;
 	}
 	delay_ms(100); //to finish download
-	return wifi_parse_weather_response(esp8266GetRxBuffer(), ESP8266_RX_BUF_SIZE);
+	return wifi_weather_parse_response(esp8266GetRxBuffer(), ESP8266_RX_BUF_SIZE);
+}
+
+bool wifiFetchCurrentNtpTime()
+{
+	if (!m_current_state == WIFI_CONNECTED)
+	{
+		return false;
+	}
+
+	if (!esp8266CommandAT())
+	{
+		return false;
+	}
+
+	esp8266CommandCIPCLOSE();
+
+	if (!esp8266CommandCIPSTART(ESP8266_PROTOCOL_UDP, ntp_servers_name[0], ntp_server_port))
+	{
+		return false;
+	}
+
+	if (!esp8266CommandCIPSEND(wifi_ntp_build_url(), NTP_PACKET_SIZE))
+	{
+		return false;
+	}
+	delay_ms(100); //just wait a short while
+	return wifi_ntp_parse_response(esp8266GetRxBuffer(), ESP8266_RX_BUF_SIZE);
 }
 
 WifiConnectionState wifiGetConnectionStatus()
@@ -128,6 +165,11 @@ WifiConnectionState wifiGetConnectionStatus()
 WifiWeatherDataModel wifiGetWeatherResultData()
 {
 	return m_last_result;
+}
+
+timeData_t wifiGetTimeResultData()
+{
+	return timeNow();
 }
 
 const char* wifiSsidParam()
@@ -183,9 +225,10 @@ bool wifiCheckApConnectionStatus()
     return true;
 }
 
-
-///private helpers///
-static bool wifi_parse_weather_response(const uint8_t* resp_buf, uint16_t buf_len)
+//
+//private helpers
+//
+static bool wifi_weather_parse_response(const uint8_t* resp_buf, uint16_t buf_len)
 {
 	if (!resp_buf)
 	{
@@ -368,7 +411,7 @@ FAIL:
 }
 
 
-static char* wifi_build_url(const char* request_url, const char* city, const char* openweather_api_key)
+static char* wifi_weather_build_url(const char* request_url, const char* city, const char* openweather_api_key)
 {
 	//"GET /data/2.5/weather?q=NowySacz&appid=e95bbbe9f7314ea2a5ca1f60ee138eef\r\n"
 	static char request_buffer[256];
@@ -388,12 +431,86 @@ static char* wifi_build_url(const char* request_url, const char* city, const cha
 	memcpy(&request_buffer[len], "&appid=", 7);
 	len += 7;
 	memcpy(&request_buffer[len], openweather_api_key, klen);
+	len += klen;
+	memcpy(&request_buffer[len], "\r\n", 2);
 	return request_buffer;
 }
 
-static void wifi_set_result_invalid()
+static void wifi_weather_set_result_invalid()
 {
     //reset last results
     memset(&m_last_result, -1, sizeof(WifiWeatherDataModel));
 }
 
+static char* wifi_ntp_build_url()
+{
+	static char request_buffer[NTP_PACKET_SIZE];
+	memset(request_buffer, '\0', sizeof(request_buffer));
+	// Initialize values needed to form NTP request
+	// (see https://tools.ietf.org/html/rfc5905 above for details on the packets)
+	request_buffer[0] = 0xE3;   // LI, Version, Mode
+	request_buffer[1] = 0;     // Stratum, or type of clock
+	request_buffer[2] = 6;     // Polling Interval
+	request_buffer[3] = 0xEC;  // Peer Clock Precision
+	// 8 bytes of zero for Root Delay & Root Dispersion
+	request_buffer[12] = 49;
+	request_buffer[13] = 0x4E;
+	request_buffer[14] = 49;
+	request_buffer[15] = 52;
+
+	return request_buffer;
+}
+
+static bool wifi_ntp_parse_response(const uint8_t* resp_buf, uint16_t buf_len)
+{
+	if (!resp_buf)
+	{
+    	goto FAIL;
+	}
+	const char* pattern = "+IPD,";
+	const uint8_t * const p = strstr(resp_buf, pattern);
+    if (!p)
+    {
+    	goto FAIL;
+    }
+    uint16_t len = 0;
+    uint8_t ch = '\0';
+    size_t shift;
+    size_t pattern_idx = 0;
+    for (shift = 0; shift < buf_len && ch != ':'; ++shift )
+    {
+    	ch = p[shift];
+    	if (ch == pattern[pattern_idx])
+    	{
+    		pattern_idx++;
+    	}
+    	else
+    	{
+    		if (pattern_idx < 5)
+    		{
+    			pattern_idx = 0;
+    		}
+    		else if (pattern_idx == 5 && ch != ':') // 5 as a strlen of pattern = "+IPD,"
+    		{
+        		len = len*10 + ch - '0';
+    		}
+    	}
+    }
+    if (len != NTP_PACKET_SIZE)
+    {
+    	goto FAIL;
+    }
+
+    uint64_t secs_since_1900 = 0;
+    const uint32_t TIME_DIFF_1900_TO_1970 = 2208988800;
+    secs_since_1900 |= (uint64_t)p[shift + 40] << 24;
+    secs_since_1900 |= (uint64_t)p[shift + 41] << 16;
+    secs_since_1900 |= (uint64_t)p[shift + 42] << 8;
+    secs_since_1900 |= (uint64_t)p[shift + 43];
+
+    setTimeNow(secs_since_1900 - TIME_DIFF_1900_TO_1970);
+	return true;
+
+FAIL:
+	return false;
+}

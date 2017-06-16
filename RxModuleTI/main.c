@@ -197,6 +197,8 @@ static void onPassEntry(tWidget *psWidget);
 static void onUpdateTimeEntry(tWidget *psWidget);
 static void onParameterEdited(const Screens prevWidget, bool save);
 static int32_t touchScreenCallback(uint32_t msg, int32_t x, int32_t y);
+static void ui_updateScreen();
+static void ui_updateClock();
 
 //*****************************************************************************
 //
@@ -316,7 +318,7 @@ static bool setTouchScreenCalibration()
 // Main page widgets
 static char ui_timeBuf[30];
 Canvas(ui_timeCanvas, &ui_screenMainBackground, 0, 0,
-       &g_ILI9320, 20, 20, 280, 20,
+       &g_ILI9320, 20, 25, 280, 20,
        CANVAS_STYLE_FILL | CANVAS_STYLE_TEXT | CANVAS_STYLE_TEXT_HCENTER |
        CANVAS_STYLE_TEXT_TOP | CANVAS_STYLE_TEXT_OPAQUE, BG_COLOR_MAIN,
        ClrWhite, ClrWhite, g_psFontCmss20, ui_timeBuf, 0, 0);
@@ -678,7 +680,7 @@ static void onParameterEdited(const Screens prevWidget, bool save)
 
 //*****************************************************************************
 //
-// @brief Update screens with settings, data and other values
+// @brief Update UI screens with settings, data and other values
 //
 //*****************************************************************************
 static void ui_updateScreen()
@@ -687,15 +689,15 @@ static void ui_updateScreen()
     {
     	case SCREEN_MAIN:
     	{
+    		uiClearBackground(); //clear images
     		WifiWeatherDataModel data = wifiGetWeatherResultData();
     		if (data.is_valid == 0)
     		{
-
     			sprintf(ui_humidityBuf, "Humidity: %d %s", data.humidity, "%");
     			sprintf(ui_pressureBuf, "Pressure: %d hPa", data.pressure);
     			sprintf(ui_tempBuf,"%d C", data.temperature);
 
-    			if(data.current_time >data.sunrise_time && data.current_time < data.sunset_time) //day
+    			if(timeNow() > data.sunrise_time && timeNow() < data.sunset_time) //day
     			{
     				GrTransparentImageDraw(&m_drawing_context, img_sun, 185, 80, 0);
     			}
@@ -728,7 +730,8 @@ static void ui_updateScreen()
     					GrTransparentImageDraw(&m_drawing_context, img_snow, 185, 80, 0);
     				}
     				//clouds
-    				else if (data.weather_cond_code[i] >= 700 && data.weather_cond_code[i] < 1000)
+    				else if (data.weather_cond_code[i] >= 700 && data.weather_cond_code[i] < 1000 &&
+    						 data.weather_cond_code[i] != 800)
     				{
     					GrTransparentImageDraw(&m_drawing_context, img_cloudy, 185, 80, 0);
     				}
@@ -736,7 +739,6 @@ static void ui_updateScreen()
     		}
     		else
     		{
-        		WidgetPaint(WIDGET_ROOT); //clear images
     			sprintf(ui_humidityBuf, "Humidity: -- %s", "%");
     			sprintf(ui_pressureBuf, "Pressure: --- hPa");
     			sprintf(ui_tempBuf,"--- C");
@@ -744,6 +746,7 @@ static void ui_updateScreen()
     			GrContextForegroundSet(&m_drawing_context, ClrWhite);
     			GrStringDrawCentered(&m_drawing_context,"----", -1, 240, 150, true);
     		}
+    		ui_updateClock();
     		WidgetPaint((tWidget*)&ui_humidityCanvas);
     		WidgetPaint((tWidget*)&ui_pressureCanvas);
     		WidgetPaint((tWidget*)&ui_tempCanvas);
@@ -812,7 +815,15 @@ static void ui_updateScreen()
     	default:
     		break;
     }
+}
 
+static void ui_updateClock()
+{
+	if (m_app_ctx.current_screen == SCREEN_MAIN)
+	{
+		sprintf(ui_timeBuf, "%d-%02d-%02d  %02d:%02d", yearNow(), monthNow(), dayNow(), hourNow(), minuteNow());
+		WidgetPaint((tWidget*)&ui_timeCanvas);
+	}
 }
 
 //*****************************************************************************
@@ -1001,10 +1012,6 @@ int main(void)
 	//Read Configuration
 	configInit();
 
-	//Wifi client init
-	wifiInit(m_app_ctx.eeprom_params.wifi_config.ap_ssid,
-			 m_app_ctx.eeprom_params.wifi_config.ap_wpa2_pass);
-
 	//UI
     GrContextInit(&m_drawing_context, &g_ILI9320);
     uiInit(&m_drawing_context);
@@ -1012,6 +1019,7 @@ int main(void)
     WidgetAdd(WIDGET_ROOT, m_screens[m_app_ctx.current_screen].widget);
     WidgetPaint(WIDGET_ROOT);
     ui_updateScreen();
+    uiDrawInitInfo();
 
 	//touchScreenControler
 	touchScreenInit();
@@ -1023,13 +1031,25 @@ int main(void)
 	setTouchScreenCalibration();
 
 	// Enable the SysTick and its Interrupt.
-	SysTickPeriodSet(SysCtlClockGet()); //1 [s];
+	SysTickPeriodSet(SysCtlClockGet()); //0.2[s];
 	SysTickIntEnable();
 	SysTickEnable();
 
 	//Enable all interrupts
 	ENABLE_ALL_INTERRUPTS();
-	m_app_ctx.flash_params.connectionSetupState.wifiEnabled = true; //FOR DEBUG
+
+	m_app_ctx.flash_params.connectionSetupState.wifiEnabled = true; //FOR DEBUG TODO
+	//Wifi client init
+	wifiInit(m_app_ctx.eeprom_params.wifi_config.ap_ssid,
+			 m_app_ctx.eeprom_params.wifi_config.ap_wpa2_pass);
+	wifiCheckApConnectionStatus();
+	if (m_app_ctx.flash_params.connectionSetupState.wifiEnabled)
+	{
+		wifiConnectToAp(); //try to connect
+	}
+	//time module initialization
+	timeInit(wifiFetchCurrentNtpTime, ui_updateClock);
+
 	while (1)
 	{
 
@@ -1064,25 +1084,12 @@ int main(void)
 						}
 					}
 				}
-				if(m_app_ctx.current_screen == SCREEN_MAIN)
+				if (m_app_ctx.current_screen == SCREEN_MAIN)
 				{
 					if (!wifiFetchCurrentWeather(m_app_ctx.eeprom_params.city_names[m_app_ctx.flash_params.currentCity]))
 					{
 						MAIN_DEBUG("wifiGetCurrentWeather failed\n\r");
 					}
-					else
-					{
-						MAIN_DEBUG("wifiGetCurrentWeather succeed\n\r");
-					}
-				}
-				if (!wifiFetchCurrentNtpTime())
-				{
-					MAIN_DEBUG("wifiFetchCurrentNtpTime failed\n\r");
-				}
-				else
-				{
-	    			sprintf(ui_timeBuf, "%d-%d-%d %d:%d:%d", yearNow(), monthNow(), dayNow(), hourNow(), minuteNow(), secondNow());
-	    			WidgetPaint((tWidget*)&ui_timeCanvas);
 				}
 			}
 			ui_updateScreen();

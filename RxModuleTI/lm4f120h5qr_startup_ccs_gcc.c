@@ -64,6 +64,7 @@ extern void TouchScreenTimer0AIntHandler(void);
 extern void Esp8266Timer1AIntHandler(void);
 extern void UiTimer2AIntHandler(void);
 extern void UARTStdioIntHandler(void);
+extern void TimeTimer3AIntHandler(void);
 //*****************************************************************************
 //
 // The vector table.  Note that the proper constructs must be placed on this to
@@ -126,7 +127,7 @@ void (* const g_pfnVectors[])(void) =
     IntDefaultHandler,                      // GPIO Port H
     IntDefaultHandler,                      // UART2 Rx and Tx
     IntDefaultHandler,                      // SSI1 Rx and Tx
-    IntDefaultHandler,                      // Timer 3 subtimer A
+	TimeTimer3AIntHandler,                      // Timer 3 subtimer A
     IntDefaultHandler,                      // Timer 3 subtimer B
     IntDefaultHandler,                      // I2C1 Master and Slave
     IntDefaultHandler,                      // Quadrature Encoder 1

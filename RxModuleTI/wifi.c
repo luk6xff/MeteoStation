@@ -40,7 +40,7 @@ static WifiWeatherDataModel m_last_result;
 static char* wifi_weather_build_url(const char* request_url, const char* city, const char* openweather_api_key);
 static bool wifi_weather_parse_response(const uint8_t* resp_buf, uint16_t buf_len);
 static void wifi_weather_set_result_invalid();
-static bool wifi_ntp_parse_response(const uint8_t* resp_buf, uint16_t buf_len);
+static bool wifi_ntp_parse_response(const uint8_t* resp_buf, uint16_t buf_len, timeData_t* time);
 static char* wifi_ntp_build_url();
 
 bool wifiInit(const char* ssid, const char* pass)
@@ -76,6 +76,11 @@ void wifiSetApParameters(const char* ssid, const char* pass)
 
 bool wifiConnectToAp()
 {
+	if (m_current_state == WIFI_CONNECTED)
+	{
+		return true;
+	}
+
 	if (!esp8266CommandRST())
 	{
 		return false;
@@ -131,10 +136,10 @@ bool wifiFetchCurrentWeather(const char* city)
 	return wifi_weather_parse_response(esp8266GetRxBuffer(), ESP8266_RX_BUF_SIZE);
 }
 
-bool wifiFetchCurrentNtpTime()
+timeData_t wifiFetchCurrentNtpTime()
 {
 
-
+	timeData_t timeRetrieved = 0;
 	if (!m_current_state == WIFI_CONNECTED)
 	{
 		goto fail;
@@ -159,15 +164,15 @@ bool wifiFetchCurrentNtpTime()
 
 	delay_ms(100); //just wait a short while
 
-	if (!wifi_ntp_parse_response(esp8266GetRxBuffer(), ESP8266_RX_BUF_SIZE))
+	if (!wifi_ntp_parse_response(esp8266GetRxBuffer(), ESP8266_RX_BUF_SIZE, &timeRetrieved))
 	{
 		goto fail;
 	}
-	return true;
+	return timeRetrieved;
 
 fail:
 	ntp_servers_name_idx = (ntp_servers_name_idx + 1) % sizeof(ntp_servers_name); //if sth does not work change ntp server for next check
-	return false;
+	return 0;
 }
 
 WifiConnectionState wifiGetConnectionStatus()
@@ -469,7 +474,7 @@ static char* wifi_ntp_build_url()
 	return ntp_request_buffer;
 }
 
-static bool wifi_ntp_parse_response(const uint8_t* resp_buf, uint16_t buf_len)
+static bool wifi_ntp_parse_response(const uint8_t* resp_buf, uint16_t buf_len, timeData_t* time)
 {
 	if (!resp_buf)
 	{
@@ -509,14 +514,14 @@ static bool wifi_ntp_parse_response(const uint8_t* resp_buf, uint16_t buf_len)
     	goto FAIL;
     }
 
-    uint32_t secs_since_1900 = 0;
+    timeData_t secs_since_1900 = 0;
     const uint32_t TIME_DIFF_1900_TO_1970 = 2208988800;
     secs_since_1900 |= (uint64_t)p[shift + 40] << 24;
     secs_since_1900 |= (uint64_t)p[shift + 41] << 16;
     secs_since_1900 |= (uint64_t)p[shift + 42] << 8;
     secs_since_1900 |= (uint64_t)p[shift + 43];
 
-    setTimeNow(secs_since_1900 - TIME_DIFF_1900_TO_1970); // convert NTP time to Unix time
+    *time = (secs_since_1900 - TIME_DIFF_1900_TO_1970); // convert NTP time to Unix time
 	return true;
 
 FAIL:

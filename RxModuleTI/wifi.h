@@ -49,7 +49,7 @@ bool wifiDisconnectFromAp();
 
 bool wifiFetchCurrentWeather(const char* city);
 
-bool wifiFetchCurrentNtpTime();
+timeData_t wifiFetchCurrentNtpTime();
 
 bool wifiCheckApConnectionStatus();
 

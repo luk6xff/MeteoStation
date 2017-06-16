@@ -16,8 +16,9 @@ extern "C" {
 
 
 #include "stdint.h"
+#include "stdbool.h"
 
-typedef uint32_t timeData_t;
+typedef uint64_t timeData_t;
 
 typedef enum {timeNotSet, timeNeedsSync, timeSet
 }  timeStatus_t ;
@@ -47,7 +48,7 @@ typedef struct  {
 #define  y2kYearToTm(Y)      ((Y) + 30)   
 
 typedef timeData_t(*getExternalTime)();
-
+typedef void(*updateUiTime)();
 
 /*==============================================================================*/
 /* Useful Constants */
@@ -104,11 +105,13 @@ int     month(timeData_t t);   // the month for the given time
 int     yearNow();             // the full four digit year: (2009, 2010 etc)
 int     year(timeData_t t); // the year for the given time
 
-timeData_t timeNow();              // return the current time as seconds since Jan 1 1970
-timeDataModel_t timeCurrentData(); // return whole time data;
+
 void    setTime(int hr,int min,int sec,int dy, int mnth, int yr);
 void    setTimeNow(timeData_t t);
-void    adjustTime(long adjustment);
+
+/* low level functions to convert to and from system time                     */
+void breakTime(timeData_t time, timeDataModel_t* tm);  // break timeData_t into elements
+timeData_t makeTime(timeDataModel_t* tm);  // convert time elements into timeData_t
 
 /* date strings */ 
 #define dt_MAX_STRING_LEN 9 // length of longest date string (excluding terminating null)
@@ -116,17 +119,16 @@ char* monthStr(uint8_t month);
 char* dayStr(uint8_t day);
 char* monthShortStr(uint8_t month);
 char* dayShortStr(uint8_t day);
-	
-/* time sync functions	*/
+
+
+/* public methods */
+timeStatus_t timeInit(getExternalTime getTimeFunction, updateUiTime updateUiTimeFunction);
 timeStatus_t timeStatus(); // indicates if time has been set and recently synchronized
-void    setSyncProvider( getExternalTime getTimeFunction); // identify the external time provider
-void    setSyncInterval(timeData_t interval); // set the number of seconds between re-sync
-
-/* low level functions to convert to and from system time                     */
-void breakTime(timeData_t time, timeDataModel_t* tm);  // break timeData_t into elements
-timeData_t makeTime(timeDataModel_t* tm);  // convert time elements into timeData_t
-
-/** @ } */
+timeData_t timeNow();              // return the current time as seconds since Jan 1 1970
+timeDataModel_t timeCurrentData(); // return whole time data;
+/* time sync functions	*/
+void timeSetSyncProvider(getExternalTime getTimeFunction); // identify the external time provider
+void timeSetSyncInterval(timeData_t interval); // set the number of seconds between re-sync
 
 #ifdef __cplusplus
 }

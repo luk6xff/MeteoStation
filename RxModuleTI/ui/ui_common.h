@@ -38,8 +38,9 @@
 
 
 void uiInit(tContext* mainDrawingContext);
-void uiClearBackground(tContext* drawing_ctx);
+void uiClearBackground();
 void uiFrameDraw(tContext* drawing_ctx, const char* app_name);
+void uiDrawInitInfo();
 tContext* uiGetMainDrawingContext();
 void uiDelay(uint32_t msDelay);
 uint32_t uiDelayCounterMsVal();

@@ -116,7 +116,7 @@ static void esp8266TimerInit()
     // Configure the Timer1A interrupt for timer timeout.
     TimerIntEnable(TIMER1_BASE, TIMER_TIMA_TIMEOUT);
 
-    // Enable the Timer0A interrupt on the processor (NVIC).
+    // Enable the Timer1A interrupt on the processor (NVIC).
     IntEnable(INT_TIMER1A);
 
     ms_counter = 0;
@@ -174,7 +174,6 @@ static bool esp8266SearchForResponseString(const char* resp)
 	uint16_t expectedLength = strlen(resp);
 	for(uint16_t i = 0; i<ESP8266_RX_BUF_SIZE && rxBuffer[i] != '\0' ; ++i)
 	{
-
 		if(rxBuffer[i] == *resp)
 		{
 			resp++;

@@ -119,7 +119,7 @@ void uiInit(tContext* mainDrawingContext)
 //*****************************************************************************
 // Clears the main screens background.
 //*****************************************************************************
-void uiClearBackground(tContext* drawing_ctx)
+void uiClearBackground()
 {
     static const tRectangle sRect =
     {
@@ -128,7 +128,8 @@ void uiClearBackground(tContext* drawing_ctx)
         BG_MAX_X,
         BG_MAX_Y,
     };
-    GrRectFill(drawing_ctx, &sRect);
+    GrContextForegroundSet(m_drawingCtx, BG_COLOR_MAIN);
+    GrRectFill(m_drawingCtx, &sRect);
 }
 
 //*****************************************************************************
@@ -154,7 +155,18 @@ void uiFrameDraw(tContext* drawing_ctx, const char* app_name)
     GrContextFontSet(drawing_ctx, &g_sFontCm20);
     GrStringDrawCentered(drawing_ctx, app_name, -1,
                          GrContextDpyWidthGet(drawing_ctx) / 2, 8, 0);
+}
 
+//*****************************************************************************
+// @brief draws the app startup info
+//*****************************************************************************
+void uiDrawInitInfo()
+{
+    // Put the application name in the middle of the banner.
+    GrContextForegroundSet(m_drawingCtx, ClrRed);
+    GrContextFontSet(m_drawingCtx, &g_sFontCmss24);
+    GrStringDrawCentered(m_drawingCtx, "App Starting ...", -1,
+                         GrContextDpyWidthGet(m_drawingCtx)/2, BG_MAX_Y/2, 0);
 }
 
 tContext* uiGetMainDrawingContext()

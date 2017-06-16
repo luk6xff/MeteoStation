@@ -20,6 +20,7 @@
 #include "touch.h"
 #include "images.h"
 #include "system.h"
+#include "time_lib.h"
 #include "ui/ui_message_box.h"
 #include "ui/ui_keyboard.h"
 #include "ui/ui_common.h"
@@ -313,15 +314,15 @@ static bool setTouchScreenCalibration()
 
 
 // Main page widgets
-static char ui_tempHighLowBuf[30];
-Canvas(ui_tempHighLowCanvas, &ui_screenMainBackground, 0, 0,
-       &g_ILI9320, 120, 195, 70, 30,
-       CANVAS_STYLE_FILL | CANVAS_STYLE_TEXT | CANVAS_STYLE_TEXT_LEFT |
+static char ui_timeBuf[30];
+Canvas(ui_timeCanvas, &ui_screenMainBackground, 0, 0,
+       &g_ILI9320, 20, 20, 280, 20,
+       CANVAS_STYLE_FILL | CANVAS_STYLE_TEXT | CANVAS_STYLE_TEXT_HCENTER |
        CANVAS_STYLE_TEXT_TOP | CANVAS_STYLE_TEXT_OPAQUE, BG_COLOR_MAIN,
-       ClrWhite, ClrWhite, g_psFontCmss20, ui_tempHighLowBuf, 0, 0);
+       ClrWhite, ClrWhite, g_psFontCmss20, ui_timeBuf, 0, 0);
 
 static char ui_tempBuf[30];
-Canvas(ui_tempCanvas, &ui_screenMainBackground, &ui_tempHighLowCanvas, 0,
+Canvas(ui_tempCanvas, &ui_screenMainBackground, &ui_timeCanvas, 0,
        &g_ILI9320, 20, 175, 100, 50,
        CANVAS_STYLE_FILL | CANVAS_STYLE_TEXT | CANVAS_STYLE_TEXT_RIGHT |
        CANVAS_STYLE_TEXT_TOP | CANVAS_STYLE_TEXT_OPAQUE, BG_COLOR_MAIN,
@@ -1080,12 +1081,14 @@ int main(void)
 				}
 				else
 				{
-					MAIN_DEBUG("NtpTime: %d\n\r", wifiGetTimeResultData());
+	    			sprintf(ui_timeBuf, "%d-%d-%d %d:%d:%d", yearNow(), monthNow(), dayNow(), hourNow(), minuteNow(), secondNow());
+	    			WidgetPaint((tWidget*)&ui_timeCanvas);
 				}
 			}
 			ui_updateScreen();
 			m_get_new_temp_data = false;
 		}
+
 		if(!ADS7843getIntPinState()) // if touch panel is being touched)
 		{
 			if(touch_screen_pressed_time == 0) // first press

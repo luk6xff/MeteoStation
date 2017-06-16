@@ -30,7 +30,7 @@
 
 #include "time_lib.h"
 
-static tmElements_t tm;          // a cache of time elements
+static timeDataModel_t tm;          // a cache of time elements
 static timeData_t cacheTime;   // the time the cache was updated
 static uint32_t syncInterval = 300;  // time sync will be attempted after this many seconds
 
@@ -143,7 +143,7 @@ int year(timeData_t t) { // the year for the given time
 
 static  const uint8_t monthDays[]={31,28,31,30,31,30,31,31,30,31,30,31}; // API starts months from 1, this array starts from 0
  
-void breakTime(timeData_t timeInput, tmElements_t *tm)
+void breakTime(timeData_t timeInput, timeDataModel_t *tm)
 {
 // break the given timeData_t into time components
 // this is a more compact version of the C library localtime function
@@ -197,7 +197,7 @@ void breakTime(timeData_t timeInput, tmElements_t *tm)
   tm->Day = time + 1;     // day of month
 }
 
-timeData_t makeTime(tmElements_t *tm){
+timeData_t makeTime(timeDataModel_t *tm){
 // assemble time elements into timeData_t
 // note year argument is offset from 1970 (see macros in time.h to convert to other formats)
 // previous version used full four digit year (or digits since 2000),i.e. 2009 was 2009 or 9
@@ -253,7 +253,8 @@ timeData_t timeNow() {
     sysUnsyncedTime++; // this can be compared to the synced time to measure long term drift     
 #endif
   }
-  if (nextSyncTime <= sysTime) {
+  if (nextSyncTime <= sysTime)
+  {
     if (getTimePtr != 0) {
       timeData_t t = getTimePtr();
       if (t != 0) {
@@ -267,7 +268,8 @@ timeData_t timeNow() {
   return (timeData_t)sysTime;
 }
 
-void setTimeNow(timeData_t t) {
+void setTimeNow(timeData_t t)
+{
 #ifdef TIME_DRIFT_INFO
  if(sysUnsyncedTime == 0) 
    sysUnsyncedTime = t;   // store the time of the first call to set a valid Time   
@@ -279,7 +281,8 @@ void setTimeNow(timeData_t t) {
  // prevMillis = millis();  // restart counting from timeNow (thanks to Korman for this fix) TODO
 } 
 
-void setTime(int hr,int min,int sec,int dy, int mnth, int yr){
+void setTime(int hr,int min,int sec,int dy, int mnth, int yr)
+{
  // year can be given as full four digit year or two digts (2010 or 10 for 2010);  
  //it is converted to years since 1970
   if( yr > 99)
@@ -295,23 +298,32 @@ void setTime(int hr,int min,int sec,int dy, int mnth, int yr){
   setTimeNow(makeTime(&tm));
 }
 
-void adjustTime(long adjustment) {
+void adjustTime(long adjustment)
+{
   sysTime += adjustment;
 }
 
 // indicates if time has been set and recently synchronized
-timeStatus_t timeStatus() {
+timeStatus_t timeStatus()
+{
   timeNow(); // required to actually update the status
   return Status;
 }
 
-void setSyncProvider( getExternalTime getTimeFunction){
+void setSyncProvider( getExternalTime getTimeFunction)
+{
   getTimePtr = getTimeFunction;  
   nextSyncTime = sysTime;
   timeNow(); // this will sync the clock
 }
 
-void setSyncInterval(timeData_t interval){ // set the number of seconds between re-sync
+void setSyncInterval(timeData_t interval)
+{ // set the number of seconds between re-sync
   syncInterval = (uint32_t)interval;
   nextSyncTime = sysTime + syncInterval;
+}
+
+timeDataModel_t timeCurrentData()
+{
+	return tm;
 }

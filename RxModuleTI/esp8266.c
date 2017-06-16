@@ -399,10 +399,10 @@ bool esp8266CommandCIPSEND(const char* packet, uint16_t packetLen)
 	{
 		return false;
 	}
-	DISABLE_ALL_INTERRUPTS();
+	//DISABLE_ALL_INTERRUPTS();
 	esp8266ResetUartRxBuffer();
 	esp8266UartSend(packet, packetLen);
-	ENABLE_ALL_INTERRUPTS();
+	//ENABLE_ALL_INTERRUPTS();
 
 	return esp8266WaitForResponse("SEND OK", 4000);
 }
@@ -423,14 +423,7 @@ void Esp8266Uart5IntHandler(void)
 	while (UARTCharsAvail(UART5_BASE))
 	{
 		recvChr = UARTCharGetNonBlocking(UART5_BASE);
-		if(recvChr == '\0')
-		{
-			continue;
-		}
-		else
-		{
-			rxBuffer[rxBufferCounter++ % ESP8266_RX_BUF_SIZE] = recvChr;
-		}
+		rxBuffer[rxBufferCounter++ % ESP8266_RX_BUF_SIZE] = recvChr;
 	}
 	rxDataAvailable = true;
 }

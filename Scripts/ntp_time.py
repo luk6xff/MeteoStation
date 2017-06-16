@@ -23,4 +23,4 @@ def get_time_from_ntp(ntp_server_addr='time.nist.gov'):
         t = t[10] - TIME_DIFF_1900_TO_1970
         print('\t@@Unix epoch=%d, Time=%s' % (t,time.ctime(t)))
         
-get_time_from_ntp('0.pool.ntp.org')
+get_time_from_ntp()#'pool.ntp.org')

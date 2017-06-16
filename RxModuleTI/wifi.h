@@ -57,8 +57,6 @@ WifiConnectionState wifiGetConnectionStatus();
 
 WifiWeatherDataModel wifiGetWeatherResultData();
 
-timeData_t wifiGetTimeResultData();
-
 const char* wifiSsidParam();
 const char* wifiPassParam();
 

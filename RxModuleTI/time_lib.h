@@ -38,7 +38,7 @@ typedef struct  {
   uint8_t Day;
   uint8_t Month; 
   uint8_t Year;   // offset from 1970; 
-}tmElements_t;
+}timeDataModel_t;
 
 //convenience macros to convert to and from tm years 
 #define  tmYearToCalendar(Y) ((Y) + 1970)  // full four digit year 
@@ -105,6 +105,7 @@ int     yearNow();             // the full four digit year: (2009, 2010 etc)
 int     year(timeData_t t); // the year for the given time
 
 timeData_t timeNow();              // return the current time as seconds since Jan 1 1970
+timeDataModel_t timeCurrentData(); // return whole time data;
 void    setTime(int hr,int min,int sec,int dy, int mnth, int yr);
 void    setTimeNow(timeData_t t);
 void    adjustTime(long adjustment);
@@ -122,8 +123,8 @@ void    setSyncProvider( getExternalTime getTimeFunction); // identify the exter
 void    setSyncInterval(timeData_t interval); // set the number of seconds between re-sync
 
 /* low level functions to convert to and from system time                     */
-void breakTime(timeData_t time, tmElements_t* tm);  // break timeData_t into elements
-timeData_t makeTime(tmElements_t* tm);  // convert time elements into timeData_t
+void breakTime(timeData_t time, timeDataModel_t* tm);  // break timeData_t into elements
+timeData_t makeTime(timeDataModel_t* tm);  // convert time elements into timeData_t
 
 /** @ } */
 

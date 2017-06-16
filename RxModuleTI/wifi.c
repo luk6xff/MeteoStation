@@ -22,7 +22,8 @@ static const char* openweather_forecast_url = "/data/2.5/forecast?units=metric";
 static const char* openweather_weather_url = "/data/2.5/weather?units=metric";
 static const char* openweather_weather_api_key = "e95bbbe9f7314ea2a5ca1f60ee138eef";
 
-static const char* ntp_servers_name[] = {"0.pool.ntp.org", "1.pool.ntp.org", "2.pool.ntp.org", "3.pool.ntp.org", "129.6.15.28"};
+static const char* ntp_servers_name[] = {"pool.ntp.org", "europe.pool.ntp.org", "pl.pool.ntp.org", "time.nist.gov"};
+static uint8_t ntp_servers_name_idx = 0;
 static const uint16_t ntp_server_port = 123;
 #define NTP_PACKET_SIZE  48 // NTP time is in the first 48 bytes of message
 
@@ -132,39 +133,41 @@ bool wifiFetchCurrentWeather(const char* city)
 
 bool wifiFetchCurrentNtpTime()
 {
+
+
 	if (!m_current_state == WIFI_CONNECTED)
 	{
-		return false;
+		goto fail;
 	}
 
 	if (!esp8266CommandAT())
 	{
-		return false;
+		goto fail;
 	}
 
-	for(size_t i = 0; i < sizeof(ntp_servers_name); ++i)
+	esp8266CommandCIPCLOSE();
+
+	if (!esp8266CommandCIPSTART(ESP8266_PROTOCOL_UDP, ntp_servers_name[ntp_servers_name_idx], ntp_server_port))
 	{
-		esp8266CommandCIPCLOSE();
+		goto fail;
+	}
 
-		if (!esp8266CommandCIPSTART(ESP8266_PROTOCOL_UDP, ntp_servers_name[i], ntp_server_port))
-		{
-			return false;
-		}
+	if (!esp8266CommandCIPSEND(wifi_ntp_build_url(), NTP_PACKET_SIZE))
+	{
+		goto fail;
+	}
 
-		if (!esp8266CommandCIPSEND(wifi_ntp_build_url(), NTP_PACKET_SIZE))
-		{
-			return false;
-		}
+	delay_ms(100); //just wait a short while
 
-		delay_ms(2000); //just wait a short while
-
-		wifi_ntp_parse_response(esp8266GetRxBuffer(), ESP8266_RX_BUF_SIZE);
-
-		timeData_t currentTime = wifiGetTimeResultData();
-		currentTime -= 1;
-		currentTime = currentTime + 1;
+	if (!wifi_ntp_parse_response(esp8266GetRxBuffer(), ESP8266_RX_BUF_SIZE))
+	{
+		goto fail;
 	}
 	return true;
+
+fail:
+	ntp_servers_name_idx = (ntp_servers_name_idx + 1) % sizeof(ntp_servers_name); //if sth does not work change ntp server for next check
+	return false;
 }
 
 WifiConnectionState wifiGetConnectionStatus()
@@ -175,11 +178,6 @@ WifiConnectionState wifiGetConnectionStatus()
 WifiWeatherDataModel wifiGetWeatherResultData()
 {
 	return m_last_result;
-}
-
-timeData_t wifiGetTimeResultData()
-{
-	return timeNow();
 }
 
 const char* wifiSsidParam()

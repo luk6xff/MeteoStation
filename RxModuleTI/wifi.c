@@ -22,7 +22,7 @@ static const char* openweather_forecast_url = "/data/2.5/forecast?units=metric";
 static const char* openweather_weather_url = "/data/2.5/weather?units=metric";
 static const char* openweather_weather_api_key = "e95bbbe9f7314ea2a5ca1f60ee138eef";
 
-static const char* ntp_servers_name[] = {"0.pool.ntp.org", "1.pool.ntp.org", "2.pool.ntp.org", "3.pool.ntp.org"};
+static const char* ntp_servers_name[] = {"0.pool.ntp.org", "1.pool.ntp.org", "2.pool.ntp.org", "3.pool.ntp.org", "129.6.15.28"};
 static const uint16_t ntp_server_port = 123;
 #define NTP_PACKET_SIZE  48 // NTP time is in the first 48 bytes of message
 
@@ -142,19 +142,29 @@ bool wifiFetchCurrentNtpTime()
 		return false;
 	}
 
-	esp8266CommandCIPCLOSE();
-
-	if (!esp8266CommandCIPSTART(ESP8266_PROTOCOL_UDP, ntp_servers_name[0], ntp_server_port))
+	for(size_t i = 0; i < sizeof(ntp_servers_name); ++i)
 	{
-		return false;
-	}
+		esp8266CommandCIPCLOSE();
 
-	if (!esp8266CommandCIPSEND(wifi_ntp_build_url(), NTP_PACKET_SIZE))
-	{
-		return false;
+		if (!esp8266CommandCIPSTART(ESP8266_PROTOCOL_UDP, ntp_servers_name[i], ntp_server_port))
+		{
+			return false;
+		}
+
+		if (!esp8266CommandCIPSEND(wifi_ntp_build_url(), NTP_PACKET_SIZE))
+		{
+			return false;
+		}
+
+		delay_ms(2000); //just wait a short while
+
+		wifi_ntp_parse_response(esp8266GetRxBuffer(), ESP8266_RX_BUF_SIZE);
+
+		timeData_t currentTime = wifiGetTimeResultData();
+		currentTime -= 1;
+		currentTime = currentTime + 1;
 	}
-	delay_ms(100); //just wait a short while
-	return wifi_ntp_parse_response(esp8266GetRxBuffer(), ESP8266_RX_BUF_SIZE);
+	return true;
 }
 
 WifiConnectionState wifiGetConnectionStatus()
@@ -444,21 +454,21 @@ static void wifi_weather_set_result_invalid()
 
 static char* wifi_ntp_build_url()
 {
-	static char request_buffer[NTP_PACKET_SIZE];
-	memset(request_buffer, '\0', sizeof(request_buffer));
+	static char ntp_request_buffer[NTP_PACKET_SIZE];
+	memset(ntp_request_buffer, '\0', sizeof(ntp_request_buffer));
 	// Initialize values needed to form NTP request
 	// (see https://tools.ietf.org/html/rfc5905 above for details on the packets)
-	request_buffer[0] = 0xE3;   // LI, Version, Mode
-	request_buffer[1] = 0;     // Stratum, or type of clock
-	request_buffer[2] = 6;     // Polling Interval
-	request_buffer[3] = 0xEC;  // Peer Clock Precision
+	ntp_request_buffer[0] = 0xE3;   // LI, Version, Mode
+	ntp_request_buffer[1] = 0;     // Stratum, or type of clock
+	ntp_request_buffer[2] = 6;     // Polling Interval
+	ntp_request_buffer[3] = 0xEC;  // Peer Clock Precision
 	// 8 bytes of zero for Root Delay & Root Dispersion
-	request_buffer[12] = 49;
-	request_buffer[13] = 0x4E;
-	request_buffer[14] = 49;
-	request_buffer[15] = 52;
-
-	return request_buffer;
+	ntp_request_buffer[12] = 49;
+	ntp_request_buffer[13] = 0x4E;
+	ntp_request_buffer[14] = 49;
+	ntp_request_buffer[15] = 52;
+	//ntp_request_buffer[0] = 0x1b;
+	return ntp_request_buffer;
 }
 
 static bool wifi_ntp_parse_response(const uint8_t* resp_buf, uint16_t buf_len)
@@ -501,14 +511,14 @@ static bool wifi_ntp_parse_response(const uint8_t* resp_buf, uint16_t buf_len)
     	goto FAIL;
     }
 
-    uint64_t secs_since_1900 = 0;
+    uint32_t secs_since_1900 = 0;
     const uint32_t TIME_DIFF_1900_TO_1970 = 2208988800;
     secs_since_1900 |= (uint64_t)p[shift + 40] << 24;
     secs_since_1900 |= (uint64_t)p[shift + 41] << 16;
     secs_since_1900 |= (uint64_t)p[shift + 42] << 8;
     secs_since_1900 |= (uint64_t)p[shift + 43];
 
-    setTimeNow(secs_since_1900 - TIME_DIFF_1900_TO_1970);
+    setTimeNow(secs_since_1900 - TIME_DIFF_1900_TO_1970); // convert NTP time to Unix time
 	return true;
 
 FAIL:

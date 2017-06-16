@@ -17,7 +17,7 @@ extern "C" {
 
 #include "stdint.h"
 
-typedef uint64_t timeData_t;
+typedef uint32_t timeData_t;
 
 typedef enum {timeNotSet, timeNeedsSync, timeSet
 }  timeStatus_t ;

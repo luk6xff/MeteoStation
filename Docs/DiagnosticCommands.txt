@@ -30,7 +30,7 @@ C-ESP_CIPCLOSE|
 
 /******ntp.org*****/
 C-ESP_CIPSTART_UDP_0.pool.ntp.org_123|
-C-ESP_CIPSEND_GET /data/2.5/weather?units=metric&q=NowySacz&appid=e95bbbe9f7314ea2a5ca1f60ee138eef|
+C-ESP_CIPSEND_\x1b\x0\x0\x0\x0\x0\x0\x0\x0\x0\x0\x0\x0\x0\x0\x0\x0\x0\x0\x0\x0\x0\x0\x0\x0\x0\x0\x0\x0\x0\x0\x0\x0\x0\x0\x0\x0\x0\x0\x0\x0\x0\x0\x0\x0\x0\x0\x0|
 C-ESP_CIPSEND_GET /data/2.5/forecast?units=metric&q=NowySacz&APPID=e95bbbe9f7314ea2a5ca1f60ee138eef|
 C-ESP_RAW|
 C-ESP_CIPCLOSE|

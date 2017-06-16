@@ -399,8 +399,12 @@ bool esp8266CommandCIPSEND(const char* packet, uint16_t packetLen)
 	{
 		return false;
 	}
+	DISABLE_ALL_INTERRUPTS();
+	esp8266ResetUartRxBuffer();
 	esp8266UartSend(packet, packetLen);
-	return esp8266WaitForResponse("+IPD", 4000);
+	ENABLE_ALL_INTERRUPTS();
+
+	return esp8266WaitForResponse("SEND OK", 4000);
 }
 
 //

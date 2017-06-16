@@ -184,6 +184,12 @@ static ScreenContainer m_screens[SCREEN_NUM_OF_SCREENS] =
     }
 };
 
+// period notifiers
+// @brief new weather data from wifi
+static volatile bool m_get_new_temp_data = false;
+// @brief global counter
+static volatile uint32_t m_global_counter_sec = 0;
+
 
 
 //*****************************************************************************
@@ -198,7 +204,7 @@ static void onUpdateTimeEntry(tWidget *psWidget);
 static void onParameterEdited(const Screens prevWidget, bool save);
 static int32_t touchScreenCallback(uint32_t msg, int32_t x, int32_t y);
 static void ui_updateScreen();
-static void ui_updateClock();
+static void ui_updateClock(bool drawOnly);
 
 //*****************************************************************************
 //
@@ -742,11 +748,8 @@ static void ui_updateScreen()
     			sprintf(ui_humidityBuf, "Humidity: -- %s", "%");
     			sprintf(ui_pressureBuf, "Pressure: --- hPa");
     			sprintf(ui_tempBuf,"--- C");
-    			GrContextFontSet(&m_drawing_context, g_psFontCmss48);
-    			GrContextForegroundSet(&m_drawing_context, ClrWhite);
-    			GrStringDrawCentered(&m_drawing_context,"----", -1, 240, 150, true);
     		}
-    		ui_updateClock();
+    		ui_updateClock(true);
     		WidgetPaint((tWidget*)&ui_humidityCanvas);
     		WidgetPaint((tWidget*)&ui_pressureCanvas);
     		WidgetPaint((tWidget*)&ui_tempCanvas);
@@ -817,12 +820,19 @@ static void ui_updateScreen()
     }
 }
 
-static void ui_updateClock()
+static void ui_updateClock(bool drawOnly)
 {
 	if (m_app_ctx.current_screen == SCREEN_MAIN)
 	{
-		sprintf(ui_timeBuf, "%d-%02d-%02d  %02d:%02d", yearNow(), monthNow(), dayNow(), hourNow(), minuteNow());
-		WidgetPaint((tWidget*)&ui_timeCanvas);
+		if (timeIsTimeChanged() || drawOnly)
+		{
+			if (!drawOnly)
+			{
+				sprintf(ui_timeBuf, "%d-%02d-%02d  %02d:%02d", yearNow(), monthNow(), dayNow(), hourNow(), minuteNow());
+			}
+			WidgetPaint((tWidget*)&ui_timeCanvas);
+		}
+
 	}
 }
 
@@ -956,7 +966,10 @@ static void handleMovement(void)
             WidgetRemove(m_screens[m_app_ctx.current_screen].widget);
             WidgetAdd(WIDGET_ROOT, m_screens[newScreenIdx].widget);
             WidgetPaint(WIDGET_ROOT);
+            m_get_new_temp_data = false;  //clean flag
+            m_global_counter_sec = 1; 	  //clean counter
             m_app_ctx.current_screen = newScreenIdx;
+            WidgetMessageQueueProcess();
             ui_updateScreen();
 		}
 	}
@@ -972,11 +985,6 @@ static void handleMovement(void)
 // m_global_counter_sec updated 5 times per second
 //
 //*****************************************************************************
-// period notifiers
-// @brief new weather data from wifi
-static volatile bool m_get_new_temp_data = false;
-// @brief global counter
-static volatile uint32_t m_global_counter_sec = 0;
 void SysTickIntHandler(void)
 {
 	static volatile uint32_t m_global_counter_sec = 0;
@@ -1018,7 +1026,6 @@ int main(void)
     uiFrameDraw(&m_drawing_context, "Meteo Ubiad Stacja");
     WidgetAdd(WIDGET_ROOT, m_screens[m_app_ctx.current_screen].widget);
     WidgetPaint(WIDGET_ROOT);
-    ui_updateScreen();
     uiDrawInitInfo();
 
 	//touchScreenControler
@@ -1030,14 +1037,6 @@ int main(void)
 	//do touch screen calibration if needed
 	setTouchScreenCalibration();
 
-	// Enable the SysTick and its Interrupt.
-	SysTickPeriodSet(SysCtlClockGet()); //0.2[s];
-	SysTickIntEnable();
-	SysTickEnable();
-
-	//Enable all interrupts
-	ENABLE_ALL_INTERRUPTS();
-
 	m_app_ctx.flash_params.connectionSetupState.wifiEnabled = true; //FOR DEBUG TODO
 	//Wifi client init
 	wifiInit(m_app_ctx.eeprom_params.wifi_config.ap_ssid,
@@ -1047,12 +1046,25 @@ int main(void)
 	{
 		wifiConnectToAp(); //try to connect
 	}
+
 	//time module initialization
-	timeInit(wifiFetchCurrentNtpTime, ui_updateClock);
+	timeInit(wifiFetchCurrentNtpTime);
+
+	// Enable the SysTick and its Interrupt.
+	SysTickPeriodSet(SysCtlClockGet()); //0.2[s];
+	SysTickIntEnable();
+	SysTickEnable();
+
+	//Enable all interrupts
+	ENABLE_ALL_INTERRUPTS();
+	m_get_new_temp_data = true; //update all for first time
 
 	while (1)
 	{
+        // Process any messages in the widget message queue.
+        WidgetMessageQueueProcess();
 
+        // handle swipe moves on the screen
         handleMovement();
 
 #if 0 //paint all places where finger touched
@@ -1096,6 +1108,8 @@ int main(void)
 			m_get_new_temp_data = false;
 		}
 
+		ui_updateClock(false);
+
 		if(!ADS7843getIntPinState()) // if touch panel is being touched)
 		{
 			if(touch_screen_pressed_time == 0) // first press
@@ -1119,8 +1133,6 @@ int main(void)
 		}
 		debugCommandReceived();
 
-        // Process any messages in the widget message queue.
-        WidgetMessageQueueProcess();
 	}
 
 }

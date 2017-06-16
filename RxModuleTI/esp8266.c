@@ -244,11 +244,9 @@ static void esp8266UartSend(const char* dataBuffer, const uint16_t dataBufferLen
 
 static void esp8266SendATCommand(const char* cmd)
 {
-	DISABLE_ALL_INTERRUPTS();
 	esp8266ResetUartRxBuffer();
 	esp8266UartSend(cmd, 0);
 	esp8266UartSend((const char*)"\r\n", 0); //CR LF
-	ENABLE_ALL_INTERRUPTS();
 }
 
 

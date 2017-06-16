@@ -42,12 +42,12 @@
 
 static timeDataModel_t tm;          		// a cache of time elements
 static timeData_t cacheTime;   				// the time the cache was updated
-static uint32_t syncIntervalSeconds = 600;  // time sync will be attempted after this many seconds, default = 600[s] = 10[min]
+static uint32_t syncIntervalSeconds = 30;//600;  // time sync will be attempted after this many seconds, default = 600[s] = 10[min]
 static uint32_t sysTime = 0;
 static uint32_t nextSyncTime = 0;
 static timeStatus_t Status = timeNotSet;
 static getExternalTime getTimePtr;  		// pointer to external [NTP] sync function
-static updateUiTime updateUiTimePtr;  		// pointer to external [NTP] sync function
+static volatile bool updateUiTime = true;  		// flag if UI update is needed, first time as true
 
 static void timeTimerInit();
 
@@ -362,13 +362,18 @@ void setTime(int hr,int min,int sec,int dy, int mnth, int yr)
 	setTimeNow(makeTime(&tm));
 }
 
-
-timeStatus_t timeInit(getExternalTime getTimeFunction, updateUiTime updateUiTimeFunction)
+timeStatus_t timeInit(getExternalTime getTimeFunction)
 {
 	timeSetSyncProvider(getTimeFunction);
-	updateUiTimePtr = updateUiTimeFunction;
 	timeTimerInit();
 	return Status;
+}
+
+bool timeIsTimeChanged()
+{
+	bool isChanged = updateUiTime;
+	updateUiTime = false;
+	return isChanged;
 }
 
 // indicates if time has been set and recently synchronized
@@ -422,9 +427,9 @@ void TimeTimer3AIntHandler(void)
 	static uint32_t seconds_cnt = 0;
 	seconds_cnt++;
 	timeAdjustSystemTime(1); //update about one second;
-	if ((seconds_cnt % 60 == 0) && updateUiTimePtr)
+	if ((seconds_cnt % 60 == 0) && (updateUiTime == false))
 	{
-		updateUiTimePtr();
+		updateUiTime = true;
 	}
 
 	TimerIntClear(TIMER3_BASE, TIMER_TIMA_TIMEOUT);

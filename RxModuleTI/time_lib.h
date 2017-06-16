@@ -48,7 +48,6 @@ typedef struct  {
 #define  y2kYearToTm(Y)      ((Y) + 30)   
 
 typedef timeData_t(*getExternalTime)();
-typedef void(*updateUiTime)();
 
 /*==============================================================================*/
 /* Useful Constants */
@@ -122,8 +121,9 @@ char* dayShortStr(uint8_t day);
 
 
 /* public methods */
-timeStatus_t timeInit(getExternalTime getTimeFunction, updateUiTime updateUiTimeFunction);
-timeStatus_t timeStatus(); // indicates if time has been set and recently synchronized
+timeStatus_t timeInit(getExternalTime getTimeFunction);
+bool timeIsTimeChanged();
+timeStatus_t timeStatus(); 		   // indicates if time has been set and recently synchronized
 timeData_t timeNow();              // return the current time as seconds since Jan 1 1970
 timeDataModel_t timeCurrentData(); // return whole time data;
 /* time sync functions	*/

@@ -33,6 +33,7 @@ static char wifi_ap_PASS_buf[AP_PARAMS_MAX_LENGTH];
 
 static WifiConnectionState m_current_state;
 static WifiWeatherDataModel m_last_result;
+static bool m_global_wifi_mutex = false;
 
 //
 //forward declarations
@@ -43,22 +44,31 @@ static void wifi_weather_set_result_invalid();
 static bool wifi_ntp_parse_response(const uint8_t* resp_buf, uint16_t buf_len, timeData_t* time);
 static char* wifi_ntp_build_url();
 
+
 bool wifiInit(const char* ssid, const char* pass)
 {
+	if (m_global_wifi_mutex)
+	{
+		return false;
+	}
+	m_global_wifi_mutex = true;
 	wifi_weather_set_result_invalid();
 	//ESP8266
 	esp8266Init();
 	if (!ssid || !pass || strcmp(ssid, "default") == 0 || strcmp(pass, "default") == 0)
 	{
+		m_global_wifi_mutex = false;
 		return false;
 	}
 	if (!esp8266CommandAT())
 	{
+		m_global_wifi_mutex = false;
 		return false;
 	}
 	wifiSetApParameters(ssid, pass);
 	esp8266CommandCWMODE(ESP8266_MODE_CLIENT); //set as a client
 	m_current_state = WIFI_NOT_CONNECTED;
+	m_global_wifi_mutex = false;
 	return true;
 }
 
@@ -68,76 +78,123 @@ void wifiSetApParameters(const char* ssid, const char* pass)
 	{
 		return;
 	}
+	if (m_global_wifi_mutex)
+	{
+		return;
+	}
+	m_global_wifi_mutex = true;
 	memset(wifi_ap_SSID_buf, '\0', sizeof(wifi_ap_SSID_buf));
 	memset(wifi_ap_PASS_buf, '\0', sizeof(wifi_ap_PASS_buf));
 	memcpy(wifi_ap_SSID_buf, ssid, sizeof(wifi_ap_SSID_buf)-1);
 	memcpy(wifi_ap_PASS_buf, pass, sizeof(wifi_ap_PASS_buf)-1);
+	m_global_wifi_mutex = false;
 }
 
 bool wifiConnectToAp()
 {
 	if (m_current_state == WIFI_CONNECTED)
 	{
-		return true;
+		goto ok;
 	}
 
-	if (!esp8266CommandRST())
+	if (m_global_wifi_mutex)
 	{
 		return false;
 	}
-	if (esp8266CommandCWJAP(wifi_ap_SSID_buf, wifi_ap_PASS_buf))
+	m_global_wifi_mutex = true;
+
+	if (esp8266CommandRST())
 	{
-		m_current_state = WIFI_CONNECTED;
-		return true;
+		if (esp8266CommandCWJAP(wifi_ap_SSID_buf, wifi_ap_PASS_buf))
+		{
+			m_current_state = WIFI_CONNECTED;
+			goto ok;
+		}
 	}
+	m_global_wifi_mutex = false;
 	return false;
+ok:
+	m_global_wifi_mutex = false;
+	return true;
 }
 
 bool wifiDisconnectFromAp()
 {
-	if (!esp8266CommandAT())
+	if (m_global_wifi_mutex)
 	{
 		return false;
 	}
-	if (esp8266CommandCWQAP())
+	m_global_wifi_mutex = true;
+
+	if (!esp8266CommandAT())
 	{
-		m_current_state = WIFI_NOT_CONNECTED;
-		return true;
+		goto fail;
 	}
+	if (!esp8266CommandCWQAP())
+	{
+		goto fail;
+	}
+	m_current_state = WIFI_NOT_CONNECTED;
+
+	m_global_wifi_mutex = false;
+	return true;
+fail:
+	m_global_wifi_mutex = false;
 	return false;
 }
 
 bool wifiFetchCurrentWeather(const char* city)
 {
+	if (m_global_wifi_mutex)
+	{
+		return false;
+	}
+	m_global_wifi_mutex = true;
+
 	wifi_weather_set_result_invalid();
 	if (!m_current_state == WIFI_CONNECTED)
 	{
-		return false;
+		goto fail;
 	}
 
 	if (!esp8266CommandAT())
 	{
-		return false;
+		goto fail;
 	}
 
 	esp8266CommandCIPCLOSE();
 
 	if (!esp8266CommandCIPSTART(ESP8266_PROTOCOL_TCP, openweather_server_name, openweather_server_port))
 	{
-		return false;
+		goto fail;
 	}
 	const char* url = wifi_weather_build_url(openweather_weather_url, city, openweather_weather_api_key);
 
 	if (!esp8266CommandCIPSEND(url, 0))
 	{
-		return false;
+		goto fail;
 	}
 	delay_ms(100); //to finish download
-	return wifi_weather_parse_response(esp8266GetRxBuffer(), ESP8266_RX_BUF_SIZE);
+	if (!wifi_weather_parse_response(esp8266GetRxBuffer(), ESP8266_RX_BUF_SIZE))
+	{
+		goto fail;
+	}
+
+	m_global_wifi_mutex = false;
+	return true;
+
+fail:
+	m_global_wifi_mutex = false;
+	return false;
 }
 
 timeData_t wifiFetchCurrentNtpTime()
 {
+	if (m_global_wifi_mutex)
+	{
+		return 0;
+	}
+	m_global_wifi_mutex = true;
 
 	timeData_t timeRetrieved = 0;
 	if (!m_current_state == WIFI_CONNECTED)
@@ -168,9 +225,12 @@ timeData_t wifiFetchCurrentNtpTime()
 	{
 		goto fail;
 	}
+
+	m_global_wifi_mutex = false;
 	return timeRetrieved;
 
 fail:
+	m_global_wifi_mutex = false;
 	ntp_servers_name_idx = (ntp_servers_name_idx + 1) % sizeof(ntp_servers_name); //if sth does not work change ntp server for next check
 	return 0;
 }
@@ -207,14 +267,20 @@ const char* wifiPassParam()
 //
 bool wifiCheckApConnectionStatus()
 {
-	if (!esp8266CommandCIPSTATUS())
+	if (m_global_wifi_mutex)
 	{
 		return false;
+	}
+	m_global_wifi_mutex = true;
+
+	if (!esp8266CommandCIPSTATUS())
+	{
+		goto fail;
 	}
 	const uint8_t *const p = strstr(esp8266GetRxBuffer(),"STATUS:");
 	if (!p)
     {
-    	return false;
+    	goto fail;
     }
 
     uint8_t status = p[7] - '0';
@@ -235,7 +301,11 @@ bool wifiCheckApConnectionStatus()
 		default:
 			break;
     }
+	m_global_wifi_mutex = false;
     return true;
+fail:
+m_global_wifi_mutex = false;
+	return false;
 }
 
 //
@@ -245,13 +315,13 @@ static bool wifi_weather_parse_response(const uint8_t* resp_buf, uint16_t buf_le
 {
 	if (!resp_buf)
 	{
-    	goto FAIL;
+    	goto fail;
 	}
 	const uint8_t * const p = strstr(resp_buf, "+IPD,");
 	const uint8_t * const r = strstr(resp_buf, "CLOSED");
     if (!p || !r)
     {
-    	goto FAIL;
+    	goto fail;
     }
     uint16_t len = 0;
     uint8_t ch = '\0';
@@ -270,20 +340,20 @@ static bool wifi_weather_parse_response(const uint8_t* resp_buf, uint16_t buf_le
     json_t const* parent = json_create(&p[shift], pool, sizeof pool / sizeof *pool );
     if (!parent)
     {
-    	goto FAIL;
+    	goto fail;
     }
 
     json_t const* main_ = json_getProperty(parent, "main");
     if (!main_ || JSON_OBJ != json_getType(main_))
     {
-    	goto FAIL;
+    	goto fail;
     }
     else
     {
         json_t const* temp = json_getProperty(main_, "temp");
         if ( !temp || JSON_INTEGER != json_getType(temp))
         {
-        	goto FAIL;
+        	goto fail;
         }
         else
         {
@@ -293,7 +363,7 @@ static bool wifi_weather_parse_response(const uint8_t* resp_buf, uint16_t buf_le
         json_t const* pressure = json_getProperty(main_, "pressure");
         if ( !pressure || JSON_INTEGER != json_getType(pressure))
         {
-        	goto FAIL;
+        	goto fail;
         }
         else
         {
@@ -303,7 +373,7 @@ static bool wifi_weather_parse_response(const uint8_t* resp_buf, uint16_t buf_le
         json_t const* humidity = json_getProperty(main_, "humidity");
         if ( !humidity || JSON_INTEGER != json_getType(humidity))
         {
-        	goto FAIL;
+        	goto fail;
         }
         else
         {
@@ -344,7 +414,7 @@ static bool wifi_weather_parse_response(const uint8_t* resp_buf, uint16_t buf_le
     json_t const* current_time = json_getProperty(parent, "dt");
     if (!current_time || JSON_INTEGER != json_getType(current_time))
     {
-    	goto FAIL;
+    	goto fail;
     }
     else
     {
@@ -355,14 +425,14 @@ static bool wifi_weather_parse_response(const uint8_t* resp_buf, uint16_t buf_le
     json_t const* sys = json_getProperty(parent, "sys");
     if (!sys || JSON_OBJ != json_getType(sys))
     {
-    	goto FAIL;
+    	goto fail;
     }
     else
     {
         json_t const* sunrise_time = json_getProperty(sys, "sunrise");
         if ( !sunrise_time || JSON_INTEGER != json_getType(sunrise_time))
         {
-        	goto FAIL;
+        	goto fail;
         }
         else
         {
@@ -372,7 +442,7 @@ static bool wifi_weather_parse_response(const uint8_t* resp_buf, uint16_t buf_le
         json_t const* sunset_time = json_getProperty(sys, "sunset");
         if ( !sunset_time || JSON_INTEGER != json_getType(sunset_time))
         {
-        	goto FAIL;
+        	goto fail;
         }
         else
         {
@@ -384,7 +454,7 @@ static bool wifi_weather_parse_response(const uint8_t* resp_buf, uint16_t buf_le
 	json_t const* weather = json_getProperty(parent, "weather");
 	if (!weather || JSON_ARRAY != json_getType(weather))
 	{
-		goto FAIL;
+		goto fail;
 	}
 	else
 	{
@@ -398,7 +468,7 @@ static bool wifi_weather_parse_response(const uint8_t* resp_buf, uint16_t buf_le
 				json_t const* weather_id = json_getProperty(weather_cond, "id");
 		        if ( !weather_id || JSON_INTEGER != json_getType(weather_id))
 		        {
-		        	goto FAIL;
+		        	goto fail;
 		        }
 		        else
 		        {
@@ -407,7 +477,7 @@ static bool wifi_weather_parse_response(const uint8_t* resp_buf, uint16_t buf_le
 		   }
 		   else
 		   {
-			   goto FAIL;
+			   goto fail;
 		   }
 		   if (idx > 2)
 		   {
@@ -418,7 +488,7 @@ static bool wifi_weather_parse_response(const uint8_t* resp_buf, uint16_t buf_le
 	m_last_result.is_valid = 0;
 	return true;
 
-FAIL:
+fail:
 	m_last_result.is_valid = -1;
 	return false;
 }
@@ -478,13 +548,13 @@ static bool wifi_ntp_parse_response(const uint8_t* resp_buf, uint16_t buf_len, t
 {
 	if (!resp_buf)
 	{
-    	goto FAIL;
+    	goto fail;
 	}
 	const char* pattern = "+IPD,";
 	const uint8_t * const p = strstr(resp_buf, pattern);
     if (!p)
     {
-    	goto FAIL;
+    	goto fail;
     }
     uint16_t len = 0;
     uint8_t ch = '\0';
@@ -511,7 +581,7 @@ static bool wifi_ntp_parse_response(const uint8_t* resp_buf, uint16_t buf_len, t
     }
     if (len != NTP_PACKET_SIZE)
     {
-    	goto FAIL;
+    	goto fail;
     }
 
     timeData_t secs_since_1900 = 0;
@@ -524,6 +594,6 @@ static bool wifi_ntp_parse_response(const uint8_t* resp_buf, uint16_t buf_len, t
     *time = (secs_since_1900 - TIME_DIFF_1900_TO_1970); // convert NTP time to Unix time
 	return true;
 
-FAIL:
+fail:
 	return false;
 }

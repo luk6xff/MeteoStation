@@ -56,7 +56,7 @@ static volatile bool rxDataAvailable = false;
 static uint8_t rxBuffer[ESP8266_RX_BUF_SIZE];
 static uint8_t txBuffer[ESP8266_TX_BUF_SIZE];
 
-//sets Timer for ESP8266
+//sets Timer for ESP8266 -- [HW Dependent]
 static void esp8266UartSetup(void) {
 	//
 	// Enable the peripherals used by the UART5
@@ -80,7 +80,7 @@ static void esp8266UartSetup(void) {
 }
 
 
-//Fires up/down the timer
+//Fires up/down the timer [HW Dependent]
 static void esp8266TimerEnable(bool enable)
 {
 	if(enable)
@@ -104,7 +104,7 @@ static void esp8266Delay(uint32_t msDelay)
 	}
 }
 
-//Configures Timer1A as a 32-bit periodic timer
+//Configures Timer1A as a 32-bit periodic timer [HW Dependent]
 static void esp8266TimerInit()
 {
     SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER1);
@@ -254,7 +254,7 @@ static void esp8266SendATCommand(const char* cmd)
 bool esp8266CommandRAW(const char* rawCmd, const char*respStr)
 {
 	esp8266SendATCommand(rawCmd);
-	return esp8266WaitForResponse(respStr, 8000);
+	return esp8266WaitForResponse(respStr, 5000);
 }
 
 bool esp8266CommandAT(void)
@@ -307,7 +307,7 @@ bool esp8266CommandCIPMUX(uint8_t enable)
 bool esp8266CommandCWLAP()
 {
 	esp8266SendATCommand("AT+CWLAP");
-	return esp8266WaitForResponse("OK", 9000);
+	return esp8266WaitForResponse("OK", 5000);
 }
 
 
@@ -316,14 +316,14 @@ bool esp8266CommandCWJAP(const char* ssid, const char* pass)
 	esp8266ResetUartTxBuffer();
 	sprintf((char*)txBuffer, "AT+CWJAP=\"%s\",\"%s\"", ssid, pass);
 	esp8266SendATCommand((char*)txBuffer);
-	return esp8266WaitForResponse("OK", 10000);
+	return esp8266WaitForResponse("OK", 8000);
 }
 
 
 bool esp8266CommandCWQAP(void)
 {
 	esp8266SendATCommand("AT+CWQAP");
-	return esp8266WaitForResponse("OK", 8000);
+	return esp8266WaitForResponse("OK", 3000);
 }
 
 
@@ -332,20 +332,20 @@ bool esp8266CommandCWSAP(const char* ssid, const char* password, uint8_t channel
 	esp8266ResetUartTxBuffer();
 	sprintf((char*)txBuffer, "AT+CWSAP=\"%s\",\"%s\",%d,%d", ssid, password, channel, encryptMode);
 	esp8266SendATCommand((char*)txBuffer);
-	return esp8266WaitForResponse("OK", 5000);
+	return esp8266WaitForResponse("OK", 2000);
 }
 
 
 bool esp8266CommandCIFSR(void)
 {
 	esp8266SendATCommand("AT+CIFSR");
-	return esp8266WaitForResponse("OK", 5000);
+	return esp8266WaitForResponse("OK", 2000);
 }
 
 bool esp8266CommandCIPSTATUS(void)
 {
 	esp8266SendATCommand("AT+CIPSTATUS");
-	return esp8266WaitForResponse("OK", 5000);
+	return esp8266WaitForResponse("OK", 2000);
 }
 
 
@@ -369,14 +369,14 @@ bool esp8266CommandCIPSTART(Esp8266Protocol proto, const char* ipAddr, uint16_t 
 	esp8266ResetUartTxBuffer();
 	sprintf((char*)txBuffer, "AT+CIPSTART=\"%s\",\"%s\",%d",protocol, ipAddr, portNum);
 	esp8266SendATCommand((char*)txBuffer);
-	return esp8266WaitForResponse("OK", 8000);
+	return esp8266WaitForResponse("OK", 2000);
 }
 
 
 bool esp8266CommandCIPCLOSE()
 {
 	esp8266SendATCommand("AT+CIPCLOSE");
-	return esp8266WaitForResponse("OK", 5000);
+	return esp8266WaitForResponse("OK", 2000);
 }
 
 
@@ -392,7 +392,7 @@ bool esp8266CommandCIPSEND(const char* packet, uint16_t packetLen)
 		sprintf((char*)txBuffer, "AT+CIPSEND=%d", packetLen);
 	}
 	esp8266SendATCommand((char*)txBuffer);
-	if(!esp8266WaitForResponse(">", 4000))
+	if(!esp8266WaitForResponse(">", 3000))
 	{
 		return false;
 	}
@@ -401,7 +401,7 @@ bool esp8266CommandCIPSEND(const char* packet, uint16_t packetLen)
 	esp8266UartSend(packet, packetLen);
 	//ENABLE_ALL_INTERRUPTS();
 
-	return esp8266WaitForResponse("SEND OK", 4000);
+	return esp8266WaitForResponse("SEND OK", 3000);
 }
 
 //

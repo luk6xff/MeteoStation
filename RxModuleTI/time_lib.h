@@ -20,26 +20,38 @@ extern "C" {
 
 typedef uint64_t timeData_t;
 
-typedef enum {timeNotSet, timeNeedsSync, timeSet
-}  timeStatus_t ;
+typedef enum
+{
+	timeNotSet, timeNeedsSync, timeSet
+} timeStatus_t ;
 
-typedef enum {
+typedef enum
+{
     dowInvalid, dowSunday, dowMonday, dowTuesday, dowWednesday, dowThursday, dowFriday, dowSaturday
 } timeDayOfWeek_t;
 
-typedef enum {
+typedef enum
+{
     tmSecond, tmMinute, tmHour, tmWday, tmDay,tmMonth, tmYear, tmNbrFields
 } tmByteFields;	   
 
-typedef struct  { 
-  uint8_t Second; 
-  uint8_t Minute; 
-  uint8_t Hour; 
-  uint8_t Wday;   // day of week, sunday is day 1
-  uint8_t Day;
-  uint8_t Month; 
-  uint8_t Year;   // offset from 1970; 
-}timeDataModel_t;
+typedef struct
+{
+	uint8_t Second;
+	uint8_t Minute;
+	uint8_t Hour;
+	uint8_t Wday;   // day of week, sunday is day 1
+	uint8_t Day;
+	uint8_t Month;
+	uint8_t Year;   // offset from 1970;
+} timeDataModel_t;
+
+typedef enum
+{
+	timeZoneUTC,
+	timeZoneCET,      //UTC + 1 - Poland winter
+	timeZoneCEST, 	  //UTC + 2 - Poland summer
+} timeZone_t;
 
 //convenience macros to convert to and from tm years 
 #define  tmYearToCalendar(Y) ((Y) + 1970)  // full four digit year 
@@ -122,6 +134,7 @@ char* dayShortStr(uint8_t day);
 
 /* public methods */
 timeStatus_t timeInit(getExternalTime getTimeFunction);
+void timeSetTimeZone(timeZone_t zone);
 bool timeIsTimeChanged();
 timeStatus_t timeStatus(); 		   // indicates if time has been set and recently synchronized
 timeData_t timeNow();              // return the current time as seconds since Jan 1 1970

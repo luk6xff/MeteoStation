@@ -1005,6 +1005,7 @@ int main(void)
 	//FPU
 	FPUEnable();
 	FPULazyStackingEnable();
+
 	// Setup the system clock to run at 80 MHz from PLL with crystal reference
 	SysCtlClockSet(SYSCTL_SYSDIV_2_5 | SYSCTL_USE_PLL | SYSCTL_OSC_MAIN | SYSCTL_XTAL_16MHZ);
 
@@ -1049,6 +1050,7 @@ int main(void)
 
 	//time module initialization
 	timeInit(wifiFetchCurrentNtpTime);
+	timeSetTimeZone(timeZoneCET);
 
 	// Enable the SysTick and its Interrupt.
 	SysTickPeriodSet(SysCtlClockGet()); //0.2[s];

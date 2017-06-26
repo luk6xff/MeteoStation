@@ -1,30 +1,6 @@
 /*
-  time.c - low level time and date functions
-  Copyright (c) Michael Margolis 2009-2014
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 2.1 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-  
-  1.0  6  Jan 2010 - initial release
-  1.1  12 Feb 2010 - fixed leap year calculation error
-  1.2  1  Nov 2010 - fixed setTime bug (thanks to Korman for this)
-  1.3  24 Mar 2012 - many edits by Paul Stoffregen: fixed timeStatus() to update
-                     status, updated examples for Arduino 1.0, fixed ARM
-                     compatibility issues, added TimeArduinoDue and TimeTeensy3
-                     examples, add error checking and messages to RTC examples,
-                     add examples to DS1307RTC library.
-  1.4  5  Sep 2014 - compatibility with Arduino 1.5.7
+* time_lib.c - low level time and date functions
+* Based on time.c by Michael Margolis 2009-2014
 */
 
 
@@ -42,20 +18,64 @@
 
 static timeDataModel_t tm;          		// a cache of time elements
 static timeData_t cacheTime;   				// the time the cache was updated
-static uint32_t syncIntervalSeconds = 30;//600;  // time sync will be attempted after this many seconds, default = 600[s] = 10[min]
-static uint32_t sysTime = 0;
-static uint32_t nextSyncTime = 0;
+static uint32_t syncIntervalSeconds = 30;	//600;  // time sync will be attempted after this many seconds, default = 600[s] = 10[min]
+static timeData_t sysTime = 0;
+static timeData_t nextSyncTime = 0;
 static timeStatus_t Status = timeNotSet;
 static getExternalTime getTimePtr;  		// pointer to external [NTP] sync function
-static volatile bool updateUiTime = true;  		// flag if UI update is needed, first time as true
+static volatile bool updateUiTime = true;  	// flag if UI update is needed, first time as true
+static timeZone_t timeZone = timeZoneUTC;
 
 static void timeTimerInit();
+
+
+/*
+ * @brief updates automatically timeZones according to Summer/Winter times
+ */
+static void checkForCETTimeZoneChange()
+{
+	if (timeZone == timeZoneCET)
+	{
+		//Switch to Summer Time at March, last week of the month, Sunday at 2:00
+		if (monthNow() == 3 && weekdayNow() == 1)
+		{
+			//check if it's a last Sunday of the month
+			if ((31 - dayNow()) < 7)
+			{
+				if (hourNow() == 2 && minuteNow() == 0)
+				{
+					timeZone = timeZoneCEST;
+				}
+			}
+		}
+	}
+	else if (timeZone == timeZoneCEST)
+	{
+		//Switch to Standard Time at October, last week of the month, Sunday at 3:00
+		if (monthNow() == 10 && weekdayNow() == 1)
+		{
+			//check if it's a last Sunday of the month
+			if ((31 - dayNow()) < 7)
+			{
+				if (hourNow() == 3 && minuteNow() == 0)
+				{
+					timeZone = timeZoneCET;
+				}
+			}
+		}
+	}
+}
+
+
+static int timeGetTimeZoneOffset()
+{
+	return (int)timeZone * 3600;
+}
 
 static void timeAdjustSystemTime(uint64_t adjustment)
 {
 	sysTime += adjustment;
 }
-
 
 void refreshCache(timeData_t t)
 {
@@ -206,7 +226,7 @@ int year(timeData_t t)
 // leap year calulator expects year argument as years offset from 1970
 #define LEAP_YEAR(Y)     ( ((1970+Y)>0) && !((1970+Y)%4) && ( ((1970+Y)%100) || !((1970+Y)%400) ) )
 
-static  const uint8_t monthDays[]={31,28,31,30,31,30,31,31,30,31,30,31}; // API starts months from 1, this array starts from 0
+static const uint8_t monthDays[]={31,28,31,30,31,30,31,31,30,31,30,31}; // API starts months from 1, this array starts from 0
  
 void breakTime(timeData_t timeInput, timeDataModel_t *tm)
 {
@@ -336,9 +356,10 @@ timeData_t timeNow()
 
 void setTimeNow(timeData_t t)
 {
-  sysTime = (uint32_t)t;  
-  nextSyncTime = (uint32_t)t + syncIntervalSeconds;
+  sysTime = t + timeGetTimeZoneOffset();
+  nextSyncTime = t + syncIntervalSeconds;
   Status = timeSet;
+  checkForCETTimeZoneChange();
 } 
 
 void setTime(int hr,int min,int sec,int dy, int mnth, int yr)
@@ -369,6 +390,11 @@ timeStatus_t timeInit(getExternalTime getTimeFunction)
 	return Status;
 }
 
+void timeSetTimeZone(timeZone_t zone)
+{
+	timeZone = zone;
+}
+
 bool timeIsTimeChanged()
 {
 	bool isChanged = updateUiTime;
@@ -391,7 +417,8 @@ void timeSetSyncProvider(getExternalTime getTimeFunction)
 }
 
 void timeSetsyncIntervalSeconds(timeData_t interval)
-{ // set the number of seconds between re-sync
+{
+	// set the number of seconds between re-sync
 	syncIntervalSeconds = (uint32_t)interval;
 	nextSyncTime = sysTime + syncIntervalSeconds;
 }

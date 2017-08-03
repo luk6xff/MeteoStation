@@ -39,27 +39,6 @@
 #define DISABLE_ALL_INTERRUPTS() IntMasterDisable();
 
 
-
-//Screens
-//*****************************************************************************
-//
-// Screens
-//
-//*****************************************************************************
-#define KEYBOARD_MAX_TEXT_LEN 25 //25 chars to be typed in the keyboard
-
-typedef enum
-{
-	SCREEN_MAIN,
-	SCREEN_CONN_SETTINGS,
-	SCREEN_WIFI_SETTINGS,
-	SCREEN_SENSOR_SETTINGS,
-	SCREEN_KEYBOARD,
-	SCREEN_NUM_OF_SCREENS
-}Screens;
-
-
-
 #endif /* SYSTEM_H_ */
 
 

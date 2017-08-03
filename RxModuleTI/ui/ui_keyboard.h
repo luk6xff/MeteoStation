@@ -8,6 +8,8 @@
 #ifndef UI_UI_KEYBOARD_H_
 #define UI_UI_KEYBOARD_H_
 
+#include "ui_common.h"
+
 typedef enum
 {
 	AlphaNumeric,

@@ -27,8 +27,30 @@ typedef struct
 	uint16_t periodTime;
 	void (*timerCb)(void);
 }TimerCallback;
+
 static uint8_t m_timerCbNum = 0;
+
 static TimerCallback* m_timerCb[UI_TIMER_CB_NUM];
+
+static ScreenContainer m_screens[SCREEN_NUM_OF_SCREENS] =
+{
+    {
+        (tWidget *)&ui_screenMainBackground,
+        SCREEN_MAIN, SCREEN_CONN_SETTINGS, SCREEN_MAIN, SCREEN_MAIN
+    },
+    {
+        (tWidget *)&ui_screenSettingsBackground,
+        SCREEN_MAIN, SCREEN_CONN_SETTINGS, SCREEN_CONN_SETTINGS, SCREEN_CONN_SETTINGS
+    },
+    {
+        (tWidget *)&ui_screenWifiSetupBackground,
+		SCREEN_CONN_SETTINGS, SCREEN_CONN_SETTINGS, SCREEN_CONN_SETTINGS, SCREEN_CONN_SETTINGS
+    },
+    {
+        (tWidget *)&ui_screenSensorSetupBackground,
+		SCREEN_CONN_SETTINGS, SCREEN_CONN_SETTINGS, SCREEN_CONN_SETTINGS, SCREEN_CONN_SETTINGS
+    }
+};
 
 //*****************************************************************************
 //@brief Fires up/down the timer

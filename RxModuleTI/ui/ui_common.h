@@ -36,7 +36,42 @@
 #include "../system.h"
 #include "../ILI9320_driver.h"
 
+//*****************************************************************************
+//
+// Forward reference to all used widget structures.
+//
+//*****************************************************************************
+extern tCanvasWidget ui_screenMainBackground;
+extern tCanvasWidget ui_screenWifiSetupBackground;
+extern tCanvasWidget ui_screenSensorSetupBackground;
+extern tCanvasWidget ui_screenSettingsBackground;
 
+//*****************************************************************************
+// Typedefs
+//*****************************************************************************
+typedef enum
+{
+	SCREEN_MAIN,
+	SCREEN_CONN_SETTINGS,
+	SCREEN_WIFI_SETTINGS,
+	SCREEN_SENSOR_SETTINGS,
+	SCREEN_KEYBOARD,
+	SCREEN_NUM_OF_SCREENS
+}Screens;
+
+typedef struct
+{
+	tWidget *widget;
+	Screens up;
+	Screens down;
+	Screens left;
+	Screens right;
+}ScreenContainer;
+
+#define KEYBOARD_MAX_TEXT_LEN 25 //25 chars to be typed in the keyboard
+//*****************************************************************************
+// Methods
+//*****************************************************************************
 void uiInit(tContext* mainDrawingContext);
 void uiClearBackground();
 void uiFrameDraw(tContext* drawing_ctx, const char* app_name);

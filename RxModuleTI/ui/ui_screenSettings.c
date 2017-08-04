@@ -9,6 +9,16 @@
 #include "../images.h"
 
 
+//*****************************************************************************
+//
+// Methods forward declarations.
+//
+//*****************************************************************************
+static void onCityEntry(tWidget *psWidget);
+static void onSsidEntry(tWidget *psWidget);
+static void onPassEntry(tWidget *psWidget);
+static void onUpdateTimeEntry(tWidget *psWidget);
+static void onParameterEdited(const Screens prevWidget, bool save);
 
 void onConnCheckBoxChange(tWidget *psWidget, uint32_t bSelected);
 void onConnToAP(tWidget *psWidget);
@@ -600,7 +610,7 @@ static void onCityEntry(tWidget *psWidget)
 					AlphaNumeric, "Save the city", "Wanna save the city?",
 					onParameterEdited);
 	// Activate the keyboard.
-	m_app_ctx.current_screen = SCREEN_KEYBOARD;
+	uiSetCurrentScreen(SCREEN_KEYBOARD);
 }
 
 static void onSsidEntry(tWidget *psWidget)
@@ -611,7 +621,7 @@ static void onSsidEntry(tWidget *psWidget)
 	uiKeyboardCreate(m_app_ctx.eeprom_params.wifi_config.ap_ssid, m_app_ctx.current_screen,
 					AlphaNumeric, "Save the ap ssid", "Wanna save the AP SSID?",
 					onParameterEdited);
-	m_app_ctx.current_screen = SCREEN_KEYBOARD;
+	uiSetCurrentScreen(SCREEN_KEYBOARD);
 }
 
 static void onPassEntry(tWidget *psWidget)
@@ -622,7 +632,7 @@ static void onPassEntry(tWidget *psWidget)
 	uiKeyboardCreate(m_app_ctx.eeprom_params.wifi_config.ap_wpa2_pass, m_app_ctx.current_screen,
 					AlphaNumeric,"Save the AP pass", "Wanna save the AP password?",
 					onParameterEdited);
-	m_app_ctx.current_screen = SCREEN_KEYBOARD;
+	uiSetCurrentScreen(SCREEN_KEYBOARD);
 }
 
 static void onUpdateTimeEntry(tWidget *psWidget)
@@ -633,7 +643,7 @@ static void onUpdateTimeEntry(tWidget *psWidget)
 	uiKeyboardCreate(m_app_ctx.eeprom_params.update_wifi_period_time, m_app_ctx.current_screen,
 					Numeric, "Update refresh period", "Wanna save the period value?",
 					onParameterEdited);
-	m_app_ctx.current_screen = SCREEN_KEYBOARD;
+	uiSetCurrentScreen(SCREEN_KEYBOARD);
 }
 
 //*****************************************************************************

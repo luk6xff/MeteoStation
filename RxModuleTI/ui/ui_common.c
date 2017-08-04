@@ -52,6 +52,28 @@ static ScreenContainer m_screens[SCREEN_NUM_OF_SCREENS] =
     }
 };
 
+static Screens m_currentScreen = SCREEN_MAIN;
+
+
+
+void uiSetCurrentScreen(Screens screen)
+{
+	m_currentScreen = screen;
+}
+
+Screens uiGetCurrentScreen()
+{
+	return m_currentScreen;
+}
+
+
+
+
+
+
+
+
+//HW Dependent stuff below
 //*****************************************************************************
 //@brief Fires up/down the timer
 //*****************************************************************************

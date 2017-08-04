@@ -154,11 +154,6 @@ static volatile uint32_t m_global_counter_sec = 0;
 // Methods forward declarations.
 //
 //*****************************************************************************
-static void onCityEntry(tWidget *psWidget);
-static void onSsidEntry(tWidget *psWidget);
-static void onPassEntry(tWidget *psWidget);
-static void onUpdateTimeEntry(tWidget *psWidget);
-static void onParameterEdited(const Screens prevWidget, bool save);
 static int32_t touchScreenCallback(uint32_t msg, int32_t x, int32_t y);
 static void ui_updateScreen();
 static void ui_updateClock(bool drawOnly);

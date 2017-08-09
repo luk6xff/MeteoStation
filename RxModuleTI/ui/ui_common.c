@@ -66,6 +66,10 @@ Screens uiGetCurrentScreen()
 	return m_currentScreen;
 }
 
+const ScreenContainer* uiGetCurrentScreenContainer()
+{
+	return  &m_screens[uiGetCurrentScreen()];
+}
 
 
 

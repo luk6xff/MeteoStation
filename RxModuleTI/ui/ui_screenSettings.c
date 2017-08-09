@@ -5,8 +5,11 @@
  *      Author: igbt6
  */
 #include "ui_common.h"
+#include "ui_screenSettings.h"
 #include "ui_keyboard.h"
+
 #include "../images.h"
+#include "../system.h"
 
 
 //*****************************************************************************
@@ -14,18 +17,82 @@
 // Methods forward declarations.
 //
 //*****************************************************************************
+static void onConnCheckBoxChange(tWidget *psWidget, uint32_t bSelected);
+static void onConnToAP(tWidget *psWidget);
+static void onWifiSetup(tWidget *psWidget);
+static void onSensorSetup(tWidget *psWidget);
+static void onOthersSetup(tWidget *psWidget);
+
 static void onCityEntry(tWidget *psWidget);
 static void onSsidEntry(tWidget *psWidget);
 static void onPassEntry(tWidget *psWidget);
 static void onUpdateTimeEntry(tWidget *psWidget);
 static void onParameterEdited(const Screens prevWidget, bool save);
 
-void onConnCheckBoxChange(tWidget *psWidget, uint32_t bSelected);
-void onConnToAP(tWidget *psWidget);
-void onWifiSetup(tWidget *psWidget);
-void onSensorSetup(tWidget *psWidget);
-void onOthersSetup(tWidget *psWidget);
 
+//*****************************************************************************
+//
+// Local UI state variables / register callbacks methods
+//
+//*****************************************************************************
+static ConectionSetupState* connectionSetupState = NULL;
+void uiScreenSettings_registerConnectionSetupState(ConectionSetupState* state)
+{
+	if (state != NULL)
+	{
+		connectionSetupState = state;
+	}
+}
+
+static void (*onConnToAppCb)(void) = NULL;
+void uiScreenSettings_registerOnConnToAP(void (*OnConnToAppCb)(void))
+{
+	onConnToAppCb = OnConnToAppCb;
+}
+
+static char* cityPtr = NULL;
+static void (*onCityEntryCb)(void) = NULL;
+void uiScreenSettings_registerOnCityEntry(char* cityBuf, void (*OnCityEntryCb)(void))
+{
+	cityPtr = cityBuf;
+	onCityEntryCb = OnCityEntryCb;
+}
+
+static char* passPtr = NULL;
+static void (*onPassEntryCb)(void) = NULL;
+void uiScreenSettings_registerOnPassEntry(char* passBuf, void (*OnPassEntryCb)(void))
+{
+	passPtr = passBuf;
+	onPassEntryCb = OnPassEntryCb;
+}
+
+static char ssidPtr[25];
+static void (*onSsidEntryCb)(void) = NULL;
+void uiScreenSettings_registerOnSsidEntry(char* ssidBuf, void (*OnSsidEntryCb)(void))
+{
+	//ssidPtr = ssidBuf;
+	onSsidEntryCb = OnSsidEntryCb;
+}
+
+static char* timeEntryPtr = NULL;
+static void (*onUpdateTimeEntryCb)(void) = NULL;
+void uiScreenSettings_registerOnUpdateTimeEntry(char* timeEntryBuf, void (*OnUpdateTimeEntryCb)(void))
+{
+	timeEntryPtr = timeEntryBuf;
+	onUpdateTimeEntryCb = OnUpdateTimeEntryCb;
+}
+
+static void (*onParameterEditedCb)(void) = NULL;
+void uiScreenSettings_registerOnParameterEdited(void (*OnparameterEditedCb)(void))
+{
+	onParameterEditedCb = OnparameterEditedCb;
+}
+
+//*****************************************************************************
+//
+// UI Containers.
+//
+//*****************************************************************************
 tContainerWidget ui_settingsPanelContainers[];
 tCanvasWidget ui_settingsCheckBoxIndicators[] =
 {
@@ -341,6 +408,7 @@ Canvas
 	0
 );
 
+
 void onConnCheckBoxChange(tWidget *widget, uint32_t enabled)
 {
     uint32_t idx;
@@ -360,22 +428,33 @@ void onConnCheckBoxChange(tWidget *widget, uint32_t enabled)
     CanvasImageSet(ui_settingsCheckBoxIndicators + idx,
     			   enabled ? img_lightOn : img_lightOff);
     WidgetPaint((tWidget *)(ui_settingsCheckBoxIndicators + idx));
+
+    if (connectionSetupState == NULL)
+    {
+    	return;
+    }
+
     if (strcmp(ui_settingsCheckBoxes[idx].pcText, "WIFI") == 0)
     {
-		m_app_ctx.flash_params.connectionSetupState.wifiEnabled = enabled;
+		connectionSetupState->wifiEnabled = enabled;
     }
     else if (strcmp(ui_settingsCheckBoxes[idx].pcText, "Sensors") == 0)
     {
-		m_app_ctx.flash_params.connectionSetupState.sensorsEnabled = enabled;
+    	connectionSetupState->sensorsEnabled = enabled;
     }
     else if (strcmp(ui_settingsCheckBoxes[idx].pcText, "PowerSaving") == 0)
     {
-		m_app_ctx.flash_params.connectionSetupState.powerSavingEnabled = enabled;
+    	connectionSetupState->powerSavingEnabled = enabled;
     }
 }
 
 void onConnToAP(tWidget *psWidget)
 {
+	if (!onConnToAppCb)
+	{
+		(*onConnToAppCb)();
+	}
+	/*
 	if (!m_app_ctx.flash_params.connectionSetupState.wifiEnabled  )
 		return;
 
@@ -402,29 +481,27 @@ void onConnToAP(tWidget *psWidget)
 			MAIN_DEBUG("ESP8266 not responding, check hardware!");
 		}
 	}
+	*/
 }
 
 
 void onWifiSetup(tWidget *psWidget)
 {
-	MAIN_DEBUG("onWifiSetup pressed");
-	if(m_app_ctx.flash_params.connectionSetupState.wifiEnabled)
+	if(connectionSetupState->wifiEnabled)
 	{
-        WidgetRemove(m_screens[m_app_ctx.current_screen].widget);
-        m_app_ctx.current_screen = SCREEN_WIFI_SETTINGS;
-        WidgetAdd(WIDGET_ROOT, m_screens[m_app_ctx.current_screen].widget);
+        WidgetRemove(uiGetCurrentScreenContainer()->widget);
+        uiSetCurrentScreen(SCREEN_WIFI_SETTINGS);
+        WidgetAdd(WIDGET_ROOT, uiGetCurrentScreenContainer()->widget);
         WidgetPaint(WIDGET_ROOT);
 	}
 }
 
 void onSensorSetup(tWidget *psWidget)
 {
-	MAIN_DEBUG("onSensorSetup pressed");
 }
 
 void onOthersSetup(tWidget *psWidget)
 {
-	MAIN_DEBUG("onOthersSetup pressed");
 }
 
 
@@ -452,7 +529,7 @@ RectangularButton
 	ClrWhite,
 	ClrGray,
 	g_psFontCmss14,
-	m_app_ctx.eeprom_params.wifi_config.ap_ssid,
+	ssidPtr,
 	0,
 	0,
 	0,
@@ -478,7 +555,7 @@ RectangularButton
 	ClrWhite,
 	ClrGray,
 	g_psFontCmss14,
-	m_app_ctx.eeprom_params.wifi_config.ap_wpa2_pass,
+	passPtr,
 	0,
 	0,
 	0,
@@ -503,7 +580,7 @@ RectangularButton
 	ClrWhite,
 	ClrGray,
 	g_psFontCmss14,
-	m_app_ctx.eeprom_params.city_names[0],
+	cityPtr,
 	0,
 	0,
 	0,
@@ -587,12 +664,6 @@ Canvas
 	0
 );
 
-//*****************************************************************************
-//
-// Widget acting as all settings panel.
-//
-//*****************************************************************************
-
 
 
 //*****************************************************************************
@@ -603,10 +674,9 @@ Canvas
 static void onCityEntry(tWidget *psWidget)
 {
 	// Disable swiping while the keyboard is active.
-	m_app_ctx.swipe_enabled = false;
-	WidgetRemove(m_screens[m_app_ctx.current_screen].widget);
-	//configEepromSetModified(&m_app_ctx.eeprom_params); // param in eeprom will be modified
-	uiKeyboardCreate(m_app_ctx.eeprom_params.city_names[m_app_ctx.flash_params.currentCity], m_app_ctx.current_screen,
+	//m_app_ctx.swipe_enabled = false;
+	(*onCityEntryCb)();
+	uiKeyboardCreate(cityPtr, uiGetCurrentScreen(),
 					AlphaNumeric, "Save the city", "Wanna save the city?",
 					onParameterEdited);
 	// Activate the keyboard.
@@ -615,10 +685,9 @@ static void onCityEntry(tWidget *psWidget)
 
 static void onSsidEntry(tWidget *psWidget)
 {
-	m_app_ctx.swipe_enabled = false;
-	WidgetRemove(m_screens[m_app_ctx.current_screen].widget);
-	configEepromSetModified(&m_app_ctx.eeprom_params); // param in eeprom will be modified
-	uiKeyboardCreate(m_app_ctx.eeprom_params.wifi_config.ap_ssid, m_app_ctx.current_screen,
+	(*onSsidEntryCb)();
+	WidgetRemove(uiGetCurrentScreenContainer()->widget);
+	uiKeyboardCreate(ssidPtr, uiGetCurrentScreen(),
 					AlphaNumeric, "Save the ap ssid", "Wanna save the AP SSID?",
 					onParameterEdited);
 	uiSetCurrentScreen(SCREEN_KEYBOARD);
@@ -626,10 +695,9 @@ static void onSsidEntry(tWidget *psWidget)
 
 static void onPassEntry(tWidget *psWidget)
 {
-	m_app_ctx.swipe_enabled = false;
-	WidgetRemove(m_screens[m_app_ctx.current_screen].widget);
-	configEepromSetModified(&m_app_ctx.eeprom_params); // param in eeprom will be modified
-	uiKeyboardCreate(m_app_ctx.eeprom_params.wifi_config.ap_wpa2_pass, m_app_ctx.current_screen,
+	(*onPassEntryCb)();
+	WidgetRemove(uiGetCurrentScreenContainer()->widget);
+	uiKeyboardCreate(passPtr, uiGetCurrentScreen(),
 					AlphaNumeric,"Save the AP pass", "Wanna save the AP password?",
 					onParameterEdited);
 	uiSetCurrentScreen(SCREEN_KEYBOARD);
@@ -637,10 +705,9 @@ static void onPassEntry(tWidget *psWidget)
 
 static void onUpdateTimeEntry(tWidget *psWidget)
 {
-	m_app_ctx.swipe_enabled = false;
-	WidgetRemove(m_screens[m_app_ctx.current_screen].widget);
-	configEepromSetModified(&m_app_ctx.eeprom_params); // param in eeprom will be modified
-	uiKeyboardCreate(m_app_ctx.eeprom_params.update_wifi_period_time, m_app_ctx.current_screen,
+	(*onUpdateTimeEntryCb)();
+	WidgetRemove(uiGetCurrentScreenContainer()->widget);
+	uiKeyboardCreate(timeEntryPtr, uiGetCurrentScreen(),
 					Numeric, "Update refresh period", "Wanna save the period value?",
 					onParameterEdited);
 	uiSetCurrentScreen(SCREEN_KEYBOARD);
@@ -651,6 +718,8 @@ static void onUpdateTimeEntry(tWidget *psWidget)
 //*****************************************************************************
 static void onParameterEdited(const Screens prevWidget, bool save)
 {
+	(*onParameterEditedCb)();
+	/*
 	if(save)
 	{
 		saveApplicationContextToMemory();
@@ -660,9 +729,11 @@ static void onParameterEdited(const Screens prevWidget, bool save)
 		configFlashCheckAndCleanModified(&m_app_ctx.flash_params);
 		configEepromCheckAndCleanModified(&m_app_ctx.eeprom_params);
 	}
-	m_app_ctx.current_screen = prevWidget;
-    WidgetAdd(WIDGET_ROOT, m_screens[m_app_ctx.current_screen].widget);
-	WidgetPaint(WIDGET_ROOT);
     //Enable swiping after removing keyboard from the root
     m_app_ctx.swipe_enabled = true;
+    */
+	uiSetCurrentScreen(prevWidget);
+    WidgetAdd(WIDGET_ROOT, uiGetCurrentScreenContainer()->widget);
+	WidgetPaint(WIDGET_ROOT);
+
 }

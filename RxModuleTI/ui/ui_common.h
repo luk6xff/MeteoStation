@@ -78,6 +78,7 @@ void uiFrameDraw(tContext* drawing_ctx, const char* app_name);
 void uiDrawInitInfo();
 void uiSetCurrentScreen(Screens screen);
 Screens uiGetCurrentScreen();
+const ScreenContainer* uiGetCurrentScreenContainer();
 tContext* uiGetMainDrawingContext();
 void uiDelay(uint32_t msDelay);
 uint32_t uiDelayCounterMsVal();

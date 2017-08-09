@@ -81,7 +81,7 @@ typedef struct
 
     //! A pointer to the text to draw on this push button, if PB_STYLE_TEXT is
     //! selected.
-    const char *pcText;
+    char *pcText;
 
     //! A pointer to the image to be drawn onto this push button, if
     //! PB_STYLE_IMG is selected.

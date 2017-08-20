@@ -11,12 +11,12 @@
 #include "../config.h"
 
 void uiScreenSettings_registerConnectionSetupState(ConectionSetupState* state);
+
 void uiScreenSettings_registerOnConnToAP(void (*OnConnToAppCb)(void));
 
-void uiScreenSettings_registerOnCityEntry(char* cityBuf, void (*OnCityEntryCb)(void));
-void uiScreenSettings_registerOnPassEntry(char* passBuf, void (*OnPassEntryCb)(void));
-void uiScreenSettings_registerOnSsidEntry(char* ssidBuf, void (*OnSsidEntryCb)(void));
-void uiScreenSettings_registerOnUpdateTimeEntry(char* timeEntryBuf, void (*OnUpdateTimeEntryCb)(void));
+void uiScreenSettings_registerParams(char* cityPtr, char* passPtr, char* ssidPtr, char* timeEntryPtr);
 
-void uiScreenSettings_registerOnParameterEdited(void (*OnparameterEditedCb)(void));
+void uiScreenSettings_init(void);
+
+void uiScreenSettingsUpdate(void);
 #endif /* UI_UI_SCREENSETTINGS_H_ */

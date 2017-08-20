@@ -36,7 +36,6 @@ typedef struct
 typedef struct
 {
 	ConectionSetupState connectionSetupState;
-	uint8_t currentCity;
 	uint8_t params_version;
 	uint8_t is_modified;
 }ConfigFlashParameters;
@@ -56,7 +55,6 @@ ConfigFlashParameters* configFlashGetCurrent(void);
 ////////////////////////////////////////////////////////////////////////
 //EEPROM stored parameters
 ////////////////////////////////////////////////////////////////////////
-#define MAX_CITIES 3
 #define CONFIG_MAX_PARAM_NAME_LENGTH 20
 
 #define  EEPROM_START_ADDRESS 0x0000
@@ -77,7 +75,7 @@ typedef struct
 {
 	TouchScreenConfigParameters touch_screen_params;
 	AccessPointConfigParameters wifi_config;
-	char city_names[MAX_CITIES][CONFIG_MAX_PARAM_NAME_LENGTH];
+	char city_name[CONFIG_MAX_PARAM_NAME_LENGTH];
 	uint8_t update_wifi_period_time;  /*Time after which request to OpenWeatherMap is sent in seconds*/
 	uint8_t update_sensor_period_time;/*Time after which request to Sensor is sent in seconds*/
 	uint8_t params_version; 		   /* First Time the value will be 0x00 -invalid, 0x01-defaults, 0x02 - updated */

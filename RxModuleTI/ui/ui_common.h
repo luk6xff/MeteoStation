@@ -33,6 +33,7 @@
 #include "../grlib/radiobutton.h"
 #include "../grlib/keyboard.h"
 
+#include "images.h"
 #include "../system.h"
 #include "../ILI9320_driver.h"
 
@@ -57,7 +58,7 @@ typedef enum
 	SCREEN_SENSOR_SETTINGS,
 	SCREEN_KEYBOARD,
 	SCREEN_NUM_OF_SCREENS
-}Screens;
+} Screens;
 
 typedef struct
 {
@@ -66,20 +67,19 @@ typedef struct
 	Screens down;
 	Screens left;
 	Screens right;
-}ScreenContainer;
+} ScreenContainer;
 
 #define KEYBOARD_MAX_TEXT_LEN 25 //25 chars to be typed in the keyboard
 //*****************************************************************************
 // Methods
 //*****************************************************************************
-void uiInit(tContext* mainDrawingContext);
-void uiClearBackground();
-void uiFrameDraw(tContext* drawing_ctx, const char* app_name);
-void uiDrawInitInfo();
+void uiInit();
 void uiSetCurrentScreen(Screens screen);
+void uiClearBackground();
 Screens uiGetCurrentScreen();
 const ScreenContainer* uiGetCurrentScreenContainer();
 tContext* uiGetMainDrawingContext();
+void uiUpdateScreen();
 void uiDelay(uint32_t msDelay);
 uint32_t uiDelayCounterMsVal();
 bool uiRegisterTimerCb(void(*cb)(void), uint16_t period);

@@ -8,6 +8,6 @@
 #ifndef UI_UI_SCREENMAIN_H_
 #define UI_UI_SCREENMAIN_H_
 
-
+void uiScreenMainUpdate(void);
 
 #endif /* UI_UI_SCREENMAIN_H_ */

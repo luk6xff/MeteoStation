@@ -10,6 +10,8 @@
 #include "3PointCalibration.h"
 #include "delay.h"
 
+#include "ui/ui_common.h"
+
 //privates
 static const uint16_t delayMs = 1000; //1s
 static void drawCalibrationPoint(const tContext* ctx, uint16_t x, uint16_t y, uint16_t radius);
@@ -18,7 +20,7 @@ static void drawCalibrationPoint(const tContext* ctx, uint16_t x, uint16_t y, ui
 uint8_t performThreePointCalibration(tContext* ctx, CalibCoefficients* coefs)
 {
 
-
+	uiClearBackground();
 	TouchPoint p1, p2, p3;
 	TouchPoint t1, t2, t3;
 	// point 1 is at 25%,50%, 2 is at 75%,25% and 3 is at 75%,75%
@@ -146,7 +148,7 @@ uint8_t confirmThreePointCalibration(tContext* ctx)
 	    GrContextForegroundSet(ctx, ClrYellow);
 		drawCalibrationPoint(ctx, testPoint.x, testPoint.y, 30);
 
-	    GrContextForegroundSet(ctx, ClrBlack);
+	    GrContextForegroundSet(ctx, ClrPink);
 	    GrContextFontSet(ctx, &g_sFontCm20);
 
 		if(((result.x) > (testPoint.x+successThreshold)) ||

@@ -7,6 +7,11 @@
 
 #include "ui_common.h"
 
+
+//modules
+#include "../time_lib.h"
+#include "../wifi.h"
+
 //Main screen widgets
 /*
  * @brief data buffers
@@ -172,3 +177,91 @@ Canvas(
 		0,
 		0
 );
+
+
+//
+//@brief helper method updates Clock UI if needed
+//
+static void uiUpdateClock(bool drawOnly)
+{
+	if (uiGetCurrentScreen() == SCREEN_MAIN)
+	{
+		if (timeIsTimeChanged() || drawOnly)
+		{
+			if (!drawOnly)
+			{
+				sprintf(ui_timeBuf, "%d-%02d-%02d  %02d:%02d", yearNow(), monthNow(), dayNow(), hourNow(), minuteNow());
+			}
+			WidgetPaint((tWidget*)&ui_timeCanvas);
+		}
+	}
+}
+
+
+
+void uiScreenMainUpdate(void)
+{
+	if (uiGetCurrentScreen() != SCREEN_MAIN)
+	{
+		return;
+	}
+	tContext* drawingCtx = uiGetMainDrawingContext();
+	uiClearBackground(); //clear images
+	WifiWeatherDataModel data = wifiGetWeatherResultData();
+	if (data.is_valid == 0)
+	{
+		sprintf(ui_humidityBuf, "Humidity: %d %s", data.humidity, "%");
+		sprintf(ui_pressureBuf, "Pressure: %d hPa", data.pressure);
+		sprintf(ui_tempBuf,"%d C", data.temperature);
+
+		if(timeNow() > data.sunrise_time && timeNow() < data.sunset_time) //day
+		{
+			GrTransparentImageDraw(drawingCtx, img_sun, 185, 80, 0);
+		}
+		else //night
+		{
+			GrTransparentImageDraw(drawingCtx, img_moon, 185, 80, 0);
+		}
+		// convert codes weather conditions codes to images as described at:
+		// https://openweathermap.org/weather-conditions
+		for (size_t i = 0; i < 3; ++i)
+		{
+			if (data.weather_cond_code[i] == -1)
+			{
+				continue;
+			}
+			//thunder storm
+			if (data.weather_cond_code[i] >= 200 && data.weather_cond_code[i] < 300)
+			{
+				GrTransparentImageDraw(drawingCtx, img_thunderStorm, 185, 80, 0);
+			}
+			//rain
+			else if ((data.weather_cond_code[i] >= 300 && data.weather_cond_code[i] < 400) &&
+					(data.weather_cond_code[i] >= 500 && data.weather_cond_code[i] < 500))
+			{
+				GrTransparentImageDraw(drawingCtx, img_rain, 185, 80, 0);
+			}
+			//snow
+			else if (data.weather_cond_code[i] >= 600 && data.weather_cond_code[i] < 700)
+			{
+				GrTransparentImageDraw(drawingCtx, img_snow, 185, 80, 0);
+			}
+			//clouds
+			else if (data.weather_cond_code[i] >= 700 && data.weather_cond_code[i] < 1000 &&
+					 data.weather_cond_code[i] != 800)
+			{
+				GrTransparentImageDraw(drawingCtx, img_cloudy, 185, 80, 0);
+			}
+		}
+	}
+	else
+	{
+		sprintf(ui_humidityBuf, "Humidity: -- %s", "%");
+		sprintf(ui_pressureBuf, "Pressure: --- hPa");
+		sprintf(ui_tempBuf,"--- C");
+	}
+	uiUpdateClock(true);
+	WidgetPaint((tWidget*)&ui_humidityCanvas);
+	WidgetPaint((tWidget*)&ui_pressureCanvas);
+	WidgetPaint((tWidget*)&ui_tempCanvas);
+}

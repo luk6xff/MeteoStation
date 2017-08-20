@@ -20,8 +20,6 @@
 #include "touch.h"
 #include "system.h"
 #include "time_lib.h"
-#include "ui/ui_message_box.h"
-#include "ui/ui_keyboard.h"
 #include "ui/ui_common.h"
 
 #define MAIN_DEBUG_ENABLE 1
@@ -78,12 +76,6 @@ typedef enum
 	SENSOR_WAIT_FOR_DATA,
 }SensorConnectionState;
 
-static const char* const connStateDesc[] = {
-		"NOT_CONNECTED",
-		"CONNECTED",
-		"Disconnect"
-		"Connect",
-};
 
 
 //*****************************************************************************
@@ -123,9 +115,7 @@ typedef struct
 {
 	ConfigFlashParameters flash_params;
 	ConfigEepromParameters eeprom_params;
-	Screens current_screen;
 	bool swipe_enabled;
-
 }AppContext;
 
 //*****************************************************************************
@@ -136,7 +126,6 @@ typedef struct
 
 static volatile State g_mainState = STATE_RESET;
 static volatile Swipe m_swipe;
-static tContext m_drawing_context;
 static AppContext m_app_ctx;
 
 
@@ -155,8 +144,6 @@ static volatile uint32_t m_global_counter_sec = 0;
 //
 //*****************************************************************************
 static int32_t touchScreenCallback(uint32_t msg, int32_t x, int32_t y);
-static void ui_updateScreen();
-static void ui_updateClock(bool drawOnly);
 
 //*****************************************************************************
 //
@@ -215,10 +202,7 @@ static bool readConfigAndSetAppContext()
 		// assign defaults settings from memory
 		memcpy(&m_app_ctx.eeprom_params, configEepromGetCurrent(), sizeof(ConfigEepromParameters));
 	}
-
-	m_app_ctx.current_screen = SCREEN_MAIN;
 	m_app_ctx.swipe_enabled = true;
-
 	return true;
 }
 
@@ -237,12 +221,12 @@ static bool setTouchScreenCalibration()
 	//disable all interrupts
 	intsOff = IntMasterDisable();
 	ConfigEepromParameters* cfg = &m_app_ctx.eeprom_params;
-	if(configEepromIsInvalid(cfg) || cfg->touch_screen_params.is_valid == 0x00 || // first time enabled on the plant
-	   configEepromCheckAndCleanModified(cfg)) // if you want manually run the calibration
+	if(configEepromIsInvalid(cfg) || cfg->touch_screen_params.is_valid == 0x00 ||   // first time enabled on the plant
+	   configEepromCheckAndCleanModified(cfg))										// if you want manually run the calibration
 	{
-		performThreePointCalibration(&m_drawing_context, &coeffs);
+		performThreePointCalibration(uiGetMainDrawingContext(), &coeffs);
 		ADS7843setCalibrationCoefficients(&coeffs);
-		if(confirmThreePointCalibration(&m_drawing_context))
+		if(confirmThreePointCalibration(uiGetMainDrawingContext()))
 		{
 			cfg->touch_screen_params.calib_coeffs = coeffs;
 			cfg->touch_screen_params.is_valid = 0x01;
@@ -274,159 +258,6 @@ static bool setTouchScreenCalibration()
 
 
 
-
-
-//*****************************************************************************
-//
-// @brief Update UI screens with settings, data and other values
-//
-//*****************************************************************************
-static void ui_updateScreen()
-{
-    switch (m_app_ctx.current_screen)
-    {
-    	case SCREEN_MAIN:
-    	{
-    		uiClearBackground(); //clear images
-    		WifiWeatherDataModel data = wifiGetWeatherResultData();
-    		if (data.is_valid == 0)
-    		{
-    			sprintf(ui_humidityBuf, "Humidity: %d %s", data.humidity, "%");
-    			sprintf(ui_pressureBuf, "Pressure: %d hPa", data.pressure);
-    			sprintf(ui_tempBuf,"%d C", data.temperature);
-
-    			if(timeNow() > data.sunrise_time && timeNow() < data.sunset_time) //day
-    			{
-    				GrTransparentImageDraw(&m_drawing_context, img_sun, 185, 80, 0);
-    			}
-    			else //night
-    			{
-    				GrTransparentImageDraw(&m_drawing_context, img_moon, 185, 80, 0);
-    			}
-    			// convert codes weather conditions codes to images as described at:
-    			// https://openweathermap.org/weather-conditions
-    			for (size_t i = 0; i < 3; ++i)
-    			{
-    				if (data.weather_cond_code[i] == -1)
-    				{
-    					continue;
-    				}
-    				//thunder storm
-    				if (data.weather_cond_code[i] >= 200 && data.weather_cond_code[i] < 300)
-    				{
-    					GrTransparentImageDraw(&m_drawing_context, img_thunderStorm, 185, 80, 0);
-    				}
-    				//rain
-    				else if ((data.weather_cond_code[i] >= 300 && data.weather_cond_code[i] < 400) &&
-    						(data.weather_cond_code[i] >= 500 && data.weather_cond_code[i] < 500))
-    				{
-    					GrTransparentImageDraw(&m_drawing_context, img_rain, 185, 80, 0);
-    				}
-    				//snow
-    				else if (data.weather_cond_code[i] >= 600 && data.weather_cond_code[i] < 700)
-    				{
-    					GrTransparentImageDraw(&m_drawing_context, img_snow, 185, 80, 0);
-    				}
-    				//clouds
-    				else if (data.weather_cond_code[i] >= 700 && data.weather_cond_code[i] < 1000 &&
-    						 data.weather_cond_code[i] != 800)
-    				{
-    					GrTransparentImageDraw(&m_drawing_context, img_cloudy, 185, 80, 0);
-    				}
-    			}
-    		}
-    		else
-    		{
-    			sprintf(ui_humidityBuf, "Humidity: -- %s", "%");
-    			sprintf(ui_pressureBuf, "Pressure: --- hPa");
-    			sprintf(ui_tempBuf,"--- C");
-    		}
-    		ui_updateClock(true);
-    		WidgetPaint((tWidget*)&ui_humidityCanvas);
-    		WidgetPaint((tWidget*)&ui_pressureCanvas);
-    		WidgetPaint((tWidget*)&ui_tempCanvas);
-    		break;
-    	}
-    	case SCREEN_CONN_SETTINGS:
-    	{
-    		if (m_app_ctx.flash_params.connectionSetupState.wifiEnabled)
-    		{
-    			CheckBoxSelectedOn(&ui_settingsCheckBoxes[0]);
-    		    CanvasImageSet(&ui_settingsCheckBoxIndicators[0], img_lightOn);
-    		}
-    		else
-    		{
-    			CheckBoxSelectedOff(&ui_settingsCheckBoxes[0]);
-    		    CanvasImageSet(&ui_settingsCheckBoxIndicators[0], img_lightOff);
-    		}
-
-    		if (m_app_ctx.flash_params.connectionSetupState.sensorsEnabled)
-    		{
-    			CheckBoxSelectedOn(&ui_settingsCheckBoxes[1]);
-    		    CanvasImageSet(&ui_settingsCheckBoxIndicators[1], img_lightOn);
-    		}
-    		else
-    		{
-    			CheckBoxSelectedOff(&ui_settingsCheckBoxes[1]);
-    		    CanvasImageSet(&ui_settingsCheckBoxIndicators[1], img_lightOff);
-    		}
-
-    		if (m_app_ctx.flash_params.connectionSetupState.powerSavingEnabled)
-    		{
-    			CheckBoxSelectedOn(&ui_settingsCheckBoxes[2]);
-    		    CanvasImageSet(&ui_settingsCheckBoxIndicators[2], img_lightOn);
-    		}
-    		else
-    		{
-    			CheckBoxSelectedOff(&ui_settingsCheckBoxes[2]);
-    		    CanvasImageSet(&ui_settingsCheckBoxIndicators[2], img_lightOff);
-    		}
-    		for (size_t i = 0; i < 3; ++i)
-    		{
-    			WidgetPaint((tWidget *)(&ui_settingsCheckBoxes[i]));
-    			WidgetPaint((tWidget *)(&ui_settingsCheckBoxIndicators[i]));
-    		}
-
-    		//connection status
-    		switch (wifiGetConnectionStatus())
-			{
-				case WIFI_NOT_CONNECTED:
-					GrContextFontSet(&m_drawing_context, &g_sFontCm12);
-					GrContextForegroundSet(&m_drawing_context, ClrWhite);
-					GrStringDrawCentered(&m_drawing_context, connStateDesc[WIFI_NOT_CONNECTED], -1, 250, 130, true);
-					break;
-				case WIFI_CONNECTED:
-				case WIFI_TRANSMISSION_CREATED:
-				case WIFI_TRANSMISSION_ENDED:
-					GrContextFontSet(&m_drawing_context, &g_sFontCm16);
-					GrContextForegroundSet(&m_drawing_context, ClrWhite);
-					GrStringDrawCentered(&m_drawing_context, connStateDesc[WIFI_CONNECTED], -1, 250, 130, true);
-					break;
-				default:
-					break;
-			}
-    		break;
-    	}
-    	default:
-    		break;
-    }
-}
-
-static void ui_updateClock(bool drawOnly)
-{
-	if (m_app_ctx.current_screen == SCREEN_MAIN)
-	{
-		if (timeIsTimeChanged() || drawOnly)
-		{
-			if (!drawOnly)
-			{
-				sprintf(ui_timeBuf, "%d-%02d-%02d  %02d:%02d", yearNow(), monthNow(), dayNow(), hourNow(), minuteNow());
-			}
-			WidgetPaint((tWidget*)&ui_timeCanvas);
-		}
-
-	}
-}
 
 //*****************************************************************************
 //
@@ -524,13 +355,13 @@ static int32_t touchScreenCallback(uint32_t msg, int32_t x, int32_t y)
         }
     }
     WidgetPointerMessage(msg, x, y);
-    return(0);
+    return 0;
 }
 
 
 static void handleMovement(void)
 {
-	uint16_t newScreenIdx = m_app_ctx.current_screen;
+	uint16_t newScreenIdx = uiGetCurrentScreen();
 	if(m_app_ctx.swipe_enabled)
 	{
 		if(m_swipe.swipeDirecttion != SWIPE_NONE )
@@ -538,31 +369,31 @@ static void handleMovement(void)
 
 			if(m_swipe.swipeDirecttion == SWIPE_RIGHT)
 			{
-			    newScreenIdx = m_screens[m_app_ctx.current_screen].right;
+			    newScreenIdx = uiGetCurrentScreenContainer()->right;
 			}
 			else if(m_swipe.swipeDirecttion == SWIPE_LEFT)
 			{
-			    newScreenIdx = m_screens[m_app_ctx.current_screen].left;
+			    newScreenIdx = uiGetCurrentScreenContainer()->left;
 			}
 			else if(m_swipe.swipeDirecttion == SWIPE_UP)
 			{
-			    newScreenIdx = m_screens[m_app_ctx.current_screen].up;
+			    newScreenIdx = uiGetCurrentScreenContainer()->up;
 			}
 			else if(m_swipe.swipeDirecttion == SWIPE_DOWN)
 			{
-			    newScreenIdx = m_screens[m_app_ctx.current_screen].down;
+			    newScreenIdx = uiGetCurrentScreenContainer()->down;
 			}
 		}
-		if(newScreenIdx != m_app_ctx.current_screen)
+		if(newScreenIdx != uiGetCurrentScreen())
 		{
-            WidgetRemove(m_screens[m_app_ctx.current_screen].widget);
-            WidgetAdd(WIDGET_ROOT, m_screens[newScreenIdx].widget);
+            WidgetRemove(uiGetCurrentScreenContainer()->widget);
+            uiSetCurrentScreen(newScreenIdx);
+            WidgetAdd(WIDGET_ROOT, uiGetCurrentScreenContainer()->widget);
             WidgetPaint(WIDGET_ROOT);
             m_get_new_temp_data = false;  //clean flag
             m_global_counter_sec = 1; 	  //clean counter
-            m_app_ctx.current_screen = newScreenIdx;
             WidgetMessageQueueProcess();
-            ui_updateScreen();
+            uiUpdateScreen();
 		}
 	}
 	m_swipe.swipeDirecttion = SWIPE_NONE;
@@ -614,12 +445,11 @@ int main(void)
 	configInit();
 
 	//UI
-    GrContextInit(&m_drawing_context, &g_ILI9320);
-    uiInit(&m_drawing_context);
-    uiFrameDraw(&m_drawing_context, "Meteo Ubiad Stacja");
-    WidgetAdd(WIDGET_ROOT, m_screens[m_app_ctx.current_screen].widget);
-    WidgetPaint(WIDGET_ROOT);
-    uiDrawInitInfo();
+	uiScreenSettings_registerParams(&m_app_ctx.eeprom_params.city_name,
+									&m_app_ctx.eeprom_params.wifi_config.ap_wpa2_pass,
+									&m_app_ctx.eeprom_params.wifi_config.ap_ssid,
+									&m_app_ctx.eeprom_params.update_wifi_period_time);
+    uiInit();
 
 	//touchScreenControler
 	touchScreenInit();
@@ -635,6 +465,7 @@ int main(void)
 	wifiInit(m_app_ctx.eeprom_params.wifi_config.ap_ssid,
 			 m_app_ctx.eeprom_params.wifi_config.ap_wpa2_pass);
 	wifiCheckApConnectionStatus();
+
 	if (m_app_ctx.flash_params.connectionSetupState.wifiEnabled)
 	{
 		wifiConnectToAp(); //try to connect
@@ -690,19 +521,17 @@ int main(void)
 						}
 					}
 				}
-				if (m_app_ctx.current_screen == SCREEN_MAIN)
+				if (uiGetCurrentScreen() == SCREEN_MAIN)
 				{
-					if (!wifiFetchCurrentWeather(m_app_ctx.eeprom_params.city_names[m_app_ctx.flash_params.currentCity]))
+					if (!wifiFetchCurrentWeather(m_app_ctx.eeprom_params.city_name))
 					{
 						MAIN_DEBUG("wifiGetCurrentWeather failed\n\r");
 					}
 				}
 			}
-			ui_updateScreen();
+			uiUpdateScreen();
 			m_get_new_temp_data = false;
 		}
-
-		ui_updateClock(false);
 
 		if(!ADS7843getIntPinState()) // if touch panel is being touched)
 		{
@@ -713,7 +542,6 @@ int main(void)
 			if((m_global_counter_sec - touch_screen_pressed_time) > 50) // if > ~10s do screen calibration
 			{
 				DISABLE_ALL_INTERRUPTS();
-				uiClearBackground(&m_drawing_context);
 				delay_ms(1500);
 				configEepromSetModified(&(m_app_ctx.eeprom_params));
 				setTouchScreenCalibration();

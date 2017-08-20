@@ -25,7 +25,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-#include "grlib/grlib.h"
+#include "../grlib/grlib.h"
 
 //*****************************************************************************
 //

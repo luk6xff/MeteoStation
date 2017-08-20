@@ -8,8 +8,18 @@
 #include "ui_screenSettings.h"
 #include "ui_keyboard.h"
 
-#include "../images.h"
 #include "../system.h"
+#include "../wifi.h"
+
+
+
+
+static const char* const connStateDesc[] = {
+		"NOT_CONNECTED",
+		"CONNECTED",
+		"Disconnect"
+		"Connect",
+};
 
 
 //*****************************************************************************
@@ -50,42 +60,22 @@ void uiScreenSettings_registerOnConnToAP(void (*OnConnToAppCb)(void))
 	onConnToAppCb = OnConnToAppCb;
 }
 
-static char* cityPtr = NULL;
-static void (*onCityEntryCb)(void) = NULL;
-void uiScreenSettings_registerOnCityEntry(char* cityBuf, void (*OnCityEntryCb)(void))
+static char cityBuf[25];
+static char passBuf[25];
+static char ssidBuf[25];
+static char timeEntryBuf[25];
+
+
+void uiScreenSettings_registerParams(char* cityPtr, char* passPtr, char* ssidPtr, char* timeEntryPtr)
 {
+	memcpy(cityBuf, cityPtr, sizeof(cityBuf));
 	cityPtr = cityBuf;
-	onCityEntryCb = OnCityEntryCb;
-}
-
-static char* passPtr = NULL;
-static void (*onPassEntryCb)(void) = NULL;
-void uiScreenSettings_registerOnPassEntry(char* passBuf, void (*OnPassEntryCb)(void))
-{
+	memcpy(passBuf, passPtr, sizeof(passBuf));
 	passPtr = passBuf;
-	onPassEntryCb = OnPassEntryCb;
-}
-
-static char ssidPtr[25];
-static void (*onSsidEntryCb)(void) = NULL;
-void uiScreenSettings_registerOnSsidEntry(char* ssidBuf, void (*OnSsidEntryCb)(void))
-{
-	//ssidPtr = ssidBuf;
-	onSsidEntryCb = OnSsidEntryCb;
-}
-
-static char* timeEntryPtr = NULL;
-static void (*onUpdateTimeEntryCb)(void) = NULL;
-void uiScreenSettings_registerOnUpdateTimeEntry(char* timeEntryBuf, void (*OnUpdateTimeEntryCb)(void))
-{
+	memcpy(ssidBuf, ssidPtr, sizeof(ssidBuf));
+	ssidPtr = ssidBuf;
+	memcpy(timeEntryBuf, timeEntryPtr, sizeof(timeEntryBuf));
 	timeEntryPtr = timeEntryBuf;
-	onUpdateTimeEntryCb = OnUpdateTimeEntryCb;
-}
-
-static void (*onParameterEditedCb)(void) = NULL;
-void uiScreenSettings_registerOnParameterEdited(void (*OnparameterEditedCb)(void))
-{
-	onParameterEditedCb = OnparameterEditedCb;
 }
 
 //*****************************************************************************
@@ -529,7 +519,7 @@ RectangularButton
 	ClrWhite,
 	ClrGray,
 	g_psFontCmss14,
-	ssidPtr,
+	ssidBuf,
 	0,
 	0,
 	0,
@@ -555,7 +545,7 @@ RectangularButton
 	ClrWhite,
 	ClrGray,
 	g_psFontCmss14,
-	passPtr,
+	passBuf,
 	0,
 	0,
 	0,
@@ -580,7 +570,7 @@ RectangularButton
 	ClrWhite,
 	ClrGray,
 	g_psFontCmss14,
-	cityPtr,
+	cityBuf,
 	0,
 	0,
 	0,
@@ -675,8 +665,8 @@ static void onCityEntry(tWidget *psWidget)
 {
 	// Disable swiping while the keyboard is active.
 	//m_app_ctx.swipe_enabled = false;
-	(*onCityEntryCb)();
-	uiKeyboardCreate(cityPtr, uiGetCurrentScreen(),
+	//(*onCityEntryCb)();
+	uiKeyboardCreate(cityBuf, uiGetCurrentScreen(),
 					AlphaNumeric, "Save the city", "Wanna save the city?",
 					onParameterEdited);
 	// Activate the keyboard.
@@ -685,9 +675,8 @@ static void onCityEntry(tWidget *psWidget)
 
 static void onSsidEntry(tWidget *psWidget)
 {
-	(*onSsidEntryCb)();
 	WidgetRemove(uiGetCurrentScreenContainer()->widget);
-	uiKeyboardCreate(ssidPtr, uiGetCurrentScreen(),
+	uiKeyboardCreate(ssidBuf, uiGetCurrentScreen(),
 					AlphaNumeric, "Save the ap ssid", "Wanna save the AP SSID?",
 					onParameterEdited);
 	uiSetCurrentScreen(SCREEN_KEYBOARD);
@@ -695,9 +684,8 @@ static void onSsidEntry(tWidget *psWidget)
 
 static void onPassEntry(tWidget *psWidget)
 {
-	(*onPassEntryCb)();
 	WidgetRemove(uiGetCurrentScreenContainer()->widget);
-	uiKeyboardCreate(passPtr, uiGetCurrentScreen(),
+	uiKeyboardCreate(passBuf, uiGetCurrentScreen(),
 					AlphaNumeric,"Save the AP pass", "Wanna save the AP password?",
 					onParameterEdited);
 	uiSetCurrentScreen(SCREEN_KEYBOARD);
@@ -705,9 +693,8 @@ static void onPassEntry(tWidget *psWidget)
 
 static void onUpdateTimeEntry(tWidget *psWidget)
 {
-	(*onUpdateTimeEntryCb)();
 	WidgetRemove(uiGetCurrentScreenContainer()->widget);
-	uiKeyboardCreate(timeEntryPtr, uiGetCurrentScreen(),
+	uiKeyboardCreate(timeEntryBuf, uiGetCurrentScreen(),
 					Numeric, "Update refresh period", "Wanna save the period value?",
 					onParameterEdited);
 	uiSetCurrentScreen(SCREEN_KEYBOARD);
@@ -718,7 +705,6 @@ static void onUpdateTimeEntry(tWidget *psWidget)
 //*****************************************************************************
 static void onParameterEdited(const Screens prevWidget, bool save)
 {
-	(*onParameterEditedCb)();
 	/*
 	if(save)
 	{
@@ -735,5 +721,71 @@ static void onParameterEdited(const Screens prevWidget, bool save)
 	uiSetCurrentScreen(prevWidget);
     WidgetAdd(WIDGET_ROOT, uiGetCurrentScreenContainer()->widget);
 	WidgetPaint(WIDGET_ROOT);
+}
+
+void uiScreenSettingsUpdate(void)
+{
+	if (uiGetCurrentScreen() != SCREEN_CONN_SETTINGS)
+	{
+		return;
+	}
+	tContext* drawingCtx = uiGetMainDrawingContext();
+
+	if (1)//m_app_ctx.flash_params.connectionSetupState.wifiEnabled)
+	{
+		CheckBoxSelectedOn(&ui_settingsCheckBoxes[0]);
+	    CanvasImageSet(&ui_settingsCheckBoxIndicators[0], img_lightOn);
+	}
+	else
+	{
+		CheckBoxSelectedOff(&ui_settingsCheckBoxes[0]);
+	    CanvasImageSet(&ui_settingsCheckBoxIndicators[0], img_lightOff);
+	}
+
+	if (1)//m_app_ctx.flash_params.connectionSetupState.sensorsEnabled)
+	{
+		CheckBoxSelectedOn(&ui_settingsCheckBoxes[1]);
+	    CanvasImageSet(&ui_settingsCheckBoxIndicators[1], img_lightOn);
+	}
+	else
+	{
+		CheckBoxSelectedOff(&ui_settingsCheckBoxes[1]);
+	    CanvasImageSet(&ui_settingsCheckBoxIndicators[1], img_lightOff);
+	}
+
+	if (1)//m_app_ctx.flash_params.connectionSetupState.powerSavingEnabled)
+	{
+		CheckBoxSelectedOn(&ui_settingsCheckBoxes[2]);
+	    CanvasImageSet(&ui_settingsCheckBoxIndicators[2], img_lightOn);
+	}
+	else
+	{
+		CheckBoxSelectedOff(&ui_settingsCheckBoxes[2]);
+	    CanvasImageSet(&ui_settingsCheckBoxIndicators[2], img_lightOff);
+	}
+	for (size_t i = 0; i < 3; ++i)
+	{
+		WidgetPaint((tWidget *)(&ui_settingsCheckBoxes[i]));
+		WidgetPaint((tWidget *)(&ui_settingsCheckBoxIndicators[i]));
+	}
+
+	//connection status
+	switch (wifiGetConnectionStatus())
+	{
+		case WIFI_NOT_CONNECTED:
+			GrContextFontSet(drawingCtx, &g_sFontCm12);
+			GrContextForegroundSet(drawingCtx, ClrWhite);
+			GrStringDrawCentered(drawingCtx, connStateDesc[WIFI_NOT_CONNECTED], -1, 250, 130, true);
+			break;
+		case WIFI_CONNECTED:
+		case WIFI_TRANSMISSION_CREATED:
+		case WIFI_TRANSMISSION_ENDED:
+			GrContextFontSet(drawingCtx, &g_sFontCm16);
+			GrContextForegroundSet(drawingCtx, ClrWhite);
+			GrStringDrawCentered(drawingCtx, connStateDesc[WIFI_CONNECTED], -1, 250, 130, true);
+			break;
+		default:
+			break;
+	}
 
 }

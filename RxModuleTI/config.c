@@ -30,12 +30,10 @@ static const ConfigFlashParameters default_flash_settings =
 		0x00,	// wifiConnectionState - WIFI_NOT_CONNECTED
 		0x00	// sensorConnectionState - SENSOR_NOT_CONNECTED
 	},
-	0x00, // currentCity
 	0x01, // params_version
 	0x00  // is_modified
 };
 
-static uint8_t active_flash_block = 0;
 
 static ConfigFlashParameters m_current_flash_parameters;
 
@@ -141,9 +139,8 @@ static const ConfigEepromParameters default_eeprom_settings =
 				{"default"}, 							// apSSID
 				{"default"},						    // apPass
 		},
-		{
-				{"city"}, {"city"}, {"city"}			// cityNames
-		},
+		{"city"},										// cityName
+
 		60,												// updateWifiPeriodTime
 		60,												// updateSensorPeriodTime
 		0x01, 											// params_version 0x00 and 0xFF means invalid one

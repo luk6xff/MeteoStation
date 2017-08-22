@@ -7,6 +7,8 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
+#include <stdarg.h>
 
 #include "debugConsole.h"
 #include "utils/uartstdio.h"
@@ -73,6 +75,30 @@ void debugCommandReceived()
 		}
 	}
 }
+
+void DEBUG(bool enable, const char* moduleName, const char* fmt, ...)
+{
+	do
+	{
+		if (enable)
+		{
+			char buf[256];
+			memset(buf, '\0', sizeof(buf));
+			int len = strlen(moduleName);
+			memcpy(buf, moduleName, len);
+			buf[len] = ':';
+			buf[len+1] = ' ';
+			va_list args;
+			va_start(args, fmt);
+			vsprintf(&buf[len+2], fmt, args);
+			va_end(args);
+			UARTwrite(buf, strlen(buf));
+			debugConsolePrintf("\n");
+		}
+	}while(0);
+}
+
+
 
 
 //Debug diagnostic message dispatching

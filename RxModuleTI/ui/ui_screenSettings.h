@@ -10,13 +10,9 @@
 
 #include "../config.h"
 
-void uiScreenSettings_registerConnectionSetupState(ConectionSetupState* state);
+void uiScreenSettings_init(ConfigEepromParameters* eepromConfig, ConfigFlashParameters* flashConfig);
 
-void uiScreenSettings_registerOnConnToAP(void (*OnConnToAppCb)(void));
+void uiScreenSettings_update(void);
 
-void uiScreenSettings_registerParams(char* cityPtr, char* passPtr, char* ssidPtr, char* timeEntryPtr);
-
-void uiScreenSettings_init(void);
-
-void uiScreenSettingsUpdate(void);
+void uiScreenSettings_onExit(void);
 #endif /* UI_UI_SCREENSETTINGS_H_ */

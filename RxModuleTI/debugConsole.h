@@ -16,5 +16,6 @@ void debugConsolePrintf(const char *pcString, ...);
 
 void debugCommandReceived();
 
+void DEBUG(bool enable, const char* moduleName, const char* fmt, ...);
 
 #endif /* DEBUGCONSOLE_H_ */

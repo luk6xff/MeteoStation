@@ -51,11 +51,12 @@ bool configFlashSetInvalid(ConfigFlashParameters* const ptr);
 bool configFlashIsInvalid(const ConfigFlashParameters * const ptr);
 ConfigFlashParameters* const configFlashGetDefaultSettings(void);
 ConfigFlashParameters* configFlashGetCurrent(void);
+bool configFlashSaveSettingsToMemory(const ConfigFlashParameters* settings);
 
 ////////////////////////////////////////////////////////////////////////
 //EEPROM stored parameters
 ////////////////////////////////////////////////////////////////////////
-#define CONFIG_MAX_PARAM_NAME_LENGTH 20
+#define CONFIG_MAX_PARAM_NAME_LENGTH 25
 
 #define  EEPROM_START_ADDRESS 0x0000
 
@@ -97,6 +98,7 @@ bool configEepromSetInvalid(ConfigEepromParameters * const ptr);
 bool configEepromIsInvalid(const ConfigEepromParameters * const ptr);
 ConfigEepromParameters* const configEepromGetDefaultSettings(void);
 ConfigEepromParameters* configEepromGetCurrent(void);
+bool configEepromSaveSettingsToMemory(const ConfigEepromParameters* settings);
 
 ////////////////////////////////////////////////////////////////////////
 //public API methods:

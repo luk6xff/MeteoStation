@@ -16,6 +16,7 @@
 #include "driverlib/debug.h"
 #include "driverlib/eeprom.h"
 
+#include "system.h"
 #include "config.h"
 
 ////////////////////////////////////////////////////////////////////////
@@ -215,4 +216,32 @@ ConfigEepromParameters* configEepromGetCurrent(void)
 	return &m_current_eeprom_parameters;
 }
 
+//@brief Global save methods
+bool configFlashSaveSettingsToMemory(const ConfigFlashParameters* settings)
+{
+	DISABLE_ALL_INTERRUPTS();
+	bool ret = false;
+	if(configFlashCheckAndCleanModified(settings))
+	{
+		memcpy(configFlashGetCurrent(), settings, sizeof(ConfigFlashParameters));
+		configFlashSave();
+		ret = true;
+	}
+	ENABLE_ALL_INTERRUPTS();
+	return ret;
+}
+
+bool configEepromSaveSettingsToMemory(const ConfigEepromParameters* settings)
+{
+	DISABLE_ALL_INTERRUPTS();
+	bool ret = false;
+	if(configEepromCheckAndCleanModified(settings))
+	{
+		memcpy(configEepromGetCurrent(), settings, sizeof(ConfigEepromParameters));
+		configEepromSave();
+		ret = true;
+	}
+	ENABLE_ALL_INTERRUPTS();
+	return ret;
+}
 

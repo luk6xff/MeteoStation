@@ -25,22 +25,8 @@
 #define MAIN_DEBUG_ENABLE 1
 #if MAIN_DEBUG_ENABLE
 	#include "debugConsole.h"
+	static const char* name = "main";
 #endif
-static inline void MAIN_DEBUG(const char* fmt, ...)
-{
-	do
-	{
-		if (MAIN_DEBUG_ENABLE)
-		{
-			va_list args;
-			va_start(args, fmt);
-			debugConsolePrintf("Main: ");
-			debugConsolePrintf(fmt, args);
-			va_end(args);
-			debugConsolePrintf("\n");
-		}
-	}while(0);
-}
 
 
 
@@ -150,26 +136,7 @@ static int32_t touchScreenCallback(uint32_t msg, int32_t x, int32_t y);
 // Private methods
 //
 //*****************************************************************************
-static bool saveApplicationContextToMemory()
-{
-	DISABLE_ALL_INTERRUPTS();
-	bool ret = false;
-	if(configFlashCheckAndCleanModified(&m_app_ctx.flash_params))
-	{
-		memcpy(configFlashGetCurrent(), &m_app_ctx.flash_params, sizeof(ConfigFlashParameters));
-		configFlashSave();
-		ret = true;
-	}
 
-	if(configEepromCheckAndCleanModified(&m_app_ctx.eeprom_params))
-	{
-		memcpy(configEepromGetCurrent(), &m_app_ctx.eeprom_params, sizeof(ConfigEepromParameters));
-		configEepromSave();
-		ret = true;
-	}
-	ENABLE_ALL_INTERRUPTS();
-	return ret;
-}
 
 // Reads config from flash and eeprom and fills the current App context
 static bool readConfigAndSetAppContext()
@@ -206,8 +173,6 @@ static bool readConfigAndSetAppContext()
 	return true;
 }
 
-
-
 //*****************************************************************************
 //
 // Touch screen calibration method.
@@ -232,14 +197,14 @@ static bool setTouchScreenCalibration()
 			cfg->touch_screen_params.is_valid = 0x01;
 			cfg->params_version = 0x01;
 			configEepromSetModified(cfg);
-			saveApplicationContextToMemory();
-			MAIN_DEBUG("COEFFSa: a.x=%d, a.y=%d\n\r", coeffs.m_ax, coeffs.m_ay);
-			MAIN_DEBUG("COEFFSb: b.x=%d, b.y=%d\n\r", coeffs.m_bx, coeffs.m_by);
-			MAIN_DEBUG("COEFFSd: d.x=%d, d.y=%d\n\r", coeffs.m_dx, coeffs.m_dy);
+			configEepromSaveSettingsToMemory(&m_app_ctx.eeprom_params);
+			DEBUG(MAIN_DEBUG_ENABLE, name, "COEFFSa: a.x=%d, a.y=%d\n\r", coeffs.m_ax, coeffs.m_ay);
+			DEBUG(MAIN_DEBUG_ENABLE, name, "COEFFSb: b.x=%d, b.y=%d\n\r", coeffs.m_bx, coeffs.m_by);
+			DEBUG(MAIN_DEBUG_ENABLE, name, "COEFFSd: d.x=%d, d.y=%d\n\r", coeffs.m_dx, coeffs.m_dy);
 		}
 		else
 		{
-			MAIN_DEBUG("Touch Screen Calibration failed\n\r");
+			DEBUG(MAIN_DEBUG_ENABLE, name, "Touch Screen Calibration failed\n\r");
 		}
 
 		ret = true;
@@ -445,10 +410,7 @@ int main(void)
 	configInit();
 
 	//UI
-	uiScreenSettings_registerParams(&m_app_ctx.eeprom_params.city_name,
-									&m_app_ctx.eeprom_params.wifi_config.ap_wpa2_pass,
-									&m_app_ctx.eeprom_params.wifi_config.ap_ssid,
-									&m_app_ctx.eeprom_params.update_wifi_period_time);
+	uiScreenSettings_init(&m_app_ctx.eeprom_params, &m_app_ctx.flash_params);
     uiInit();
 
 	//touchScreenControler
@@ -472,8 +434,8 @@ int main(void)
 	}
 
 	//time module initialization
-	timeInit(wifiFetchCurrentNtpTime);
-	timeSetTimeZone(timeZoneCET);
+	//timeInit(wifiFetchCurrentNtpTime);
+	//timeSetTimeZone(timeZoneCET);
 
 	// Enable the SysTick and its Interrupt.
 	SysTickPeriodSet(SysCtlClockGet()); //0.2[s];
@@ -498,7 +460,7 @@ int main(void)
 			ADS7843read();
 			TouchPoint a;
 			a = ADS7843getTouchedPoint();
-			//MAIN_DEBUG("RESULTS: x=%d, y=%d\n\r", a.x, a.y);
+			DEBUG(MAIN_DEBUG_ENABLE, name, "RESULTS: x=%d, y=%d\n\r", a.x, a.y);
 			GrContextForegroundSet(&m_drawing_context, ClrRed);
 			GrCircleFill(&m_drawing_context, a.x, a.y, 3);
 		}
@@ -517,7 +479,7 @@ int main(void)
 						{
 							m_app_ctx.flash_params.connectionSetupState.wifiConnectionState = state;
 							configFlashSetModified(&m_app_ctx.flash_params);
-							saveApplicationContextToMemory();
+							configFlashSaveSettingsToMemory(&m_app_ctx.flash_params);
 						}
 					}
 				}
@@ -525,13 +487,18 @@ int main(void)
 				{
 					if (!wifiFetchCurrentWeather(m_app_ctx.eeprom_params.city_name))
 					{
-						MAIN_DEBUG("wifiGetCurrentWeather failed\n\r");
+						DEBUG(MAIN_DEBUG_ENABLE, name, "wifiFetchCurrentWeather failed\n\r");
+					}
+					if (!wifiFetchCurrentNtpTime())
+					{
+						DEBUG(MAIN_DEBUG_ENABLE, name, "wifiFetchCurrentNtpTime failed\n\r");
 					}
 				}
 			}
-			uiUpdateScreen();
 			m_get_new_temp_data = false;
 		}
+
+		uiUpdateScreen();
 
 		if(!ADS7843getIntPinState()) // if touch panel is being touched)
 		{

@@ -11,6 +11,11 @@
 #include "../system.h"
 #include "../wifi.h"
 
+#define UI_SETTINGS_DEBUG_ENABLE 1
+#if UI_SETTINGS_DEBUG_ENABLE
+	#include "../debugConsole.h"
+	static const char* name = "ui_screenSettings";
+#endif
 
 
 
@@ -45,37 +50,21 @@ static void onParameterEdited(const Screens prevWidget, bool save);
 // Local UI state variables / register callbacks methods
 //
 //*****************************************************************************
-static ConectionSetupState* connectionSetupState = NULL;
-void uiScreenSettings_registerConnectionSetupState(ConectionSetupState* state)
+static ConfigEepromParameters* eepromConfig;
+static ConfigFlashParameters* flashConfig;
+static char cityBuf[CONFIG_MAX_PARAM_NAME_LENGTH];
+static char passBuf[CONFIG_MAX_PARAM_NAME_LENGTH];
+static char ssidBuf[CONFIG_MAX_PARAM_NAME_LENGTH];
+static char timeEntryBuf[CONFIG_MAX_PARAM_NAME_LENGTH];
+
+void uiScreenSettings_init(ConfigEepromParameters* eepromConfigPtr, ConfigFlashParameters* flashConfigPtr)
 {
-	if (state != NULL)
-	{
-		connectionSetupState = state;
-	}
-}
-
-static void (*onConnToAppCb)(void) = NULL;
-void uiScreenSettings_registerOnConnToAP(void (*OnConnToAppCb)(void))
-{
-	onConnToAppCb = OnConnToAppCb;
-}
-
-static char cityBuf[25];
-static char passBuf[25];
-static char ssidBuf[25];
-static char timeEntryBuf[25];
-
-
-void uiScreenSettings_registerParams(char* cityPtr, char* passPtr, char* ssidPtr, char* timeEntryPtr)
-{
-	memcpy(cityBuf, cityPtr, sizeof(cityBuf));
-	cityPtr = cityBuf;
-	memcpy(passBuf, passPtr, sizeof(passBuf));
-	passPtr = passBuf;
-	memcpy(ssidBuf, ssidPtr, sizeof(ssidBuf));
-	ssidPtr = ssidBuf;
-	memcpy(timeEntryBuf, timeEntryPtr, sizeof(timeEntryBuf));
-	timeEntryPtr = timeEntryBuf;
+	eepromConfig = eepromConfigPtr;
+	flashConfig  = flashConfigPtr;
+	memcpy(cityBuf, eepromConfigPtr->city_name, sizeof(cityBuf));
+	memcpy(passBuf, eepromConfigPtr->wifi_config.ap_wpa2_pass, sizeof(passBuf));
+	memcpy(ssidBuf, eepromConfigPtr->wifi_config.ap_ssid, sizeof(ssidBuf));
+	//memcpy(timeEntryBuf, eepromConfigPtr->update_wifi_period_time, sizeof(timeEntryBuf));
 }
 
 //*****************************************************************************
@@ -419,65 +408,59 @@ void onConnCheckBoxChange(tWidget *widget, uint32_t enabled)
     			   enabled ? img_lightOn : img_lightOff);
     WidgetPaint((tWidget *)(ui_settingsCheckBoxIndicators + idx));
 
-    if (connectionSetupState == NULL)
-    {
-    	return;
-    }
-
     if (strcmp(ui_settingsCheckBoxes[idx].pcText, "WIFI") == 0)
     {
-		connectionSetupState->wifiEnabled = enabled;
+    	flashConfig->connectionSetupState.wifiEnabled = enabled;
+    	configFlashSetModified(flashConfig);
     }
     else if (strcmp(ui_settingsCheckBoxes[idx].pcText, "Sensors") == 0)
     {
-    	connectionSetupState->sensorsEnabled = enabled;
+    	flashConfig->connectionSetupState.sensorsEnabled = enabled;
+    	configFlashSetModified(flashConfig);
     }
     else if (strcmp(ui_settingsCheckBoxes[idx].pcText, "PowerSaving") == 0)
     {
-    	connectionSetupState->powerSavingEnabled = enabled;
+    	flashConfig->connectionSetupState.powerSavingEnabled = enabled;
+    	configFlashSetModified(flashConfig);
     }
 }
 
 void onConnToAP(tWidget *psWidget)
 {
-	if (!onConnToAppCb)
+	if (!flashConfig->connectionSetupState.wifiEnabled)
 	{
-		(*onConnToAppCb)();
-	}
-	/*
-	if (!m_app_ctx.flash_params.connectionSetupState.wifiEnabled  )
 		return;
+	}
 
 	if (wifiGetConnectionStatus() == WIFI_NOT_CONNECTED)
 	{
 		if(wifiConnectToAp())
 		{
-			MAIN_DEBUG("Connected to AP: %s", m_app_ctx.eeprom_params.wifi_config.ap_ssid);
+			DEBUG(UI_SETTINGS_DEBUG_ENABLE, name, "Connected to AP: %s", eepromConfig->wifi_config.ap_ssid);
 		}
 		else
 		{
-			MAIN_DEBUG("Cannot connect to AP: %s",  m_app_ctx.eeprom_params.wifi_config.ap_ssid);
+			DEBUG(UI_SETTINGS_DEBUG_ENABLE, name, "Cannot connect to AP: %s",  eepromConfig->wifi_config.ap_ssid);
 		}
 
 	}
-	else if (wifiGetConnectionStatus())
+	else
 	{
 		if (wifiDisconnectFromAp())
 		{
-			MAIN_DEBUG("Disconnected from AP: %s",  m_app_ctx.eeprom_params.wifi_config.ap_ssid);
+			DEBUG(UI_SETTINGS_DEBUG_ENABLE, name, "Disconnected from AP: %s",  eepromConfig->wifi_config.ap_ssid);
 		}
 		else
 		{
-			MAIN_DEBUG("ESP8266 not responding, check hardware!");
+			DEBUG(UI_SETTINGS_DEBUG_ENABLE, name, "ESP8266 not responding, check hardware!");
 		}
 	}
-	*/
 }
 
 
 void onWifiSetup(tWidget *psWidget)
 {
-	if(connectionSetupState->wifiEnabled)
+	if(flashConfig->connectionSetupState.wifiEnabled)
 	{
         WidgetRemove(uiGetCurrentScreenContainer()->widget);
         uiSetCurrentScreen(SCREEN_WIFI_SETTINGS);
@@ -665,7 +648,8 @@ static void onCityEntry(tWidget *psWidget)
 {
 	// Disable swiping while the keyboard is active.
 	//m_app_ctx.swipe_enabled = false;
-	//(*onCityEntryCb)();
+	configEepromSetModified(eepromConfig);
+	WidgetRemove(uiGetCurrentScreenContainer()->widget);
 	uiKeyboardCreate(cityBuf, uiGetCurrentScreen(),
 					AlphaNumeric, "Save the city", "Wanna save the city?",
 					onParameterEdited);
@@ -675,6 +659,7 @@ static void onCityEntry(tWidget *psWidget)
 
 static void onSsidEntry(tWidget *psWidget)
 {
+	configEepromSetModified(eepromConfig);
 	WidgetRemove(uiGetCurrentScreenContainer()->widget);
 	uiKeyboardCreate(ssidBuf, uiGetCurrentScreen(),
 					AlphaNumeric, "Save the ap ssid", "Wanna save the AP SSID?",
@@ -684,6 +669,7 @@ static void onSsidEntry(tWidget *psWidget)
 
 static void onPassEntry(tWidget *psWidget)
 {
+	configEepromSetModified(eepromConfig);
 	WidgetRemove(uiGetCurrentScreenContainer()->widget);
 	uiKeyboardCreate(passBuf, uiGetCurrentScreen(),
 					AlphaNumeric,"Save the AP pass", "Wanna save the AP password?",
@@ -693,6 +679,7 @@ static void onPassEntry(tWidget *psWidget)
 
 static void onUpdateTimeEntry(tWidget *psWidget)
 {
+	configEepromSetModified(eepromConfig);
 	WidgetRemove(uiGetCurrentScreenContainer()->widget);
 	uiKeyboardCreate(timeEntryBuf, uiGetCurrentScreen(),
 					Numeric, "Update refresh period", "Wanna save the period value?",
@@ -705,19 +692,19 @@ static void onUpdateTimeEntry(tWidget *psWidget)
 //*****************************************************************************
 static void onParameterEdited(const Screens prevWidget, bool save)
 {
-	/*
-	if(save)
+	if (save)
 	{
-		saveApplicationContextToMemory();
+		memcpy(eepromConfig->city_name, cityBuf, sizeof(cityBuf));
+		memcpy(eepromConfig->wifi_config.ap_wpa2_pass, passBuf, sizeof(passBuf));
+		memcpy(eepromConfig->wifi_config.ap_ssid, ssidBuf, sizeof(ssidBuf));
+		configFlashSaveSettingsToMemory(flashConfig);
+		configEepromSaveSettingsToMemory(eepromConfig);
 	}
 	else
 	{
-		configFlashCheckAndCleanModified(&m_app_ctx.flash_params);
-		configEepromCheckAndCleanModified(&m_app_ctx.eeprom_params);
+		configFlashCheckAndCleanModified(flashConfig);
+		configEepromCheckAndCleanModified(eepromConfig);
 	}
-    //Enable swiping after removing keyboard from the root
-    m_app_ctx.swipe_enabled = true;
-    */
 	uiSetCurrentScreen(prevWidget);
     WidgetAdd(WIDGET_ROOT, uiGetCurrentScreenContainer()->widget);
 	WidgetPaint(WIDGET_ROOT);
@@ -731,7 +718,7 @@ void uiScreenSettingsUpdate(void)
 	}
 	tContext* drawingCtx = uiGetMainDrawingContext();
 
-	if (1)//m_app_ctx.flash_params.connectionSetupState.wifiEnabled)
+	if (flashConfig->connectionSetupState.wifiEnabled)
 	{
 		CheckBoxSelectedOn(&ui_settingsCheckBoxes[0]);
 	    CanvasImageSet(&ui_settingsCheckBoxIndicators[0], img_lightOn);
@@ -742,7 +729,7 @@ void uiScreenSettingsUpdate(void)
 	    CanvasImageSet(&ui_settingsCheckBoxIndicators[0], img_lightOff);
 	}
 
-	if (1)//m_app_ctx.flash_params.connectionSetupState.sensorsEnabled)
+	if (flashConfig->connectionSetupState.sensorsEnabled)
 	{
 		CheckBoxSelectedOn(&ui_settingsCheckBoxes[1]);
 	    CanvasImageSet(&ui_settingsCheckBoxIndicators[1], img_lightOn);
@@ -753,7 +740,7 @@ void uiScreenSettingsUpdate(void)
 	    CanvasImageSet(&ui_settingsCheckBoxIndicators[1], img_lightOff);
 	}
 
-	if (1)//m_app_ctx.flash_params.connectionSetupState.powerSavingEnabled)
+	if (flashConfig->connectionSetupState.powerSavingEnabled)
 	{
 		CheckBoxSelectedOn(&ui_settingsCheckBoxes[2]);
 	    CanvasImageSet(&ui_settingsCheckBoxIndicators[2], img_lightOn);
@@ -787,5 +774,13 @@ void uiScreenSettingsUpdate(void)
 		default:
 			break;
 	}
+}
 
+//
+//@brief Stores NVM if sth changed
+//
+void uiScreenSettings_onExit(void)
+{
+	configFlashSaveSettingsToMemory(flashConfig);
+	configEepromSaveSettingsToMemory(eepromConfig);
 }

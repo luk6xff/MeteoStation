@@ -33,7 +33,6 @@ static char wifi_ap_PASS_buf[AP_PARAMS_MAX_LENGTH];
 
 static WifiConnectionState m_current_state;
 static WifiWeatherDataModel m_last_result;
-static bool m_global_wifi_mutex = false;
 
 //
 //forward declarations
@@ -47,28 +46,20 @@ static char* wifi_ntp_build_url();
 
 bool wifiInit(const char* ssid, const char* pass)
 {
-	if (m_global_wifi_mutex)
-	{
-		return false;
-	}
-	m_global_wifi_mutex = true;
 	wifi_weather_set_result_invalid();
 	//ESP8266
 	esp8266Init();
 	if (!ssid || !pass || strcmp(ssid, "default") == 0 || strcmp(pass, "default") == 0)
 	{
-		m_global_wifi_mutex = false;
 		return false;
 	}
 	if (!esp8266CommandAT())
 	{
-		m_global_wifi_mutex = false;
 		return false;
 	}
 	wifiSetApParameters(ssid, pass);
 	esp8266CommandCWMODE(ESP8266_MODE_CLIENT); //set as a client
 	m_current_state = WIFI_NOT_CONNECTED;
-	m_global_wifi_mutex = false;
 	return true;
 }
 
@@ -78,16 +69,11 @@ void wifiSetApParameters(const char* ssid, const char* pass)
 	{
 		return;
 	}
-	if (m_global_wifi_mutex)
-	{
-		return;
-	}
-	m_global_wifi_mutex = true;
+
 	memset(wifi_ap_SSID_buf, '\0', sizeof(wifi_ap_SSID_buf));
 	memset(wifi_ap_PASS_buf, '\0', sizeof(wifi_ap_PASS_buf));
 	memcpy(wifi_ap_SSID_buf, ssid, sizeof(wifi_ap_SSID_buf)-1);
 	memcpy(wifi_ap_PASS_buf, pass, sizeof(wifi_ap_PASS_buf)-1);
-	m_global_wifi_mutex = false;
 }
 
 bool wifiConnectToAp()
@@ -97,12 +83,6 @@ bool wifiConnectToAp()
 		goto ok;
 	}
 
-	if (m_global_wifi_mutex)
-	{
-		return false;
-	}
-	m_global_wifi_mutex = true;
-
 	if (esp8266CommandRST())
 	{
 		if (esp8266CommandCWJAP(wifi_ap_SSID_buf, wifi_ap_PASS_buf))
@@ -111,21 +91,13 @@ bool wifiConnectToAp()
 			goto ok;
 		}
 	}
-	m_global_wifi_mutex = false;
 	return false;
 ok:
-	m_global_wifi_mutex = false;
 	return true;
 }
 
 bool wifiDisconnectFromAp()
 {
-	if (m_global_wifi_mutex)
-	{
-		return false;
-	}
-	m_global_wifi_mutex = true;
-
 	if (!esp8266CommandAT())
 	{
 		goto fail;
@@ -136,21 +108,13 @@ bool wifiDisconnectFromAp()
 	}
 	m_current_state = WIFI_NOT_CONNECTED;
 
-	m_global_wifi_mutex = false;
 	return true;
 fail:
-	m_global_wifi_mutex = false;
 	return false;
 }
 
 bool wifiFetchCurrentWeather(const char* city)
 {
-	if (m_global_wifi_mutex)
-	{
-		return false;
-	}
-	m_global_wifi_mutex = true;
-
 	wifi_weather_set_result_invalid();
 	if (!m_current_state == WIFI_CONNECTED)
 	{
@@ -180,22 +144,14 @@ bool wifiFetchCurrentWeather(const char* city)
 		goto fail;
 	}
 
-	m_global_wifi_mutex = false;
 	return true;
 
 fail:
-	m_global_wifi_mutex = false;
 	return false;
 }
 
 timeData_t wifiFetchCurrentNtpTime()
 {
-	if (m_global_wifi_mutex)
-	{
-		return 0;
-	}
-	m_global_wifi_mutex = true;
-
 	timeData_t timeRetrieved = 0;
 	if (!m_current_state == WIFI_CONNECTED)
 	{
@@ -226,11 +182,9 @@ timeData_t wifiFetchCurrentNtpTime()
 		goto fail;
 	}
 
-	m_global_wifi_mutex = false;
 	return timeRetrieved;
 
 fail:
-	m_global_wifi_mutex = false;
 	ntp_servers_name_idx = (ntp_servers_name_idx + 1) % sizeof(ntp_servers_name); //if sth does not work change ntp server for next check
 	return 0;
 }
@@ -267,12 +221,6 @@ const char* wifiPassParam()
 //
 bool wifiCheckApConnectionStatus()
 {
-	if (m_global_wifi_mutex)
-	{
-		return false;
-	}
-	m_global_wifi_mutex = true;
-
 	if (!esp8266CommandCIPSTATUS())
 	{
 		goto fail;
@@ -301,10 +249,8 @@ bool wifiCheckApConnectionStatus()
 		default:
 			break;
     }
-	m_global_wifi_mutex = false;
     return true;
 fail:
-m_global_wifi_mutex = false;
 	return false;
 }
 

@@ -28,13 +28,8 @@
 #define ESP8266_DEBUG_ENABLE 1
 #if ESP8266_DEBUG_ENABLE
 	#include "debugConsole.h"
+	static const char* name = "esp8266";
 #endif
-#define ESP8266_DEBUG(str) \
-		do \
-		{  \
-			if (ESP8266_DEBUG_ENABLE) \
-				debugConsolePrintf(str); \
-		}while(0);
 
 
 //! - UART5 peripheral
@@ -74,7 +69,10 @@ static void esp8266UartSetup(void) {
 			(UART_CONFIG_WLEN_8 | UART_CONFIG_STOP_ONE |
 			UART_CONFIG_PAR_NONE));
 
-	// Enable the  UART5 RX interrupts.
+    // Set Low interrupt priority for Timer3A
+    IntPrioritySet(INT_UART5, 2);
+
+    // Enable the  UART5 RX interrupts.
 	IntEnable(INT_UART5);
 	UARTIntEnable(UART5_BASE, UART_INT_RX | UART_INT_RT);
 }
@@ -260,7 +258,7 @@ bool esp8266CommandRAW(const char* rawCmd, const char*respStr)
 bool esp8266CommandAT(void)
 {
 	esp8266SendATCommand("AT");
-	return esp8266WaitForResponse("OK", 2000);
+	return esp8266WaitForResponse("OK", 1000);
 }
 
 
@@ -345,7 +343,7 @@ bool esp8266CommandCIFSR(void)
 bool esp8266CommandCIPSTATUS(void)
 {
 	esp8266SendATCommand("AT+CIPSTATUS");
-	return esp8266WaitForResponse("OK", 2000);
+	return esp8266WaitForResponse("OK", 1000);
 }
 
 

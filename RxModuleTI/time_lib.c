@@ -441,6 +441,9 @@ static void timeTimerInit()
     // Configure the Timer3A interrupt for timer timeout.
     TimerIntEnable(TIMER3_BASE, TIMER_TIMA_TIMEOUT);
 
+    // Set Low interrupt priority for Timer3A
+    IntPrioritySet(INT_TIMER3A, 3);
+
     // Enable the Timer3A interrupt on the processor (NVIC).
     IntEnable(INT_TIMER3A);
 

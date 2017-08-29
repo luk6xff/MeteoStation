@@ -69,12 +69,13 @@ static void esp8266UartSetup(void) {
 			(UART_CONFIG_WLEN_8 | UART_CONFIG_STOP_ONE |
 			UART_CONFIG_PAR_NONE));
 
-    // Set Low interrupt priority for Timer3A
+	UARTIntEnable(UART5_BASE, UART_INT_RX | UART_INT_RT);
+
+	// Set Low interrupt priority for UART5
     IntPrioritySet(INT_UART5, 2);
 
     // Enable the  UART5 RX interrupts.
 	IntEnable(INT_UART5);
-	UARTIntEnable(UART5_BASE, UART_INT_RX | UART_INT_RT);
 }
 
 
@@ -113,6 +114,9 @@ static void esp8266TimerInit()
 
     // Configure the Timer1A interrupt for timer timeout.
     TimerIntEnable(TIMER1_BASE, TIMER_TIMA_TIMEOUT);
+
+    // Set Low interrupt priority for Timer1A
+    IntPrioritySet(INT_TIMER1A, 3);
 
     // Enable the Timer1A interrupt on the processor (NVIC).
     IntEnable(INT_TIMER1A);
@@ -167,6 +171,11 @@ static void esp8266SetUartTxBuffer(const char* strToCopy)
 
 static bool esp8266SearchForResponseString(const char* resp)
 {
+	if (!resp)
+	{
+		return false;
+	}
+
 	bool res = false;
 	uint16_t length = 0;
 	uint16_t expectedLength = strlen(resp);
@@ -179,8 +188,8 @@ static bool esp8266SearchForResponseString(const char* resp)
 		}
 		else
 		{
-			resp-=length;
-			length=0;
+			resp -= length;
+			length = 0;
 		}
 
 		if(expectedLength == length)
@@ -188,7 +197,6 @@ static bool esp8266SearchForResponseString(const char* resp)
 			res = true;
 			break;
 		}
-
 	}
 	return res;
 }
@@ -420,7 +428,10 @@ void Esp8266Uart5IntHandler(void)
 		recvChr = UARTCharGetNonBlocking(UART5_BASE);
 		rxBuffer[rxBufferCounter++ % ESP8266_RX_BUF_SIZE] = recvChr;
 	}
-	rxDataAvailable = true;
+	if (rxBufferCounter > 0)
+	{
+		rxDataAvailable = true;
+	}
 }
 
 //Timer1A interrupt handler

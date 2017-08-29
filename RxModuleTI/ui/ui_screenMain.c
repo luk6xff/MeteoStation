@@ -182,18 +182,16 @@ Canvas(
 //
 //@brief helper method updates Clock UI if needed
 //
-static void uiUpdateClock(bool drawOnly)
+static void uiUpdateClock()
 {
 	if (uiGetCurrentScreen() == SCREEN_MAIN)
 	{
-		if (timeIsTimeChanged() || drawOnly)
+		if (timeIsTimeChanged())
 		{
-			if (!drawOnly)
-			{
-				sprintf(ui_timeBuf, "%d-%02d-%02d  %02d:%02d", yearNow(), monthNow(), dayNow(), hourNow(), minuteNow());
-			}
+			sprintf(ui_timeBuf, "%d-%02d-%02d  %02d:%02d", yearNow(), monthNow(), dayNow(), hourNow(), minuteNow());
 			WidgetPaint((tWidget*)&ui_timeCanvas);
 		}
+		WidgetPaint((tWidget*)&ui_timeCanvas);
 	}
 }
 
@@ -260,7 +258,7 @@ void uiScreenMainUpdate(void)
 		sprintf(ui_pressureBuf, "Pressure: --- hPa");
 		sprintf(ui_tempBuf,"--- C");
 	}
-	uiUpdateClock(true);
+	uiUpdateClock();
 	WidgetPaint((tWidget*)&ui_humidityCanvas);
 	WidgetPaint((tWidget*)&ui_pressureCanvas);
 	WidgetPaint((tWidget*)&ui_tempCanvas);

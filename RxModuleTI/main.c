@@ -423,6 +423,7 @@ int main(void)
 	setTouchScreenCalibration();
 
 	m_app_ctx.flash_params.connectionSetupState.wifiEnabled = true; //FOR DEBUG TODO
+
 	//Wifi client init
 	wifiInit(m_app_ctx.eeprom_params.wifi_config.ap_ssid,
 			 m_app_ctx.eeprom_params.wifi_config.ap_wpa2_pass);
@@ -434,8 +435,8 @@ int main(void)
 	}
 
 	//time module initialization
-	//timeInit(wifiFetchCurrentNtpTime);
-	//timeSetTimeZone(timeZoneCET);
+	timeInit(wifiFetchCurrentNtpTime);
+	timeSetTimeZone(timeZoneCET);
 
 	// Enable the SysTick and its Interrupt.
 	SysTickPeriodSet(SysCtlClockGet()); //0.2[s];
@@ -473,6 +474,7 @@ int main(void)
 				if (wifiCheckApConnectionStatus())
 				{
 					WifiConnectionState state = wifiGetConnectionStatus();
+					/*
 					if (m_app_ctx.flash_params.connectionSetupState.wifiConnectionState != state)
 					{
 						if (state == WIFI_NOT_CONNECTED || state == WIFI_CONNECTED)
@@ -482,6 +484,7 @@ int main(void)
 							configFlashSaveSettingsToMemory(&m_app_ctx.flash_params);
 						}
 					}
+					*/
 				}
 				if (uiGetCurrentScreen() == SCREEN_MAIN)
 				{
@@ -489,7 +492,7 @@ int main(void)
 					{
 						DEBUG(MAIN_DEBUG_ENABLE, name, "wifiFetchCurrentWeather failed\n\r");
 					}
-					if (!wifiFetchCurrentNtpTime())
+					//if (timeNow() == 0)
 					{
 						DEBUG(MAIN_DEBUG_ENABLE, name, "wifiFetchCurrentNtpTime failed\n\r");
 					}

@@ -18,7 +18,7 @@
 
 static timeDataModel_t tm;          		// a cache of time elements
 static timeData_t cacheTime;   				// the time the cache was updated
-static uint32_t syncIntervalSeconds = 30;	//600;  // time sync will be attempted after this many seconds, default = 600[s] = 10[min]
+static uint32_t syncIntervalSeconds = 60;	// time sync will be attempted after this many seconds, default = 60[s] = 1[min]
 static timeData_t sysTime = 0;
 static timeData_t nextSyncTime = 0;
 static timeStatus_t Status = timeNotSet;
@@ -454,6 +454,7 @@ static void timeTimerInit()
 //Timer3A interrupt handler
 void TimeTimer3AIntHandler(void)
 {
+	TimerIntClear(TIMER3_BASE, TIMER_TIMA_TIMEOUT);
 	static uint32_t seconds_cnt = 0;
 	seconds_cnt++;
 	timeAdjustSystemTime(1); //update about one second;
@@ -462,5 +463,5 @@ void TimeTimer3AIntHandler(void)
 		updateUiTime = true;
 	}
 
-	TimerIntClear(TIMER3_BASE, TIMER_TIMA_TIMEOUT);
+
 }

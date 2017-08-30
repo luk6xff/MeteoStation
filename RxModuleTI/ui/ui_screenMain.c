@@ -188,8 +188,11 @@ static void uiUpdateClock()
 	{
 		if (timeIsTimeChanged())
 		{
-			sprintf(ui_timeBuf, "%d-%02d-%02d  %02d:%02d", yearNow(), monthNow(), dayNow(), hourNow(), minuteNow());
-			WidgetPaint((tWidget*)&ui_timeCanvas);
+			if (timeNow() != 0)
+			{
+				int year = yearNow(); //update cache
+				sprintf(ui_timeBuf, "%d-%02d-%02d  %02d:%02d", year, timeCurrentData().Month, timeCurrentData().Day, timeCurrentData().Hour, timeCurrentData().Minute);
+			}
 		}
 		WidgetPaint((tWidget*)&ui_timeCanvas);
 	}
@@ -258,8 +261,8 @@ void uiScreenMainUpdate(void)
 		sprintf(ui_pressureBuf, "Pressure: --- hPa");
 		sprintf(ui_tempBuf,"--- C");
 	}
-	uiUpdateClock();
 	WidgetPaint((tWidget*)&ui_humidityCanvas);
 	WidgetPaint((tWidget*)&ui_pressureCanvas);
 	WidgetPaint((tWidget*)&ui_tempCanvas);
+	uiUpdateClock();
 }

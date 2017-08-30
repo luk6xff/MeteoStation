@@ -387,6 +387,7 @@ void SysTickIntHandler(void)
 
 // Main method of the application
 int main(void)
+
 {
 	static uint32_t touch_screen_pressed_time = 0;
 
@@ -491,10 +492,6 @@ int main(void)
 					if (!wifiFetchCurrentWeather(m_app_ctx.eeprom_params.city_name))
 					{
 						DEBUG(MAIN_DEBUG_ENABLE, name, "wifiFetchCurrentWeather failed\n\r");
-					}
-					//if (timeNow() == 0)
-					{
-						DEBUG(MAIN_DEBUG_ENABLE, name, "wifiFetchCurrentNtpTime failed\n\r");
 					}
 				}
 			}

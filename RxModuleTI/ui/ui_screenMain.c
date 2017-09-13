@@ -190,8 +190,8 @@ static void uiUpdateClock()
 		{
 			if (timeNow() != 0)
 			{
-				//int year = yearNow(); //update cache
-				//sprintf(ui_timeBuf, "%d-%02d-%02d  %02d:%02d", year, timeCurrentData().Month, timeCurrentData().Day, timeCurrentData().Hour, timeCurrentData().Minute);
+				int year = yearNow(); //update cache
+				sprintf(ui_timeBuf, "%d-%02d-%02d  %02d:%02d", year, timeCurrentData().Month, timeCurrentData().Day, timeCurrentData().Hour, timeCurrentData().Minute);
 			}
 		}
 		WidgetPaint((tWidget*)&ui_timeCanvas);

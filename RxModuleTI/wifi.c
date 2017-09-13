@@ -138,7 +138,8 @@ bool wifiFetchCurrentWeather(const char* city)
 	{
 		goto fail;
 	}
-	delay_ms(100); //to finish download
+	//delay_ms(100); //to finish download
+	esp8266WaitForData(100, 2000, "+IPD,");
 	if (!wifi_weather_parse_response(esp8266GetRxBuffer(), ESP8266_RX_BUF_SIZE))
 	{
 		goto fail;
@@ -175,7 +176,7 @@ timeData_t wifiFetchCurrentNtpTime()
 		goto fail;
 	}
 
-	delay_ms(100); //just wait a short while
+	esp8266WaitForData(NTP_PACKET_SIZE, 2000, "+IPD,"); //just wait a short while
 
 	if (!wifi_ntp_parse_response(esp8266GetRxBuffer(), ESP8266_RX_BUF_SIZE, &timeRetrieved))
 	{
@@ -492,7 +493,7 @@ static char* wifi_ntp_build_url()
 
 static bool wifi_ntp_parse_response(const uint8_t* resp_buf, uint16_t buf_len, timeData_t* time)
 {
-	if (!resp_buf)
+	if (!resp_buf || buf_len == 0)
 	{
     	goto fail;
 	}

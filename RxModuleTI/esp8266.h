@@ -34,7 +34,17 @@ typedef enum
 }Esp8266Protocol;
 
 
+
 void esp8266Init();
+
+//
+//@brief Blocks SW for some time and searches for a given number of bytes
+//@param  num_of_bytes - number of bytes which must be received into RX buffer from the module
+//@param  ms_timeout - timeout for which given data shall be found in
+//@param  pattern - a some pattern which we expect to find the RX buffer, if not needed pass by NULL
+//@return false-given number of bytes or/and pattern found, true-success
+//
+bool esp8266WaitForData(uint16_t num_of_bytes, uint16_t ms_timeout, const char* pattern);
 
 
 //

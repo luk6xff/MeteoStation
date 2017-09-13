@@ -65,6 +65,7 @@ extern void Esp8266Timer1AIntHandler(void);
 extern void UiTimer2AIntHandler(void);
 extern void UARTStdioIntHandler(void);
 extern void TimeTimer3AIntHandler(void);
+extern void WatchdogHandler(void);
 //*****************************************************************************
 //
 // The vector table.  Note that the proper constructs must be placed on this to
@@ -110,7 +111,7 @@ void (* const g_pfnVectors[])(void) =
     IntDefaultHandler,                      // ADC Sequence 1
     IntDefaultHandler,                      // ADC Sequence 2
     IntDefaultHandler,                      // ADC Sequence 3
-    IntDefaultHandler,                      // Watchdog timer
+	WatchdogHandler,                        // Watchdog timer
 	TouchScreenTimer0AIntHandler,           // Timer 0 subtimer A
 	IntDefaultHandler,           			// Timer 0 subtimer B
 	Esp8266Timer1AIntHandler,               // Timer 1 subtimer A

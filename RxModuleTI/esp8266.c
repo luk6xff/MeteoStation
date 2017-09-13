@@ -169,17 +169,17 @@ static void esp8266SetUartTxBuffer(const char* strToCopy)
 	memcpy((void*)txBuffer, (void*)strToCopy, strlen(strToCopy));
 }
 
-static bool esp8266SearchForResponseString(const char* resp)
+static bool esp8266SearchForResponseString(const char* resp, uint16_t resp_len)
 {
-	if (!resp)
+	if (!resp || resp_len < 1)
 	{
 		return false;
 	}
 
 	bool res = false;
 	uint16_t length = 0;
-	uint16_t expectedLength = strlen(resp);
-	for(uint16_t i = 0; i<ESP8266_RX_BUF_SIZE && rxBuffer[i] != '\0' ; ++i)
+	uint16_t expectedLength = resp_len;
+	for(uint16_t i = 0; i<ESP8266_RX_BUF_SIZE/* && rxBuffer[i] != '\0'*/ ; ++i)
 	{
 		if(rxBuffer[i] == *resp)
 		{
@@ -205,12 +205,12 @@ static bool esp8266WaitForResponse(const char* resp, uint16_t msTimeout)
 {
 	bool res = false;
 	uint32_t startTime = esp8266Milis();
-
+	uint16_t resp_len = strlen(resp);
 	while((esp8266Milis() - startTime) < msTimeout)
 	{
 		if(rxDataAvailable)
 		{
-			if(esp8266SearchForResponseString(resp))
+			if(esp8266SearchForResponseString(resp, resp_len))
 			{
 				res = true;
 				break;
@@ -221,6 +221,54 @@ static bool esp8266WaitForResponse(const char* resp, uint16_t msTimeout)
 	return res;
 }
 
+
+bool esp8266WaitForData(uint16_t num_of_bytes, uint16_t ms_timeout, const char* pattern)
+{
+
+
+	if (num_of_bytes == 0 || (pattern && (strlen(pattern) < num_of_bytes)))
+	{
+		return false;
+	}
+
+	bool res = false;
+	uint16_t pattern_len = 0;
+	bool search_for_pattern = false;
+	if (pattern)
+	{
+		pattern_len = strlen(pattern);
+		if (pattern_len < num_of_bytes)
+		{
+			return res;
+		}
+		search_for_pattern = true;
+	}
+
+	uint32_t startTime = esp8266Milis();
+
+	while((esp8266Milis() - startTime) < ms_timeout)
+	{
+		if(rxDataAvailable && rxBufferCounter >= num_of_bytes)
+		{
+			if (search_for_pattern)
+			{
+				if(esp8266SearchForResponseString(pattern, pattern_len))
+				{
+					res = true;
+					break;
+				}
+			}
+			else
+			{
+				res = true;
+			}
+		}
+	}
+	rxDataAvailable = false;
+	return res;
+}
+
+
 //*****************************************************************************
 //
 // Send a string to the UART.
@@ -228,7 +276,7 @@ static bool esp8266WaitForResponse(const char* resp, uint16_t msTimeout)
 //*****************************************************************************
 static void esp8266UartSend(const char* dataBuffer, const uint16_t dataBufferLen)
 {
-
+	DISABLE_ALL_INTERRUPTS();
 	while (UARTBusy(UART5_BASE));
 	uint16_t dataLen = dataBufferLen;
 	if (dataLen == 0)
@@ -246,6 +294,7 @@ static void esp8266UartSend(const char* dataBuffer, const uint16_t dataBufferLen
 			dataLen--;
 		}
 	}
+	ENABLE_ALL_INTERRUPTS();
 }
 
 static void esp8266SendATCommand(const char* cmd)
@@ -402,10 +451,8 @@ bool esp8266CommandCIPSEND(const char* packet, uint16_t packetLen)
 	{
 		return false;
 	}
-	//DISABLE_ALL_INTERRUPTS();
 	esp8266ResetUartRxBuffer();
 	esp8266UartSend(packet, packetLen);
-	//ENABLE_ALL_INTERRUPTS();
 
 	return esp8266WaitForResponse("SEND OK", 3000);
 }

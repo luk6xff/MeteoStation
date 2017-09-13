@@ -4,11 +4,14 @@
 #include "inc/hw_memmap.h"
 #include "inc/hw_ints.h"
 
+#include "driverlib/rom_map.h"
 #include "driverlib/sysctl.h"
 #include "driverlib/gpio.h"
 #include "driverlib/systick.h"
 #include "driverlib/interrupt.h"
 #include "driverlib/fpu.h"
+#include "driverlib/watchdog.h"
+
 
 #include "utils/ustdlib.h"
 
@@ -20,6 +23,7 @@
 #include "touch.h"
 #include "system.h"
 #include "time_lib.h"
+#include "wdog.h"
 #include "ui/ui_common.h"
 
 #define MAIN_DEBUG_ENABLE 1
@@ -136,7 +140,6 @@ static int32_t touchScreenCallback(uint32_t msg, int32_t x, int32_t y);
 // Private methods
 //
 //*****************************************************************************
-
 
 // Reads config from flash and eeprom and fills the current App context
 static bool readConfigAndSetAppContext()
@@ -379,7 +382,7 @@ void SysTickIntHandler(void)
 	m_global_counter_sec++;
 	if((m_global_counter_sec % 100) == 0 && !m_get_new_temp_data) //every 20s
 	{
-		m_get_new_temp_data = true;
+		//m_get_new_temp_data = true;
 	}
 }
 
@@ -392,40 +395,44 @@ int main(void)
 	static uint32_t touch_screen_pressed_time = 0;
 
 	//FPU
-	FPUEnable();
-	FPULazyStackingEnable();
+	MAP_FPUEnable();
+	MAP_FPULazyStackingEnable();
 
 	// Setup the system clock to run at 80 MHz from PLL with crystal reference
-	SysCtlClockSet(SYSCTL_SYSDIV_2_5 | SYSCTL_USE_PLL | SYSCTL_OSC_MAIN | SYSCTL_XTAL_16MHZ);
+	MAP_SysCtlClockSet(SYSCTL_SYSDIV_2_5 | SYSCTL_USE_PLL | SYSCTL_OSC_MAIN | SYSCTL_XTAL_16MHZ);
 
-	//Reads from non-volatile memory
+	// Init watchdog
+	watchdog_init();
+
+	// Reads from non-volatile memory
 	readConfigAndSetAppContext();
 
-	//Debug Console
+	// Debug Console
 	debugConsoleInit();
 
-	//Display driver
+	// Display driver
 	ILI9320Init();
 
-	//Read Configuration
+	// Read Configuration
 	configInit();
 
-	//UI
+	// UI
 	uiScreenSettings_init(&m_app_ctx.eeprom_params, &m_app_ctx.flash_params);
     uiInit();
 
-	//touchScreenControler
+	// touchScreenControler
 	touchScreenInit();
 
     // Set the touch screen event handler.
 	touchScreenSetTouchCallback(touchScreenCallback);
 
-	//do touch screen calibration if needed
+	// do touch screen calibration if needed
 	setTouchScreenCalibration();
 
 	m_app_ctx.flash_params.connectionSetupState.wifiEnabled = true; //FOR DEBUG TODO
 
-	//Wifi client init
+	// Wifi client init
+
 	wifiInit(m_app_ctx.eeprom_params.wifi_config.ap_ssid,
 			 m_app_ctx.eeprom_params.wifi_config.ap_wpa2_pass);
 	wifiCheckApConnectionStatus();
@@ -435,16 +442,16 @@ int main(void)
 		wifiConnectToAp(); //try to connect
 	}
 
-	//time module initialization
+	// time module initialization
 	timeInit(wifiFetchCurrentNtpTime);
 	timeSetTimeZone(timeZoneCET);
 
 	// Enable the SysTick and its Interrupt.
-	SysTickPeriodSet(SysCtlClockGet()); //0.2[s];
-	SysTickIntEnable();
-	SysTickEnable();
+	MAP_SysTickPeriodSet(MAP_SysCtlClockGet()); //0.2[s];
+	MAP_SysTickIntEnable();
+	MAP_SysTickEnable();
 
-	//Enable all interrupts
+	// Enable all interrupts
 	ENABLE_ALL_INTERRUPTS();
 	m_get_new_temp_data = true; //update all for first time
 
@@ -468,6 +475,7 @@ int main(void)
 		}
 
 #endif
+#if 0
 		if (m_get_new_temp_data)
 		{
 			if (m_app_ctx.flash_params.connectionSetupState.wifiEnabled)
@@ -497,7 +505,7 @@ int main(void)
 			}
 			m_get_new_temp_data = false;
 		}
-
+#endif
 		uiUpdateScreen();
 
 		if(!ADS7843getIntPinState()) // if touch panel is being touched)
@@ -521,7 +529,10 @@ int main(void)
 			touch_screen_pressed_time = 0;
 		}
 		debugCommandReceived();
-
+		watchdog_reset();
 	}
-
 }
+
+
+
+

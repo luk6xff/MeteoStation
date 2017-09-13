@@ -18,7 +18,7 @@
 
 static timeDataModel_t tm;          		// a cache of time elements
 static timeData_t cacheTime;   				// the time the cache was updated
-static uint32_t syncIntervalSeconds = 60;	// time sync will be attempted after this many seconds, default = 60[s] = 1[min]
+static const uint32_t syncIntervalSeconds = 1;	// time sync will be attempted after this many seconds, default = 60[s] = 1[min]
 static timeData_t sysTime = 0;
 static timeData_t nextSyncTime = 0;
 static timeStatus_t Status = timeNotSet;
@@ -27,6 +27,7 @@ static volatile bool updateUiTime = true;  	// flag if UI update is needed, firs
 static timeZone_t timeZone = timeZoneUTC;
 
 static void timeTimerInit();
+static void timeTimerEnable(bool enable);
 
 
 /*
@@ -339,6 +340,7 @@ timeData_t timeNow()
 	{
 		if (getTimePtr != 0)
 		{
+			//timeTimerEnable(false);
 			timeData_t t = getTimePtr();
 			if (t != 0)
 			{
@@ -349,6 +351,7 @@ timeData_t timeNow()
 				nextSyncTime = sysTime + syncIntervalSeconds;
 				Status = (Status == timeNotSet) ?  timeNotSet : timeNeedsSync;
 			}
+			//timeTimerEnable(true);
 		}
 	}
 	return (timeData_t)sysTime;
@@ -416,13 +419,6 @@ void timeSetSyncProvider(getExternalTime getTimeFunction)
 	timeNow(); // this will sync the clock
 }
 
-void timeSetsyncIntervalSeconds(timeData_t interval)
-{
-	// set the number of seconds between re-sync
-	syncIntervalSeconds = (uint32_t)interval;
-	nextSyncTime = sysTime + syncIntervalSeconds;
-}
-
 timeDataModel_t timeCurrentData()
 {
 	return tm;
@@ -438,17 +434,31 @@ static void timeTimerInit()
     // Set the Timer3A load value to 1s.
     TimerLoadSet(TIMER3_BASE, TIMER_A, SysCtlClockGet() / 1); //1 [s]
 
-    // Configure the Timer3A interrupt for timer timeout.
-    TimerIntEnable(TIMER3_BASE, TIMER_TIMA_TIMEOUT);
+    timeTimerEnable(true);
+}
 
-    // Set Low interrupt priority for Timer3A
-    IntPrioritySet(INT_TIMER3A, 3);
 
-    // Enable the Timer3A interrupt on the processor (NVIC).
-    IntEnable(INT_TIMER3A);
+//Enables/Disables Timer3A
+static void timeTimerEnable(bool enable)
+{
+	if (enable)
+	{
+	    // Configure the Timer3A interrupt for timer timeout.
+	    TimerIntEnable(TIMER3_BASE, TIMER_TIMA_TIMEOUT);
+	    // Set Low interrupt priority for Timer3A
+	    IntPrioritySet(INT_TIMER3A, 3);
+	    // Enable the Timer3A interrupt on the processor (NVIC).
+	    IntEnable(INT_TIMER3A);
+	    // Enable Timer3A.
+		TimerEnable(TIMER3_BASE, TIMER_A);
 
-    // Enable Timer3A.
-	TimerEnable(TIMER3_BASE, TIMER_A);
+	}
+	else
+	{
+		TimerDisable(TIMER3_BASE, TIMER_A);
+	    TimerIntDisable(TIMER3_BASE, TIMER_TIMA_TIMEOUT);
+	    IntDisable(INT_TIMER3A);
+	}
 }
 
 //Timer3A interrupt handler

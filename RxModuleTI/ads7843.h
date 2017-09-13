@@ -109,7 +109,7 @@ typedef struct {
 
 typedef struct
 {
-	float m_ax, m_bx, m_dx, m_ay, m_by, m_dy;
+	float a_x, b_x, d_x, a_y, b_y, d_y;
 }CalibCoefficients;
 
 //*****************************************************************************

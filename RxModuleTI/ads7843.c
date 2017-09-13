@@ -18,8 +18,8 @@
 
 
 //privates
-static TouchInfo m_touchInfoData;
-static TouchPoint m_currentTouchedPoint;
+static TouchInfo touchInfoData;
+static TouchPoint currentTouchedPoint;
 //corection coefficients
 static CalibCoefficients calibCoefs;
 
@@ -114,13 +114,13 @@ void ADS7843init(void) {
 	ADS7843_INT_INPUT();
 //#endif
 	// assign default values
-	m_touchInfoData.touchStatus = TOUCH_STATUS_PENUP;
+	touchInfoData.touchStatus = TOUCH_STATUS_PENUP;
 	ADS7843setIrqAndPowerDown();
 }
 
 bool ADS7843read(bool rawDataMode)
 {
-	return ADS7843readPointXY(&m_currentTouchedPoint, rawDataMode);
+	return ADS7843readPointXY(&currentTouchedPoint, rawDataMode);
 }
 
 bool ADS7843dataAvailable()
@@ -133,7 +133,7 @@ bool ADS7843dataAvailable()
 
 TouchPoint ADS7843getTouchedPoint()
 {
-	return m_currentTouchedPoint;
+	return currentTouchedPoint;
 }
 
 void ADS7843setIrqAndPowerDown(void) {
@@ -147,9 +147,9 @@ void ADS7843touchPenIntHandler()
 	if (!ADS7843getIntPinState()) //if pendown
 	{
 		//ADS7843_INT_IRQ_CONFIG_PIN_DISABLE();
-		m_touchInfoData.touchStatus = TOUCH_STATUS_PENDOWN;
+		touchInfoData.touchStatus = TOUCH_STATUS_PENDOWN;
 	} else {
-		m_touchInfoData.touchStatus = TOUCH_STATUS_PENUP;
+		touchInfoData.touchStatus = TOUCH_STATUS_PENUP;
 	}
 }
 
@@ -192,14 +192,14 @@ uint16_t ADS7843fastMedian(uint16_t *samples) {
 TouchPoint ADS7843translateCoordinates(const TouchPoint* rawPoint)
 {
 	TouchPoint p;
-	p.x = calibCoefs.m_ax * rawPoint->x + calibCoefs.m_bx * rawPoint->y + calibCoefs.m_dx;
-	p.y = calibCoefs.m_ay * rawPoint->x + calibCoefs.m_by * rawPoint->y + calibCoefs.m_dy;
+	p.x = calibCoefs.a_x * rawPoint->x + calibCoefs.b_x * rawPoint->y + calibCoefs.d_x;
+	p.y = calibCoefs.a_y * rawPoint->x + calibCoefs.b_y * rawPoint->y + calibCoefs.d_y;
 	return p;
 }
 
 bool ADS7843readPointXY(TouchPoint* touchPoint, bool rawDataMode)
 {
-	bool isPenDown = m_touchInfoData.touchStatus == TOUCH_STATUS_PENDOWN;
+	bool isPenDown = touchInfoData.touchStatus == TOUCH_STATUS_PENDOWN;
 
 	uint16_t xyDataBuf[2][7]; //7 samples
 	TouchPoint p;
@@ -223,17 +223,17 @@ bool ADS7843readPointXY(TouchPoint* touchPoint, bool rawDataMode)
 }
 
 inline TouchStatus ADS7843getTouchStatus() {
-	return m_touchInfoData.touchStatus;
+	return touchInfoData.touchStatus;
 }
 
 void ADS7843setCalibrationCoefficients(const CalibCoefficients* coeffs)
 {
-	calibCoefs.m_ax = coeffs->m_ax;
-	calibCoefs.m_ay = coeffs->m_ay;
-	calibCoefs.m_bx = coeffs->m_bx;
-	calibCoefs.m_by = coeffs->m_by;
-	calibCoefs.m_dx = coeffs->m_dx;
-	calibCoefs.m_dy = coeffs->m_dy;
+	calibCoefs.a_x = coeffs->a_x;
+	calibCoefs.a_y = coeffs->a_y;
+	calibCoefs.b_x = coeffs->b_x;
+	calibCoefs.b_y = coeffs->b_y;
+	calibCoefs.d_x = coeffs->d_x;
+	calibCoefs.d_y = coeffs->d_y;
 
 }
 

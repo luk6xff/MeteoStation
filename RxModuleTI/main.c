@@ -47,8 +47,8 @@ typedef enum
 	STATE_RESET,
 	STATE_INIT,
 	STATE_CHECK_CONNECTION,
-	STATE_GET_WEATHER_FROM_WEB,
-	STATE_GET_WEATHER_FROM_SENSOR,
+	STATE_GET_WEATHER_FROWEB,
+	STATE_GET_WEATHER_FROSENSOR,
 	STATE_UPDATE_DISPLAY
 }State;
 
@@ -104,7 +104,7 @@ typedef struct
 typedef struct
 {
 	ConfigFlashParameters flash_params;
-	ConfigEepromParameters eeprom_params;
+	ConfigEepromParameters eeproparams;
 	bool swipe_enabled;
 }AppContext;
 
@@ -115,16 +115,16 @@ typedef struct
 //*****************************************************************************
 
 static volatile State g_mainState = STATE_RESET;
-static volatile Swipe m_swipe;
-static AppContext m_app_ctx;
+static volatile Swipe swipe;
+static AppContext app_ctx;
 
 
 
 // period notifiers
 // @brief new weather data from wifi
-static volatile bool m_get_new_temp_data = false;
+static volatile bool get_new_temp_data = false;
 // @brief global counter
-static volatile uint32_t m_global_counter_sec = 0;
+static volatile uint32_t global_counter_sec = 0;
 
 
 
@@ -145,8 +145,8 @@ static int32_t touchScreenCallback(uint32_t msg, int32_t x, int32_t y);
 static bool readConfigAndSetAppContext()
 {
 	// assign defaults
-	memcpy(&m_app_ctx.flash_params, configFlashGetDefaultSettings(), sizeof(ConfigFlashParameters));
-	memcpy(&m_app_ctx.eeprom_params, configEepromGetDefaultSettings(), sizeof(ConfigEepromParameters));
+	memcpy(&app_ctx.flash_params, configFlashGetDefaultSettings(), sizeof(ConfigFlashParameters));
+	memcpy(&app_ctx.eeproparams, configEepromGetDefaultSettings(), sizeof(ConfigEepromParameters));
 
 	// reads configuration from flash/eeprom
 	configInit();
@@ -159,7 +159,7 @@ static bool readConfigAndSetAppContext()
 	else
 	{
 		// assign defaults settings from memory
-		memcpy(&m_app_ctx.flash_params, configFlashGetCurrent(), sizeof(ConfigFlashParameters));
+		memcpy(&app_ctx.flash_params, configFlashGetCurrent(), sizeof(ConfigFlashParameters));
 	}
 
 	//configEepromSetInvalid(configEepromGetCurrent()); //new memory layout introduced - comment it out later
@@ -170,9 +170,9 @@ static bool readConfigAndSetAppContext()
 	else
 	{
 		// assign defaults settings from memory
-		memcpy(&m_app_ctx.eeprom_params, configEepromGetCurrent(), sizeof(ConfigEepromParameters));
+		memcpy(&app_ctx.eeproparams, configEepromGetCurrent(), sizeof(ConfigEepromParameters));
 	}
-	m_app_ctx.swipe_enabled = true;
+	app_ctx.swipe_enabled = true;
 	return true;
 }
 
@@ -188,7 +188,7 @@ static bool setTouchScreenCalibration()
 	bool intsOff;
 	//disable all interrupts
 	intsOff = IntMasterDisable();
-	ConfigEepromParameters* cfg = &m_app_ctx.eeprom_params;
+	ConfigEepromParameters* cfg = &app_ctx.eeproparams;
 	if(configEepromIsInvalid(cfg) || cfg->touch_screen_params.is_valid == 0x00 ||   // first time enabled on the plant
 	   configEepromCheckAndCleanModified(cfg))										// if you want manually run the calibration
 	{
@@ -200,10 +200,10 @@ static bool setTouchScreenCalibration()
 			cfg->touch_screen_params.is_valid = 0x01;
 			cfg->params_version = 0x01;
 			configEepromSetModified(cfg);
-			configEepromSaveSettingsToMemory(&m_app_ctx.eeprom_params);
-			DEBUG(MAIN_DEBUG_ENABLE, name, "COEFFSa: a.x=%d, a.y=%d\n\r", coeffs.m_ax, coeffs.m_ay);
-			DEBUG(MAIN_DEBUG_ENABLE, name, "COEFFSb: b.x=%d, b.y=%d\n\r", coeffs.m_bx, coeffs.m_by);
-			DEBUG(MAIN_DEBUG_ENABLE, name, "COEFFSd: d.x=%d, d.y=%d\n\r", coeffs.m_dx, coeffs.m_dy);
+			configEepromSaveSettingsToMemory(&app_ctx.eeproparams);
+			DEBUG(MAIN_DEBUG_ENABLE, name, "COEFFSa: a.x=%d, a.y=%d\n\r", coeffs.a_x, coeffs.a_y);
+			DEBUG(MAIN_DEBUG_ENABLE, name, "COEFFSb: b.x=%d, b.y=%d\n\r", coeffs.b_x, coeffs.b_y);
+			DEBUG(MAIN_DEBUG_ENABLE, name, "COEFFSd: d.x=%d, d.y=%d\n\r", coeffs.d_x, coeffs.d_y);
 		}
 		else
 		{
@@ -236,7 +236,7 @@ static bool setTouchScreenCalibration()
 static int32_t touchScreenCallback(uint32_t msg, int32_t x, int32_t y)
 {
 	int32_t swipeDiffX, swipeDiffY;
-    if(m_app_ctx.swipe_enabled)
+    if(app_ctx.swipe_enabled)
     {
         switch(msg)
         {
@@ -244,17 +244,17 @@ static int32_t touchScreenCallback(uint32_t msg, int32_t x, int32_t y)
             case WIDGET_MSG_PTR_DOWN:
             {
                 // Save this press location.
-            	m_swipe.swipeStarted = true;
-            	if(!m_swipe.swipeOnGoing)
+            	swipe.swipeStarted = true;
+            	if(!swipe.swipeOnGoing)
             	{
-					m_swipe.initX = x;
-					m_swipe.initY = y;
+					swipe.initX = x;
+					swipe.initY = y;
 
             	}
             	else
-            	{	++m_swipe.sampleNum;
-            		m_swipe.bufX[m_swipe.sampleNum % SWIPE_LAST_VAL_BUF_SIZE] = x;
-            		m_swipe.bufY[m_swipe.sampleNum % SWIPE_LAST_VAL_BUF_SIZE] = y;
+            	{	++swipe.sampleNum;
+            		swipe.bufX[swipe.sampleNum % SWIPE_LAST_VAL_BUF_SIZE] = x;
+            		swipe.bufY[swipe.sampleNum % SWIPE_LAST_VAL_BUF_SIZE] = y;
             	}
 
                 break;
@@ -263,12 +263,12 @@ static int32_t touchScreenCallback(uint32_t msg, int32_t x, int32_t y)
             // The user has moved the touch location on the screen.
             case WIDGET_MSG_PTR_MOVE:
             {
-            	if(m_swipe.swipeStarted || m_swipe.swipeOnGoing)
+            	if(swipe.swipeStarted || swipe.swipeOnGoing)
             	{
-            		++m_swipe.sampleNum;
-            		m_swipe.bufX[m_swipe.sampleNum % SWIPE_LAST_VAL_BUF_SIZE] = x;
-            		m_swipe.bufY[m_swipe.sampleNum % SWIPE_LAST_VAL_BUF_SIZE] = y;
-					m_swipe.swipeOnGoing = true;
+            		++swipe.sampleNum;
+            		swipe.bufX[swipe.sampleNum % SWIPE_LAST_VAL_BUF_SIZE] = x;
+            		swipe.bufY[swipe.sampleNum % SWIPE_LAST_VAL_BUF_SIZE] = y;
+					swipe.swipeOnGoing = true;
             	}
                 break;
             }
@@ -276,49 +276,49 @@ static int32_t touchScreenCallback(uint32_t msg, int32_t x, int32_t y)
             // The user just stopped touching the screen.
             case WIDGET_MSG_PTR_UP:
             {
-            	if(m_swipe.swipeOnGoing)
+            	if(swipe.swipeOnGoing)
             	{
             		//checks on last gathered data for now
-            		int32_t xLastVal = m_swipe.bufX[m_swipe.sampleNum % SWIPE_LAST_VAL_BUF_SIZE];
-            		int32_t yLastVal = m_swipe.bufY[m_swipe.sampleNum % SWIPE_LAST_VAL_BUF_SIZE];
-            		bool xLessThanInit = xLastVal < m_swipe.initX;
-            		bool yLessThanInit = yLastVal < m_swipe.initY;
-            		swipeDiffX = ((xLastVal - m_swipe.initX)>0) ? (xLastVal - m_swipe.initX) : (m_swipe.initX - xLastVal);
-            		swipeDiffY = ((yLastVal - m_swipe.initY)>0) ? (yLastVal - m_swipe.initY) : (m_swipe.initY - yLastVal);
+            		int32_t xLastVal = swipe.bufX[swipe.sampleNum % SWIPE_LAST_VAL_BUF_SIZE];
+            		int32_t yLastVal = swipe.bufY[swipe.sampleNum % SWIPE_LAST_VAL_BUF_SIZE];
+            		bool xLessThanInit = xLastVal < swipe.initX;
+            		bool yLessThanInit = yLastVal < swipe.initY;
+            		swipeDiffX = ((xLastVal - swipe.initX)>0) ? (xLastVal - swipe.initX) : (swipe.initX - xLastVal);
+            		swipeDiffY = ((yLastVal - swipe.initY)>0) ? (yLastVal - swipe.initY) : (swipe.initY - yLastVal);
             		// checks which difference is bigger
             		if(swipeDiffX > swipeDiffY )
             		{
 
             			if(!xLessThanInit && (swipeDiffX > SWIPE_MIN_DIFFERENCE))
 						{
-							m_swipe.swipeDirecttion = SWIPE_RIGHT;
+							swipe.swipeDirecttion = SWIPE_RIGHT;
 						}
 						else if(xLessThanInit && (swipeDiffX > SWIPE_MIN_DIFFERENCE))
 						{
-							m_swipe.swipeDirecttion = SWIPE_LEFT;
+							swipe.swipeDirecttion = SWIPE_LEFT;
 						}
             		}
             		else
             		{
 						if(!yLessThanInit && (swipeDiffY > SWIPE_MIN_DIFFERENCE))
 						{
-							m_swipe.swipeDirecttion = SWIPE_DOWN;
+							swipe.swipeDirecttion = SWIPE_DOWN;
 						}
 						else if(yLessThanInit && (swipeDiffY > SWIPE_MIN_DIFFERENCE))
 						{
-							m_swipe.swipeDirecttion = SWIPE_UP;
+							swipe.swipeDirecttion = SWIPE_UP;
 						}
             		}
             	}
-        		m_swipe.swipeOnGoing = false;
-        		m_swipe.swipeStarted = false;
-        		m_swipe.sampleNum = 0;
+        		swipe.swipeOnGoing = false;
+        		swipe.swipeStarted = false;
+        		swipe.sampleNum = 0;
         		break;
             }
             default:
-        		m_swipe.swipeOnGoing = false;
-        		m_swipe.swipeStarted = false;
-        		m_swipe.sampleNum = 0;
+        		swipe.swipeOnGoing = false;
+        		swipe.swipeStarted = false;
+        		swipe.sampleNum = 0;
         		break;
         }
     }
@@ -330,24 +330,24 @@ static int32_t touchScreenCallback(uint32_t msg, int32_t x, int32_t y)
 static void handleMovement(void)
 {
 	uint16_t newScreenIdx = uiGetCurrentScreen();
-	if(m_app_ctx.swipe_enabled)
+	if(app_ctx.swipe_enabled)
 	{
-		if(m_swipe.swipeDirecttion != SWIPE_NONE )
+		if(swipe.swipeDirecttion != SWIPE_NONE )
 		{
 
-			if(m_swipe.swipeDirecttion == SWIPE_RIGHT)
+			if(swipe.swipeDirecttion == SWIPE_RIGHT)
 			{
 			    newScreenIdx = uiGetCurrentScreenContainer()->right;
 			}
-			else if(m_swipe.swipeDirecttion == SWIPE_LEFT)
+			else if(swipe.swipeDirecttion == SWIPE_LEFT)
 			{
 			    newScreenIdx = uiGetCurrentScreenContainer()->left;
 			}
-			else if(m_swipe.swipeDirecttion == SWIPE_UP)
+			else if(swipe.swipeDirecttion == SWIPE_UP)
 			{
 			    newScreenIdx = uiGetCurrentScreenContainer()->up;
 			}
-			else if(m_swipe.swipeDirecttion == SWIPE_DOWN)
+			else if(swipe.swipeDirecttion == SWIPE_DOWN)
 			{
 			    newScreenIdx = uiGetCurrentScreenContainer()->down;
 			}
@@ -358,13 +358,13 @@ static void handleMovement(void)
             uiSetCurrentScreen(newScreenIdx);
             WidgetAdd(WIDGET_ROOT, uiGetCurrentScreenContainer()->widget);
             WidgetPaint(WIDGET_ROOT);
-            m_get_new_temp_data = false;  //clean flag
-            m_global_counter_sec = 1; 	  //clean counter
+            get_new_temp_data = false;  //clean flag
+            global_counter_sec = 1; 	  //clean counter
             WidgetMessageQueueProcess();
             uiUpdateScreen();
 		}
 	}
-	m_swipe.swipeDirecttion = SWIPE_NONE;
+	swipe.swipeDirecttion = SWIPE_NONE;
 }
 
 
@@ -373,16 +373,16 @@ static void handleMovement(void)
 //*****************************************************************************
 //
 // The interrupt handler for the for Systick interrupt.
-// m_global_counter_sec updated 5 times per second
+// global_counter_sec updated 5 times per second
 //
 //*****************************************************************************
 void SysTickIntHandler(void)
 {
-	static volatile uint32_t m_global_counter_sec = 0;
-	m_global_counter_sec++;
-	if((m_global_counter_sec % 100) == 0 && !m_get_new_temp_data) //every 20s
+	static volatile uint32_t global_counter_sec = 0;
+	global_counter_sec++;
+	if((global_counter_sec % 100) == 0 && !get_new_temp_data) //every 20s
 	{
-		//m_get_new_temp_data = true;
+		get_new_temp_data = true;
 	}
 }
 
@@ -417,7 +417,7 @@ int main(void)
 	configInit();
 
 	// UI
-	uiScreenSettings_init(&m_app_ctx.eeprom_params, &m_app_ctx.flash_params);
+	uiScreenSettings_init(&app_ctx.eeproparams, &app_ctx.flash_params);
     uiInit();
 
 	// touchScreenControler
@@ -429,15 +429,15 @@ int main(void)
 	// do touch screen calibration if needed
 	setTouchScreenCalibration();
 
-	m_app_ctx.flash_params.connectionSetupState.wifiEnabled = true; //FOR DEBUG TODO
+	app_ctx.flash_params.connectionSetupState.wifiEnabled = true; //FOR DEBUG TODO
 
 	// Wifi client init
 
-	wifiInit(m_app_ctx.eeprom_params.wifi_config.ap_ssid,
-			 m_app_ctx.eeprom_params.wifi_config.ap_wpa2_pass);
+	wifiInit(app_ctx.eeproparams.wifi_config.ap_ssid,
+			 app_ctx.eeproparams.wifi_config.ap_wpa2_pass);
 	wifiCheckApConnectionStatus();
 
-	if (m_app_ctx.flash_params.connectionSetupState.wifiEnabled)
+	if (app_ctx.flash_params.connectionSetupState.wifiEnabled)
 	{
 		wifiConnectToAp(); //try to connect
 	}
@@ -453,7 +453,7 @@ int main(void)
 
 	// Enable all interrupts
 	ENABLE_ALL_INTERRUPTS();
-	m_get_new_temp_data = true; //update all for first time
+	get_new_temp_data = true; //update all for first time
 
 	while (1)
 	{
@@ -470,55 +470,55 @@ int main(void)
 			TouchPoint a;
 			a = ADS7843getTouchedPoint();
 			DEBUG(MAIN_DEBUG_ENABLE, name, "RESULTS: x=%d, y=%d\n\r", a.x, a.y);
-			GrContextForegroundSet(&m_drawing_context, ClrRed);
-			GrCircleFill(&m_drawing_context, a.x, a.y, 3);
+			GrContextForegroundSet(&drawing_context, ClrRed);
+			GrCircleFill(&drawing_context, a.x, a.y, 3);
 		}
 
 #endif
-#if 0
-		if (m_get_new_temp_data)
+
+		if (get_new_temp_data)
 		{
-			if (m_app_ctx.flash_params.connectionSetupState.wifiEnabled)
+			if (app_ctx.flash_params.connectionSetupState.wifiEnabled)
 			{
 				if (wifiCheckApConnectionStatus())
 				{
 					WifiConnectionState state = wifiGetConnectionStatus();
 					/*
-					if (m_app_ctx.flash_params.connectionSetupState.wifiConnectionState != state)
+					if (app_ctx.flash_params.connectionSetupState.wifiConnectionState != state)
 					{
 						if (state == WIFI_NOT_CONNECTED || state == WIFI_CONNECTED)
 						{
-							m_app_ctx.flash_params.connectionSetupState.wifiConnectionState = state;
-							configFlashSetModified(&m_app_ctx.flash_params);
-							configFlashSaveSettingsToMemory(&m_app_ctx.flash_params);
+							app_ctx.flash_params.connectionSetupState.wifiConnectionState = state;
+							configFlashSetModified(&app_ctx.flash_params);
+							configFlashSaveSettingsToMemory(&app_ctx.flash_params);
 						}
 					}
 					*/
 				}
 				if (uiGetCurrentScreen() == SCREEN_MAIN)
 				{
-					if (!wifiFetchCurrentWeather(m_app_ctx.eeprom_params.city_name))
+					if (!wifiFetchCurrentWeather(app_ctx.eeproparams.city_name))
 					{
 						DEBUG(MAIN_DEBUG_ENABLE, name, "wifiFetchCurrentWeather failed\n\r");
 					}
 				}
 			}
-			m_get_new_temp_data = false;
+			get_new_temp_data = false;
 		}
-#endif
+
 		uiUpdateScreen();
 
 		if(!ADS7843getIntPinState()) // if touch panel is being touched)
 		{
 			if(touch_screen_pressed_time == 0) // first press
 			{
-				touch_screen_pressed_time = m_global_counter_sec;
+				touch_screen_pressed_time = global_counter_sec;
 			}
-			if((m_global_counter_sec - touch_screen_pressed_time) > 50) // if > ~10s do screen calibration
+			if((global_counter_sec - touch_screen_pressed_time) > 50) // if > ~10s do screen calibration
 			{
 				DISABLE_ALL_INTERRUPTS();
 				delay_ms(1500);
-				configEepromSetModified(&(m_app_ctx.eeprom_params));
+				configEepromSetModified(&(app_ctx.eeproparams));
 				setTouchScreenCalibration();
 				delay_ms(1000);
 				SysCtlReset(); // reboot

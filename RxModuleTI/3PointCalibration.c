@@ -106,13 +106,13 @@ uint8_t performThreePointCalibration(tContext* ctx, CalibCoefficients* coefs)
 									- (int32_t) t2.x * t1.y);
 
 	// final values
-	coefs->m_ax = (float) deltaX1 / (float) delta;
-	coefs->m_bx = (float) deltaX2 / (float) delta;
-	coefs->m_dx = (float) deltaX3 / (float) delta;
+	coefs->a_x = (float) deltaX1 / (float) delta;
+	coefs->b_x = (float) deltaX2 / (float) delta;
+	coefs->d_x = (float) deltaX3 / (float) delta;
 
-	coefs->m_ay = (float) deltaY1 / (float) delta;
-	coefs->m_by = (float) deltaY2 / (float) delta;
-	coefs->m_dy = (float) deltaY3 / (float) delta;
+	coefs->a_y = (float) deltaY1 / (float) delta;
+	coefs->b_y = (float) deltaY2 / (float) delta;
+	coefs->d_y = (float) deltaY3 / (float) delta;
     GrContextForegroundSet(ctx, ClrRed);
     GrContextFontSet(ctx, &g_sFontCm16);
     GrStringDrawCentered(ctx, "Success-storing data...", -1,

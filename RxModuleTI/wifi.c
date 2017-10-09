@@ -1,7 +1,7 @@
 /*
  * wifi.c
  *
- * @brief Module responsible for connection and grabbing weataher data from openweathermap.org via WIFI access point
+ * @brief Module responsible for connection and grabbing weather data from openweathermap.org via WIFI access point
  *  Created on: 6 maj 2017
  *      Author: igbt6
  */
@@ -31,8 +31,8 @@ static const uint16_t ntp_server_port = 123;
 static char wifi_ap_SSID_buf[AP_PARAMS_MAX_LENGTH];
 static char wifi_ap_PASS_buf[AP_PARAMS_MAX_LENGTH];
 
-static WifiConnectionState m_current_state;
-static WifiWeatherDataModel m_last_result;
+static WifiConnectionState current_state;
+static WifiWeatherDataModel last_result;
 
 //
 //forward declarations
@@ -59,7 +59,7 @@ bool wifiInit(const char* ssid, const char* pass)
 	}
 	wifiSetApParameters(ssid, pass);
 	esp8266CommandCWMODE(ESP8266_MODE_CLIENT); //set as a client
-	m_current_state = WIFI_NOT_CONNECTED;
+	current_state = WIFI_NOT_CONNECTED;
 	return true;
 }
 
@@ -78,7 +78,7 @@ void wifiSetApParameters(const char* ssid, const char* pass)
 
 bool wifiConnectToAp()
 {
-	if (m_current_state == WIFI_CONNECTED)
+	if (current_state == WIFI_CONNECTED)
 	{
 		goto ok;
 	}
@@ -87,7 +87,7 @@ bool wifiConnectToAp()
 	{
 		if (esp8266CommandCWJAP(wifi_ap_SSID_buf, wifi_ap_PASS_buf))
 		{
-			m_current_state = WIFI_CONNECTED;
+			current_state = WIFI_CONNECTED;
 			goto ok;
 		}
 	}
@@ -106,7 +106,7 @@ bool wifiDisconnectFromAp()
 	{
 		goto fail;
 	}
-	m_current_state = WIFI_NOT_CONNECTED;
+	current_state = WIFI_NOT_CONNECTED;
 
 	return true;
 fail:
@@ -116,7 +116,7 @@ fail:
 bool wifiFetchCurrentWeather(const char* city)
 {
 	wifi_weather_set_result_invalid();
-	if (!m_current_state == WIFI_CONNECTED)
+	if (!current_state == WIFI_CONNECTED)
 	{
 		goto fail;
 	}
@@ -138,8 +138,7 @@ bool wifiFetchCurrentWeather(const char* city)
 	{
 		goto fail;
 	}
-	//delay_ms(100); //to finish download
-	esp8266WaitForData(100, 2000, "+IPD,");
+	esp8266WaitForData(300, 5000, 500, "IPD+");
 	if (!wifi_weather_parse_response(esp8266GetRxBuffer(), ESP8266_RX_BUF_SIZE))
 	{
 		goto fail;
@@ -154,7 +153,7 @@ fail:
 timeData_t wifiFetchCurrentNtpTime()
 {
 	timeData_t timeRetrieved = 0;
-	if (!m_current_state == WIFI_CONNECTED)
+	if (!current_state == WIFI_CONNECTED)
 	{
 		goto fail;
 	}
@@ -175,8 +174,7 @@ timeData_t wifiFetchCurrentNtpTime()
 	{
 		goto fail;
 	}
-
-	esp8266WaitForData(NTP_PACKET_SIZE, 2000, "+IPD,"); //just wait a short while
+	esp8266WaitForData(NTP_PACKET_SIZE, 5000, 500, "+IPD,"); //just wait a short while
 
 	if (!wifi_ntp_parse_response(esp8266GetRxBuffer(), ESP8266_RX_BUF_SIZE, &timeRetrieved))
 	{
@@ -192,12 +190,12 @@ fail:
 
 WifiConnectionState wifiGetConnectionStatus()
 {
-	return m_current_state;
+	return current_state;
 }
 
 WifiWeatherDataModel wifiGetWeatherResultData()
 {
-	return m_last_result;
+	return last_result;
 }
 
 const char* wifiSsidParam()
@@ -236,16 +234,16 @@ bool wifiCheckApConnectionStatus()
     switch(status)
     {
 		case 2:
-			m_current_state = WIFI_CONNECTED;
+			current_state = WIFI_CONNECTED;
 			break;
 		case 3:
-			m_current_state = WIFI_TRANSMISSION_CREATED;
+			current_state = WIFI_TRANSMISSION_CREATED;
 			break;
 		case 4:
-			m_current_state = WIFI_TRANSMISSION_ENDED;
+			current_state = WIFI_TRANSMISSION_ENDED;
 			break;
 		case 5:
-			m_current_state = WIFI_NOT_CONNECTED;
+			current_state = WIFI_NOT_CONNECTED;
 			break;
 		default:
 			break;
@@ -276,7 +274,7 @@ static bool wifi_weather_parse_response(const uint8_t* resp_buf, uint16_t buf_le
     for (shift = 5; shift < buf_len && ch != ':'; ++shift )
     {
     	ch = p[shift];
-    	if ((shift -5) < 3)
+    	if ((shift - 5) < 3)
     	{
     		len = len*10 + ch - '0';
     	}
@@ -304,7 +302,7 @@ static bool wifi_weather_parse_response(const uint8_t* resp_buf, uint16_t buf_le
         }
         else
         {
-        	m_last_result.temperature = (int)json_getInteger(temp);
+        	last_result.temperature = (int)json_getInteger(temp);
         }
 
         json_t const* pressure = json_getProperty(main_, "pressure");
@@ -314,7 +312,7 @@ static bool wifi_weather_parse_response(const uint8_t* resp_buf, uint16_t buf_le
         }
         else
         {
-        	m_last_result.pressure = (int)json_getInteger(pressure);
+        	last_result.pressure = (int)json_getInteger(pressure);
         }
 
         json_t const* humidity = json_getProperty(main_, "humidity");
@@ -324,7 +322,7 @@ static bool wifi_weather_parse_response(const uint8_t* resp_buf, uint16_t buf_le
         }
         else
         {
-        	m_last_result.humidity = (int)json_getInteger(humidity);
+        	last_result.humidity = (int)json_getInteger(humidity);
         }
     }
 
@@ -343,7 +341,7 @@ static bool wifi_weather_parse_response(const uint8_t* resp_buf, uint16_t buf_le
         }
         else
         {
-        	m_last_result.wind_speed = (int)json_getInteger(speed);
+        	last_result.wind_speed = (int)json_getInteger(speed);
         }
 
         json_t const* deg = json_getProperty(wind, "deg");
@@ -353,7 +351,7 @@ static bool wifi_weather_parse_response(const uint8_t* resp_buf, uint16_t buf_le
         }
         else
         {
-        	m_last_result.wind_direction = (int)json_getInteger(deg);
+        	last_result.wind_direction = (int)json_getInteger(deg);
         }
     }
 
@@ -365,7 +363,7 @@ static bool wifi_weather_parse_response(const uint8_t* resp_buf, uint16_t buf_le
     }
     else
     {
-    	m_last_result.current_time = (unsigned int)json_getInteger(current_time);
+    	last_result.current_time = (unsigned int)json_getInteger(current_time);
     }
 
     //sunrise/sunset times
@@ -383,7 +381,7 @@ static bool wifi_weather_parse_response(const uint8_t* resp_buf, uint16_t buf_le
         }
         else
         {
-        	m_last_result.sunrise_time = (unsigned int)json_getInteger(sunrise_time);
+        	last_result.sunrise_time = (unsigned int)json_getInteger(sunrise_time);
         }
 
         json_t const* sunset_time = json_getProperty(sys, "sunset");
@@ -393,7 +391,7 @@ static bool wifi_weather_parse_response(const uint8_t* resp_buf, uint16_t buf_le
         }
         else
         {
-        	m_last_result.sunset_time = (unsigned int)json_getInteger(sunset_time);
+        	last_result.sunset_time = (unsigned int)json_getInteger(sunset_time);
         }
     }
 
@@ -419,7 +417,7 @@ static bool wifi_weather_parse_response(const uint8_t* resp_buf, uint16_t buf_le
 		        }
 		        else
 		        {
-		        	m_last_result.weather_cond_code[idx++] = (int)json_getInteger(weather_id);
+		        	last_result.weather_cond_code[idx++] = (int)json_getInteger(weather_id);
 		        }
 		   }
 		   else
@@ -432,11 +430,11 @@ static bool wifi_weather_parse_response(const uint8_t* resp_buf, uint16_t buf_le
 		   }
 	   }
 	}
-	m_last_result.is_valid = 0;
+	last_result.is_valid = 0;
 	return true;
 
 fail:
-	m_last_result.is_valid = -1;
+	last_result.is_valid = -1;
 	return false;
 }
 
@@ -469,7 +467,7 @@ static char* wifi_weather_build_url(const char* request_url, const char* city, c
 static void wifi_weather_set_result_invalid()
 {
     //reset last results
-    memset(&m_last_result, -1, sizeof(WifiWeatherDataModel));
+    memset(&last_result, -1, sizeof(WifiWeatherDataModel));
 }
 
 static char* wifi_ntp_build_url()

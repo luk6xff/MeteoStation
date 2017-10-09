@@ -15,7 +15,7 @@
 
 #include "wdog.h"
 
-#define WATCHDOG_PERIOD_SEC  10  //10s
+#define WATCHDOG_PERIOD_SEC  20  //20s
 
 //@brief Initializes watchdog 0
 void watchdog_init()

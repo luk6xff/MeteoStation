@@ -18,12 +18,12 @@
 
 static timeDataModel_t tm;          		// a cache of time elements
 static timeData_t cacheTime;   				// the time the cache was updated
-static const uint32_t syncIntervalSeconds = 1;	// time sync will be attempted after this many seconds, default = 60[s] = 1[min]
+static const uint32_t syncIntervalSeconds = 60;	// time sync will be attempted after this many seconds, default = 60[s] = 1[min]
 static timeData_t sysTime = 0;
 static timeData_t nextSyncTime = 0;
 static timeStatus_t Status = timeNotSet;
 static getExternalTime getTimePtr;  		// pointer to external [NTP] sync function
-static volatile bool updateUiTime = true;  	// flag if UI update is needed, first time as true
+static volatile bool updateTime = true;  	// flag if UI update is needed, first time as true
 static timeZone_t timeZone = timeZoneUTC;
 
 static void timeTimerInit();
@@ -52,7 +52,7 @@ static void checkForCETTimeZoneChange()
 	}
 	else if (timeZone == timeZoneCEST)
 	{
-		//Switch to Standard Time at October, last week of the month, Sunday at 3:00
+		//Switch to Standard Time (CET - UTC+1) at October, last week of the month, Sunday at 3:00
 		if (monthNow() == 10 && weekdayNow() == 1)
 		{
 			//check if it's a last Sunday of the month
@@ -65,6 +65,7 @@ static void checkForCETTimeZoneChange()
 			}
 		}
 	}
+
 }
 
 
@@ -228,7 +229,8 @@ int year(timeData_t t)
 #define LEAP_YEAR(Y)     ( ((1970+Y)>0) && !((1970+Y)%4) && ( ((1970+Y)%100) || !((1970+Y)%400) ) )
 
 static const uint8_t monthDays[]={31,28,31,30,31,30,31,31,30,31,30,31}; // API starts months from 1, this array starts from 0
- 
+
+//---------------------------------------------------------------------
 void breakTime(timeData_t timeInput, timeDataModel_t *tm)
 {
 	// break the given timeData_t into time components
@@ -294,6 +296,7 @@ void breakTime(timeData_t timeInput, timeDataModel_t *tm)
 	tm->Day = time + 1;     // day of month
 }
 
+//---------------------------------------------------------------------
 timeData_t makeTime(timeDataModel_t *tm)
 {
 	// assemble time elements into timeData_t
@@ -336,27 +339,35 @@ timeData_t makeTime(timeDataModel_t *tm)
 /* Low level system time functions  */
 timeData_t timeNow()
 {
+	return (timeData_t)sysTime;
+}
+//---------------------------------------------------------------------
+
+bool timeUpdateNow()
+{
+	bool ret = false;
 	if (nextSyncTime <= sysTime)
 	{
 		if (getTimePtr != 0)
 		{
-			//timeTimerEnable(false);
 			timeData_t t = getTimePtr();
 			if (t != 0)
 			{
 				setTimeNow(t);
+				updateTime = false;
+				ret = true;
 			}
 			else
 			{
 				nextSyncTime = sysTime + syncIntervalSeconds;
 				Status = (Status == timeNotSet) ?  timeNotSet : timeNeedsSync;
 			}
-			//timeTimerEnable(true);
 		}
 	}
-	return (timeData_t)sysTime;
+	return ret;
 }
 
+//---------------------------------------------------------------------
 void setTimeNow(timeData_t t)
 {
   sysTime = t + timeGetTimeZoneOffset();
@@ -365,6 +376,7 @@ void setTimeNow(timeData_t t)
   checkForCETTimeZoneChange();
 } 
 
+//---------------------------------------------------------------------
 void setTime(int hr,int min,int sec,int dy, int mnth, int yr)
 {
 	// year can be given as full four digit year or two digts (2010 or 10 for 2010);
@@ -386,6 +398,7 @@ void setTime(int hr,int min,int sec,int dy, int mnth, int yr)
 	setTimeNow(makeTime(&tm));
 }
 
+//---------------------------------------------------------------------
 timeStatus_t timeInit(getExternalTime getTimeFunction)
 {
 	timeSetSyncProvider(getTimeFunction);
@@ -393,37 +406,40 @@ timeStatus_t timeInit(getExternalTime getTimeFunction)
 	return Status;
 }
 
+//---------------------------------------------------------------------
 void timeSetTimeZone(timeZone_t zone)
 {
 	timeZone = zone;
 }
 
-bool timeIsTimeChanged()
+//---------------------------------------------------------------------
+bool timeIsTimeToBeUpdated()
 {
-	bool isChanged = updateUiTime;
-	updateUiTime = false;
-	return isChanged;
+	return updateTime;
 }
 
+//---------------------------------------------------------------------
 // indicates if time has been set and recently synchronized
 timeStatus_t timeStatus()
 {
-	timeNow(); // required to actually update the status
 	return Status;
 }
 
+//---------------------------------------------------------------------
 void timeSetSyncProvider(getExternalTime getTimeFunction)
 {
 	getTimePtr = getTimeFunction;
 	nextSyncTime = sysTime;
-	timeNow(); // this will sync the clock
+	timeUpdateNow(); // this will sync the clock
 }
 
+//---------------------------------------------------------------------
 timeDataModel_t timeCurrentData()
 {
 	return tm;
 }
 
+//---------------------------------------------------------------------
 //Configures Timer3A as a 32-bit periodic timer
 static void timeTimerInit()
 {
@@ -432,12 +448,12 @@ static void timeTimerInit()
     TimerConfigure(TIMER3_BASE, TIMER_CFG_32_BIT_PER_UP);
 
     // Set the Timer3A load value to 1s.
-    TimerLoadSet(TIMER3_BASE, TIMER_A, SysCtlClockGet() / 1); //1 [s]
+    TimerLoadSet(TIMER3_BASE, TIMER_A, SysCtlClockGet() / 1); //1[s]
 
     timeTimerEnable(true);
 }
 
-
+//---------------------------------------------------------------------
 //Enables/Disables Timer3A
 static void timeTimerEnable(bool enable)
 {
@@ -461,6 +477,7 @@ static void timeTimerEnable(bool enable)
 	}
 }
 
+//---------------------------------------------------------------------
 //Timer3A interrupt handler
 void TimeTimer3AIntHandler(void)
 {
@@ -468,9 +485,9 @@ void TimeTimer3AIntHandler(void)
 	static uint32_t seconds_cnt = 0;
 	seconds_cnt++;
 	timeAdjustSystemTime(1); //update about one second;
-	if ((seconds_cnt % 60 == 0) && (updateUiTime == false))
+	if ((seconds_cnt % syncIntervalSeconds == 0) && (updateTime == false))
 	{
-		updateUiTime = true;
+		updateTime = true;
 	}
 
 

@@ -26,11 +26,9 @@
 #include "wdog.h"
 #include "ui/ui_common.h"
 
-#define MAIN_DEBUG_ENABLE 1
-#if MAIN_DEBUG_ENABLE
-	#include "debugConsole.h"
-	static const char* name = "main";
-#endif
+#include "debugConsole.h"
+#define MAIN_DEBUG_ENABLE 0
+static const char* name = "main";
 
 
 
@@ -390,7 +388,6 @@ void SysTickIntHandler(void)
 
 // Main method of the application
 int main(void)
-
 {
 	static uint32_t touch_screen_pressed_time = 0;
 
@@ -437,14 +434,17 @@ int main(void)
 			 app_ctx.eeproparams.wifi_config.ap_wpa2_pass);
 	wifiCheckApConnectionStatus();
 
-	if (app_ctx.flash_params.connectionSetupState.wifiEnabled)
+	if (wifiGetConnectionStatus() != WIFI_CONNECTED)
 	{
-		wifiConnectToAp(); //try to connect
+		if (app_ctx.flash_params.connectionSetupState.wifiEnabled)
+		{
+			wifiConnectToAp(); //try to connect
+		}
 	}
 
 	// time module initialization
 	timeInit(wifiFetchCurrentNtpTime);
-	timeSetTimeZone(timeZoneCET);
+	timeSetTimeZone(timeZoneCEST);
 
 	// Enable the SysTick and its Interrupt.
 	MAP_SysTickPeriodSet(MAP_SysCtlClockGet()); //0.2[s];
@@ -480,33 +480,32 @@ int main(void)
 		{
 			if (app_ctx.flash_params.connectionSetupState.wifiEnabled)
 			{
-				if (wifiCheckApConnectionStatus())
-				{
-					WifiConnectionState state = wifiGetConnectionStatus();
-					/*
-					if (app_ctx.flash_params.connectionSetupState.wifiConnectionState != state)
-					{
-						if (state == WIFI_NOT_CONNECTED || state == WIFI_CONNECTED)
-						{
-							app_ctx.flash_params.connectionSetupState.wifiConnectionState = state;
-							configFlashSetModified(&app_ctx.flash_params);
-							configFlashSaveSettingsToMemory(&app_ctx.flash_params);
-						}
-					}
-					*/
-				}
 				if (uiGetCurrentScreen() == SCREEN_MAIN)
 				{
+					uint8_t uiUpdateCnt = 0;
 					if (!wifiFetchCurrentWeather(app_ctx.eeproparams.city_name))
 					{
 						DEBUG(MAIN_DEBUG_ENABLE, name, "wifiFetchCurrentWeather failed\n\r");
+					}
+					else
+					{
+						uiUpdateCnt++;
+					}
+					if (timeIsTimeToBeUpdated())
+					{
+						if (timeUpdateNow())
+						{
+							uiUpdateCnt++;
+						}
+					}
+					if (uiUpdateCnt != 0)
+					{
+						uiUpdateScreen();
 					}
 				}
 			}
 			get_new_temp_data = false;
 		}
-
-		uiUpdateScreen();
 
 		if(!ADS7843getIntPinState()) // if touch panel is being touched)
 		{

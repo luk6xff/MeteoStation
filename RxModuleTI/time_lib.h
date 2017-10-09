@@ -135,9 +135,10 @@ char* dayShortStr(uint8_t day);
 /* public methods */
 timeStatus_t timeInit(getExternalTime getTimeFunction);
 void timeSetTimeZone(timeZone_t zone);
-bool timeIsTimeChanged();
+bool timeIsTimeToBeUpdated();	   // indicates if time is to be updated from external source
 timeStatus_t timeStatus(); 		   // indicates if time has been set and recently synchronized
 timeData_t timeNow();              // return the current time as seconds since Jan 1 1970
+bool  timeUpdateNow();        // updates time retrieved from external source (NTP server, RTC etc.)
 timeDataModel_t timeCurrentData(); // return whole time data;
 /* time sync functions	*/
 void timeSetSyncProvider(getExternalTime getTimeFunction); // identify the external time provider

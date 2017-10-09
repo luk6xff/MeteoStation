@@ -12,10 +12,9 @@
 #include "../wifi.h"
 
 #define UI_SETTINGS_DEBUG_ENABLE 1
-#if UI_SETTINGS_DEBUG_ENABLE
-	#include "../debugConsole.h"
-	static const char* name = "ui_screenSettings";
-#endif
+#include "../debugConsole.h"
+static const char* name = "ui_screenSettings";
+
 
 
 

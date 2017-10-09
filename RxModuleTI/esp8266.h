@@ -44,7 +44,7 @@ void esp8266Init();
 //@param  pattern - a some pattern which we expect to find the RX buffer, if not needed pass by NULL
 //@return false-given number of bytes or/and pattern found, true-success
 //
-bool esp8266WaitForData(uint16_t num_of_bytes, uint16_t ms_timeout, const char* pattern);
+bool esp8266WaitForData(uint16_t num_of_bytes, uint16_t ms_timeout, uint16_t ms_time_for_more_data, const char* pattern);
 
 
 //

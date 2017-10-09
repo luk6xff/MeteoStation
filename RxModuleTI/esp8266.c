@@ -26,10 +26,9 @@
 
 
 #define ESP8266_DEBUG_ENABLE 1
-#if ESP8266_DEBUG_ENABLE
-	#include "debugConsole.h"
-	static const char* name = "esp8266";
-#endif
+#include "debugConsole.h"
+static const char* name = "esp8266";
+
 
 
 //! - UART5 peripheral
@@ -150,6 +149,7 @@ uint8_t* esp8266GetRxBuffer(void)
 static void esp8266ResetUartRxBuffer(void)
 {
 	rxBufferCounter = 0;
+	rxDataAvailable = false;
 	memset((void*)rxBuffer, '\0', ESP8266_RX_BUF_SIZE);
 }
 
@@ -222,11 +222,11 @@ static bool esp8266WaitForResponse(const char* resp, uint16_t msTimeout)
 }
 
 
-bool esp8266WaitForData(uint16_t num_of_bytes, uint16_t ms_timeout, const char* pattern)
+bool esp8266WaitForData(uint16_t num_of_bytes, uint16_t ms_timeout, uint16_t ms_time_for_more_data, const char* pattern)
 {
 
 
-	if (num_of_bytes == 0 || (pattern && (strlen(pattern) < num_of_bytes)))
+	if (num_of_bytes == 0)
 	{
 		return false;
 	}
@@ -237,7 +237,7 @@ bool esp8266WaitForData(uint16_t num_of_bytes, uint16_t ms_timeout, const char* 
 	if (pattern)
 	{
 		pattern_len = strlen(pattern);
-		if (pattern_len < num_of_bytes)
+		if (pattern_len > num_of_bytes)
 		{
 			return res;
 		}
@@ -248,23 +248,26 @@ bool esp8266WaitForData(uint16_t num_of_bytes, uint16_t ms_timeout, const char* 
 
 	while((esp8266Milis() - startTime) < ms_timeout)
 	{
-		if(rxDataAvailable && rxBufferCounter >= num_of_bytes)
+		if (esp8266isDataInRxBufferAvaialble())
 		{
 			if (search_for_pattern)
 			{
 				if(esp8266SearchForResponseString(pattern, pattern_len))
 				{
 					res = true;
+					while((esp8266Milis() - startTime) < ms_time_for_more_data);//num_of_bytes_invalid)
 					break;
+
 				}
 			}
-			else
+			else if(rxBufferCounter >= num_of_bytes)
 			{
 				res = true;
+				break;
 			}
 		}
 	}
-	rxDataAvailable = false;
+
 	return res;
 }
 
@@ -362,7 +365,7 @@ bool esp8266CommandCIPMUX(uint8_t enable)
 bool esp8266CommandCWLAP()
 {
 	esp8266SendATCommand("AT+CWLAP");
-	return esp8266WaitForResponse("OK", 5000);
+	return esp8266WaitForResponse("OK", 4000);
 }
 
 
@@ -371,7 +374,7 @@ bool esp8266CommandCWJAP(const char* ssid, const char* pass)
 	esp8266ResetUartTxBuffer();
 	sprintf((char*)txBuffer, "AT+CWJAP=\"%s\",\"%s\"", ssid, pass);
 	esp8266SendATCommand((char*)txBuffer);
-	return esp8266WaitForResponse("OK", 8000);
+	return esp8266WaitForResponse("OK", 5000);
 }
 
 
@@ -447,14 +450,14 @@ bool esp8266CommandCIPSEND(const char* packet, uint16_t packetLen)
 		sprintf((char*)txBuffer, "AT+CIPSEND=%d", packetLen);
 	}
 	esp8266SendATCommand((char*)txBuffer);
-	if(!esp8266WaitForResponse(">", 3000))
+	if(!esp8266WaitForResponse(">", 2000))
 	{
 		return false;
 	}
 	esp8266ResetUartRxBuffer();
 	esp8266UartSend(packet, packetLen);
 
-	return esp8266WaitForResponse("SEND OK", 3000);
+	return esp8266WaitForResponse("SEND OK", 2000);
 }
 
 //

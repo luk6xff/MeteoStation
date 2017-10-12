@@ -8,7 +8,7 @@
 #ifndef TOUCH_H_
 #define TOUCH_H_
 
-#include <stdint.h>
+#include "system.h"
 
 
 void touchScreenInit();

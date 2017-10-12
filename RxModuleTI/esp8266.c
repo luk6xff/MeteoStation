@@ -4,10 +4,6 @@
  *  Created on: 20 lis 2016
  *      Author: igbt6
  */
-
-
-#include <stdint.h>
-#include <stdbool.h>
 #include <string.h>
 #include <stdio.h>
 
@@ -21,7 +17,6 @@
 #include "driverlib/timer.h"
 #include "driverlib/uart.h"
 
-#include "system.h"
 #include "esp8266.h"
 
 

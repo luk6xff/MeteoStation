@@ -8,11 +8,7 @@
 #ifndef ADS7843_H_
 #define ADS7843_H_
 
-#include <stdbool.h>
-#include <stdint.h>
-
-#include "inc/hw_ints.h"
-
+#include "system.h"
 /*********************************Hardware dependent part*****************************************/
 /*********************************Hardware dependent part*****************************************/
 
@@ -33,7 +29,7 @@
 #endif
 
 
-//------------------SSI0 CS_PIN----------------------
+//------------------SSI0 ADS7843 CS_PIN----------------------
 #define ADS7843_PIN_CS      			GPIO_PIN_3
 #define ADS7843_PORT_CS     			GPIO_PORTA_BASE
 #define ADS7843_PORT_CS_CLOCK()			SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA)
@@ -57,39 +53,6 @@
 
 
 /*********************************Hardware dependent part - END*****************************************/
-
-//
-// Enable touch interrupt
-//
-//#define ADS7843_ENABLE_TOUCH_INT
-#define TOUCH_SCREEN_WIDTH         240
-#define TOUCH_SCREEN_HEIGHT        320
-
-#define TOUCH_MAX_NUM_OF_SAMPLES    20  //Note! must be >= 7
-//Configure it correctly to your display
-#define TOUCH_AD_X_MAX             1880
-#define TOUCH_AD_X_MIN             150
-#define TOUCH_AD_Y_MAX             2020
-#define TOUCH_AD_Y_MIN             170
-#define TOUCH_AD_CALIB_ERROR       30
-
-//*****************************************************************************
-//
-// @addtogroup ADS7843_Config ADS7843 Driver Predefines
-// @brief This part defines the slave address and register address of ADS7843.
-//
-//*****************************************************************************
-#define ADS7843_READ_X             0xD0
-#define ADS7843_READ_Y             0x90
-#define ADS7843_SER            	   0x04
-#define ADS7843_DFR            	   0x00
-#define ADS7843_NO_POWERDOWN       0x03
-#define ADS7843_POWERDOWN          0x00
-#define ADS7843_12_BIT             0x00
-#define ADS7843_8_BIT              0x08
-#define ADS7843_READ_IN3           0xA0
-#define ADS7843_READ_IN4           0xE0
-
 typedef enum {
 	TOUCH_STATUS_PENUP, TOUCH_STATUS_PENDOWN, TOUCH_STATUS_TOUCHING
 } TouchStatus;

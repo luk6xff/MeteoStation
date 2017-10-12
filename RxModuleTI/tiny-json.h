@@ -24,8 +24,7 @@
 extern "C" {
 #endif
 
-#include <stdbool.h>
-#include <stdint.h>
+#include "system.h"
 #include <stdlib.h>
 
 /** @defgroup tinyJson Tiny JSON parser.

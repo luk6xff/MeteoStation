@@ -24,7 +24,9 @@
 #include "system.h"
 #include "time_lib.h"
 #include "wdog.h"
+#include "spiCommon.h"
 #include "ui/ui_common.h"
+#include "RF22.h"
 
 #include "debugConsole.h"
 #define MAIN_DEBUG_ENABLE 0
@@ -416,6 +418,14 @@ int main(void)
 	// UI
 	uiScreenSettings_init(&app_ctx.eeproparams, &app_ctx.flash_params);
     uiInit();
+
+    // spi bus init
+    spiCommonInit();
+
+    if (!RF22_init())
+    {
+    	while(1);
+    }
 
 	// touchScreenControler
 	touchScreenInit();

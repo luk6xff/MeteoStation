@@ -15,8 +15,7 @@ extern "C" {
 #endif
 
 
-#include "stdint.h"
-#include "stdbool.h"
+#include "system.h"
 
 typedef uint64_t timeData_t;
 

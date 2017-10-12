@@ -8,7 +8,6 @@
 #ifndef WIFI_H_
 #define WIFI_H_
 
-#include <stdbool.h>
 #include "time_lib.h"
 
 typedef enum

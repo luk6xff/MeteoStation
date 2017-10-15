@@ -62,22 +62,28 @@ static void spiInit(void)
 	}
 	ADS7843_PORT_CS_CLOCK();
 	ADS7843_CS_OUTPUT(); //SSI0FSS will be handled manually
+	ADS7843_CS_HIGH();
 }
 
 static void spiWriteReadData(uint8_t* txBuf, uint8_t txSize, uint8_t* rxBuf,
 		uint8_t rxSize) {
 	ADS7843_CS_LOW();
-	if (txBuf != (void*) 0) {
-		for (int txIdx = 0; txIdx < txSize; ++txIdx) {
+	if (txBuf != (void*) 0)
+	{
+		for (int txIdx = 0; txIdx < txSize; ++txIdx)
+		{
 			SSIDataPut(SSI0_BASE, txBuf[txIdx]);
-			while (SSIBusy(SSI0_BASE)) {
+			while (SSIBusy(SSI0_BASE))
+			{
 			}
 		}
 	}
 
-	if (rxBuf != (void*) 0) {
+	if (rxBuf != (void*) 0)
+	{
 		//read bytes of data
-		for (int rxIdx = 0; rxIdx < rxSize; ++rxIdx) {
+		for (int rxIdx = 0; rxIdx < rxSize; ++rxIdx)
+		{
 			SSIDataGet(SSI0_BASE, &rxBuf[rxIdx]);
 		}
 	}

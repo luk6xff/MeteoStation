@@ -222,12 +222,13 @@ static void spiInit(void)
 
 static uint8_t spiWriteReadByte(uint8_t val)
 {
-	uint8_t retVal = 0xFF; // ivalid value
+	uint32_t retVal = 0xFA; // ivalid value
 	SSIDataPut(SSI0_BASE, val);
 	while (SSIBusy(SSI0_BASE))
 	{}
+	//SSIDataGetNonBlocking(SSI0_BASE, &retVal);
 	SSIDataGet(SSI0_BASE, &retVal);
-	return retVal;
+	return (uint8_t)retVal;
 }
 //------------------------------------------------------------------------
 /// Reads a single register from the RF22
@@ -254,6 +255,19 @@ static void spiWrite(uint8_t reg, uint8_t val)
     RFM_22_CS_LOW();
     spiWriteReadByte(reg | RF22_SPI_WRITE_MASK); // Send the address with the write mask on
     spiWriteReadByte(val); // New value follows
+
+    /*
+    uint32_t retVal;
+	SSIDataPut(SSI0_BASE, reg | RF22_SPI_WRITE_MASK);
+	while (SSIBusy(SSI0_BASE))
+	{};
+	SSIDataGetNonBlocking(SSI0_BASE, &retVal);
+	SSIDataPut(SSI0_BASE, val);
+	while (SSIBusy(SSI0_BASE))
+	{};
+	SSIDataGetNonBlocking(SSI0_BASE, &retVal);
+	*/
+
     RFM_22_CS_HIGH();
     ENABLE_ALL_INTERRUPTS();
 }
@@ -321,7 +335,7 @@ static void RF22_IntPinInit()
 	RFM_22_INT_INPUT();
 	RFM_22_INT_CONFIG_AS_FALLING();
 	GPIOPortIntRegister(RFM_22_PORT_INT, RF22_PinIntHandler);
-	//ENABLE_ALL_INTERRUPTS();
+	ENABLE_ALL_INTERRUPTS();
 	RFM_22_INT_INTERRUPT_ENABLE();
 }
 
@@ -332,8 +346,7 @@ static void RF22_IntPinInit()
 //------------------------------------------------------------------------
 bool RF22_init()
 {
-    // Wait for RF22 POR (up to 16msec)
-    //delay(16);
+
     _idleMode = RF22_XTON; // Default idle state is READY mode
     _mode = RF22_MODE_IDLE; // We start up in idle mode
     _rxGood = 0;
@@ -341,11 +354,15 @@ bool RF22_init()
     _txGood = 0;
     //TODO _shutdownPin= 0;  //power on - not used, connected to GND
 
-
+    RF22_TimerInit();
+    // Wait for RF22 POR (up to 16msec)
     RF22_TimerWait_ms(16);
 
+    //SPI Init
     spiInit();
-    RF22_TimerInit();
+
+    // Set up interrupt handler
+    RF22_IntPinInit();
 
     RF22_TimerWait_ms(100);
 
@@ -361,8 +378,7 @@ bool RF22_init()
         return false;
     }
 
-    // Set up interrupt handler
-    RF22_IntPinInit();
+
 
     RF22_clearTxBuf();
     RF22_clearRxBuf();
@@ -533,7 +549,7 @@ void RF22_reset()
 {
 	spiWrite(RF22_REG_07_OPERATING_MODE1, RF22_SWRES);
     // Wait for it to settle
-	RF22_TimerWait_ms(1); // SWReset time is nominally 100usec
+	RF22_TimerWait_ms(100); // SWReset time is nominally 100usec
 }
 
 //------------------------------------------------------------------------
@@ -877,7 +893,9 @@ bool RF22_fillTxBuf(const uint8_t* data, uint8_t len)
 bool RF22_appendTxBuf(const uint8_t* data, uint8_t len)
 {
     if (((uint16_t)_bufLen + len) > RF22_MAX_MESSAGE_LEN)
+    {
         return false;
+    }
     DISABLE_ALL_INTERRUPTS();    // Disable Interrupts
     memcpy(_buf + _bufLen, data, len);
     _bufLen += len;
@@ -889,7 +907,8 @@ bool RF22_appendTxBuf(const uint8_t* data, uint8_t len)
 // Assumption: there is currently <= RF22_TXFFAEM_THRESHOLD bytes in the Tx FIFO
 void RF22_sendNextFragment()
 {
-    if (_txBufSentIndex < _bufLen) {
+    if (_txBufSentIndex < _bufLen)
+    {
         // Some left to send?
         uint8_t len = _bufLen - _txBufSentIndex;
         // But dont send too much
@@ -1018,7 +1037,9 @@ bool RF22_DatagramInit(uint8_t thisAddress)
 {
     bool ret = RF22_init();
     if (ret)
+    {
     	RF22_setThisAddress(_thisAddress);
+    }
     return ret;
 }
 

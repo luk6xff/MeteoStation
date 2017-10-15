@@ -422,19 +422,20 @@ int main(void)
     // spi bus init
     spiCommonInit();
 
-    if (!RF22_init())
-    {
-    	while(1);
-    }
-
 	// touchScreenControler
 	touchScreenInit();
-
     // Set the touch screen event handler.
 	touchScreenSetTouchCallback(touchScreenCallback);
 
 	// do touch screen calibration if needed
 	setTouchScreenCalibration();
+
+    // rfm23b init
+    if (!RF22_DatagramInit(0x05))// address 0x05
+    {
+    	while(1);
+    }
+
 
 	app_ctx.flash_params.connectionSetupState.wifiEnabled = true; //FOR DEBUG TODO
 

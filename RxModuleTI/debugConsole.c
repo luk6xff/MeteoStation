@@ -4,7 +4,6 @@
  *  Created on: 20 lis 2016
  *      Author: igbt6
  */
-#include <stdint.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>

@@ -9,7 +9,7 @@
 #define DELAY_H_
 
 
-#include <stdint.h>
+#include "system.h"
 
 void delay_ms(uint32_t ms);
 

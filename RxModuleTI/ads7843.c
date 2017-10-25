@@ -14,6 +14,37 @@
 #include "driverlib/gpio.h"
 
 
+//
+// Enable touch interrupt
+//
+//#define ADS7843_ENABLE_TOUCH_INT
+#define TOUCH_SCREEN_WIDTH         240
+#define TOUCH_SCREEN_HEIGHT        320
+
+#define TOUCH_MAX_NUM_OF_SAMPLES    20  //Note! must be >= 7
+//Configure it correctly to your display
+#define TOUCH_AD_X_MAX             1880
+#define TOUCH_AD_X_MIN             150
+#define TOUCH_AD_Y_MAX             2020
+#define TOUCH_AD_Y_MIN             170
+#define TOUCH_AD_CALIB_ERROR       30
+
+//*****************************************************************************
+//
+// @addtogroup ADS7843_Config ADS7843 Driver Predefines
+// @brief This part defines the slave address and register address of ADS7843.
+//
+//*****************************************************************************
+#define ADS7843_READ_X             0xD0
+#define ADS7843_READ_Y             0x90
+#define ADS7843_SER            	   0x04
+#define ADS7843_DFR            	   0x00
+#define ADS7843_NO_POWERDOWN       0x03
+#define ADS7843_POWERDOWN          0x00
+#define ADS7843_12_BIT             0x00
+#define ADS7843_8_BIT              0x08
+#define ADS7843_READ_IN3           0xA0
+#define ADS7843_READ_IN4           0xE0
 
 
 
@@ -23,57 +54,36 @@ static TouchPoint currentTouchedPoint;
 //corection coefficients
 static CalibCoefficients calibCoefs;
 
-// Configure the SoftSSI module.  The size of the FIFO buffers can be
-// Module SSI0, pins are assigned as follows:
-//      PA2 - SoftSSICLK
-//      PA3 - SoftSSIFss
-//      PA4 - SoftSSIRx
-//      PA5 - SoftSSITx
-static void spiInit(void) {
-
-	uint32_t rxBuf[1];
-	SysCtlPeripheralEnable(SYSCTL_PERIPH_SSI0);
-
-	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
-	//GPIOPinConfigure(GPIO_PA3_SSI0FSS);
+static void spiInit(void)
+{
+	if (!spiCommonIsSpiInitialized())
+	{
+		while(1);
+	}
 	ADS7843_PORT_CS_CLOCK();
 	ADS7843_CS_OUTPUT(); //SSI0FSS will be handled manually
-
-	GPIOPinConfigure(GPIO_PA2_SSI0CLK);
-	GPIOPinConfigure(GPIO_PA4_SSI0RX);
-	GPIOPinConfigure(GPIO_PA5_SSI0TX);
-
-	GPIOPinTypeSSI(GPIO_PORTA_BASE,
-	GPIO_PIN_5 | GPIO_PIN_4 | /*GPIO_PIN_3 |*/ GPIO_PIN_2);
-
-	// Configure and enable the SSI port for SPI master mode.  Use SSI0,
-	// system clock supply, idle clock level low and active low clock in
-	// freescale SPI mode, master mode, 1MHz SSI frequency, and 8-bit data.
-	SSIConfigSetExpClk(SSI0_BASE, SysCtlClockGet(), SSI_FRF_MOTO_MODE_0,
-	SSI_MODE_MASTER, 100000, 8);
-
-	// Enable the SSI0 module.
-	SSIEnable(SSI0_BASE);
-
-	//flush the receives fifos
-	while (SSIDataGetNonBlocking(SSI0_BASE, &rxBuf[0])) {
-	}
+	ADS7843_CS_HIGH();
 }
 
 static void spiWriteReadData(uint8_t* txBuf, uint8_t txSize, uint8_t* rxBuf,
 		uint8_t rxSize) {
 	ADS7843_CS_LOW();
-	if (txBuf != (void*) 0) {
-		for (int txIdx = 0; txIdx < txSize; ++txIdx) {
+	if (txBuf != (void*) 0)
+	{
+		for (int txIdx = 0; txIdx < txSize; ++txIdx)
+		{
 			SSIDataPut(SSI0_BASE, txBuf[txIdx]);
-			while (SSIBusy(SSI0_BASE)) {
+			while (SSIBusy(SSI0_BASE))
+			{
 			}
 		}
 	}
 
-	if (rxBuf != (void*) 0) {
+	if (rxBuf != (void*) 0)
+	{
 		//read bytes of data
-		for (int rxIdx = 0; rxIdx < rxSize; ++rxIdx) {
+		for (int rxIdx = 0; rxIdx < rxSize; ++rxIdx)
+		{
 			SSIDataGet(SSI0_BASE, &rxBuf[rxIdx]);
 		}
 	}

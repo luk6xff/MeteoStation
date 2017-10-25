@@ -8,8 +8,7 @@
 #ifndef ESP8266_H_
 #define ESP8266_H_
 
-#include <stdint.h>
-#include <stdbool.h>
+#include "system.h"
 
 
 

@@ -24,7 +24,9 @@
 #include "system.h"
 #include "time_lib.h"
 #include "wdog.h"
+#include "spiCommon.h"
 #include "ui/ui_common.h"
+#include "RF22.h"
 
 #include "debugConsole.h"
 #define MAIN_DEBUG_ENABLE 0
@@ -417,14 +419,23 @@ int main(void)
 	uiScreenSettings_init(&app_ctx.eeproparams, &app_ctx.flash_params);
     uiInit();
 
+    // spi bus init
+    spiCommonInit();
+
 	// touchScreenControler
 	touchScreenInit();
-
     // Set the touch screen event handler.
 	touchScreenSetTouchCallback(touchScreenCallback);
 
 	// do touch screen calibration if needed
 	setTouchScreenCalibration();
+
+    // rfm23b init
+    if (!RF22_DatagramInit(0x05))// address 0x05
+    {
+    	while(1);
+    }
+
 
 	app_ctx.flash_params.connectionSetupState.wifiEnabled = true; //FOR DEBUG TODO
 

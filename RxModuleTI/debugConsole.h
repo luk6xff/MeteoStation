@@ -8,7 +8,7 @@
 #ifndef DEBUGCONSOLE_H_
 #define DEBUGCONSOLE_H_
 
-#include <stdbool.h>
+#include "system.h"
 
 void debugConsoleInit(void);
 

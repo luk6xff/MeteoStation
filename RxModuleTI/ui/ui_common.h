@@ -8,8 +8,6 @@
 #ifndef UI_UI_COMMON_H_
 #define UI_UI_COMMON_H_
 
-#include <stdint.h>
-#include <stdbool.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>

@@ -1,9 +1,7 @@
 // RF22.c
 //
 // Copyright (C) 2011 Mike McCauley
-// $Id: RF22.cpp,v 1.17 2013/02/06 21:33:56 mikem Exp mikem $
-// ported to mbed by Karl Zweimueller
-// modified by Lukasz Uszko luszko@op.pl
+// Modifications done by Lukasz Uszko aka igbt6 luszko@op.pl
 
 
 
@@ -26,6 +24,7 @@
 #include <string.h>
 #include <math.h>
 
+
 #include "RF22.h"
 
 
@@ -34,8 +33,10 @@
 *******************************************************************************/
 // The acknowledgement bit in the FLAGS
 #define RF22_FLAGS_ACK 0x80
-#define DISABLE_ALL_INTERRUPTS() void    // Disable Interrupts
-#define ENABLE_ALL_INTERRUPTS() void     // Enable Interrupts
+#define DISABLE_ALL_INTERRUPTS()  { prim_status = __get_PRIMASK(); __disable_irq(); }
+#define ENABLE_ALL_INTERRUPTS() { if (!prim_status) { __enable_irq();} }
+static uint32_t prim_status = 0;
+
 
 /*******************************************************************************
 * Constants
@@ -98,7 +99,7 @@ static const RF22_ModemConfig MODEM_CONFIG_TABLE[] = {
 static volatile uint8_t    _mode; // One of RF22_MODE_*
 
 static uint8_t             _idleMode;
-//NOT USED                  _shutdownPin; // SDN should be = 0 in all modes except Shutdown mode. When SDN =1 the chip will be completely shutdown and the contents of the registers will be lost
+
 static uint8_t             _deviceType;
 
 // These volatile members may get changed in the interrupt service routine
@@ -125,11 +126,11 @@ static uint8_t _lastSequenceNumber;
 
 // Retransmit timeout (milliseconds)
 /// Defaults to 200
-static uint16_t _timeout;
+static uint16_t _timeout = 200;
 
 // Retries (0 means one try only)
 /// Defaults to 3
-static uint8_t _retries;
+static uint8_t _retries = 3;
 
 /// Array of the last seen sequence number indexed by node address that sent it
 /// It is used for duplicate detection. Duplicated messages are re-acknowledged when received
@@ -143,6 +144,8 @@ static uint8_t _thisAddress;
 
 /// Current timer time in seconds
 static volatile uint32_t _time_counter = 0;
+
+static bool _initialized = false;
 
 /*******************************************************************************
 * Hardware dependent stuff (SPI, Timer, etc)
@@ -168,7 +171,9 @@ static void RF22_TimerWait_ms(uint32_t ms)
 	while((_time_counter - start) < ms)
 	{}
 }
-
+/////////////////////////////GPIO////////////////////////////////
+#define RFM_22_SHUTDOWN_ON() HAL_GPIO_WritePin(RFM23_SHDN_GPIO_Port, RFM23_SHDN_Pin, GPIO_PIN_SET);
+#define RFM_22_SHUTDOWN_OFF() HAL_GPIO_WritePin(RFM23_SHDN_GPIO_Port, RFM23_SHDN_Pin, GPIO_PIN_RESET);
 
 
 /////////////////////////////SPI////////////////////////////////
@@ -177,6 +182,7 @@ static void RF22_TimerWait_ms(uint32_t ms)
 
 #define RFM_22_CS_HIGH()	HAL_GPIO_WritePin(SPI1_NSS_GPIO_Port, SPI1_NSS_Pin, GPIO_PIN_SET);
 #define RFM_22_CS_LOW()		HAL_GPIO_WritePin(SPI1_NSS_GPIO_Port, SPI1_NSS_Pin, GPIO_PIN_RESET);
+
 
 static void spiInit(void)
 {
@@ -299,12 +305,12 @@ static void RF22_IntPinInit()
 bool RF22_init()
 {
 
-    _idleMode = RF22_XTON; // Default idle state is READY mode
+    _idleMode = RF22_XTON;  // Default idle state is READY mode
     _mode = RF22_MODE_IDLE; // We start up in idle mode
     _rxGood = 0;
     _rxBad = 0;
     _txGood = 0;
-    //TODO _shutdownPin= 0;  //power on - not used, connected to GND
+    RFM_22_SHUTDOWN_OFF();  // power on (SHDN pin connected to GND)
 
     RF22_TimerInit();
     // Wait for RF22 POR (up to 16msec)
@@ -329,8 +335,6 @@ bool RF22_init()
     {
         return false;
     }
-
-
 
     RF22_clearTxBuf();
     RF22_clearRxBuf();
@@ -389,6 +393,7 @@ bool RF22_init()
     // Minimum power
     RF22_setTxPower(RF22_TXPOW_8DBM);
     //setTxPower(RF22_TXPOW_17DBM);
+    _initialized = true;
     return true;
 }
 
@@ -396,6 +401,11 @@ bool RF22_init()
 // C level interrupt handler for this instance
 void RF22_handleInterrupt()
 {
+	if (!_initialized)
+	{
+		return;
+	}
+
     uint8_t _lastInterruptFlags[2];
 
     // Read the interrupt flags which clears the interrupt
@@ -461,14 +471,14 @@ void RF22_handleInterrupt()
             return; // Hmmm receiver buffer overflow.
         }
         spiBurstRead(RF22_REG_7F_FIFO_ACCESS, _buf + _bufLen, len - _bufLen);
-        //DISABLE_ALL_INTERRUPTS();    // Disable Interrupts
+        DISABLE_ALL_INTERRUPTS();    // Disable Interrupts
         _rxGood++;
         _bufLen = len;
         _mode = RF22_MODE_IDLE;
         _rxBufValid = true;
         // reset the fifo for next packet??
         //resetRxFifo();
-        //ENABLE_ALL_INTERRUPTS();     // Enable Interrupts
+        ENABLE_ALL_INTERRUPTS();     // Enable Interrupts
     }
     
     if (_lastInterruptFlags[0] & RF22_ICRCERROR) {

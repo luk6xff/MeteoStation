@@ -47,6 +47,8 @@
 /* USER CODE BEGIN Includes */
 #include <stdbool.h>
 #include <stdint.h>
+
+#include "RF22.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -108,6 +110,41 @@ int main(void)
       Error_Handler();
   }
 
+#define CLIENT_ADDRESS 1
+#define SERVER_ADDRESS 2
+  if (!RF22_DatagramInit(SERVER_ADDRESS))
+  {
+	  Error_Handler();
+  }
+
+  // Init server demo
+  uint8_t data[] = "DATA_FROM_TemperatureSensor_MODULE";;
+  uint8_t respBuf[40];
+  uint8_t len = sizeof(respBuf);
+  uint8_t from;
+
+  while(1) {
+
+      if (!RF22_sendtoWait(data, sizeof(data), CLIENT_ADDRESS))
+      {
+          //DEBUG("sending request to Client failed...");
+    	  uint8_t didNotSent = 0; //TODO
+    	  didNotSent += 100;
+      }
+      else
+      {
+    	  uint8_t respVal = 0;
+          if (RF22_recvfromAckTimeout(respBuf, &len, 1000, &from, NULL, NULL, NULL))
+          {
+        	  respVal++;
+        	  respVal++;
+          }
+          else
+          {
+        	  respVal++;
+          }
+      }
+  }
   /* USER CODE END 2 */
 
   /* Infinite loop */

@@ -125,11 +125,11 @@ static uint8_t _lastSequenceNumber;
 
 // Retransmit timeout (milliseconds)
 /// Defaults to 200
-static uint16_t _timeout;
+static uint16_t _timeout = 200;
 
 // Retries (0 means one try only)
 /// Defaults to 3
-static uint8_t _retries;
+static uint8_t _retries = 3;
 
 /// Array of the last seen sequence number indexed by node address that sent it
 /// It is used for duplicate detection. Duplicated messages are re-acknowledged when received
@@ -255,18 +255,6 @@ static void spiWrite(uint8_t reg, uint8_t val)
     RFM_22_CS_LOW();
     spiWriteReadByte(reg | RF22_SPI_WRITE_MASK); // Send the address with the write mask on
     spiWriteReadByte(val); // New value follows
-
-    /*
-    uint32_t retVal;
-	SSIDataPut(SSI0_BASE, reg | RF22_SPI_WRITE_MASK);
-	while (SSIBusy(SSI0_BASE))
-	{};
-	SSIDataGetNonBlocking(SSI0_BASE, &retVal);
-	SSIDataPut(SSI0_BASE, val);
-	while (SSIBusy(SSI0_BASE))
-	{};
-	SSIDataGetNonBlocking(SSI0_BASE, &retVal);
-	*/
 
     RFM_22_CS_HIGH();
     ENABLE_ALL_INTERRUPTS();

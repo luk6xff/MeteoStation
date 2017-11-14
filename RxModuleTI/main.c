@@ -430,8 +430,10 @@ int main(void)
 	// do touch screen calibration if needed
 	setTouchScreenCalibration();
 
+#define CLIENT_ADDRESS 1
+#define SERVER_ADDRESS 2
     // rfm23b init
-    if (!RF22_DatagramInit(0x05))// address 0x05
+    if (!RF22_DatagramInit(CLIENT_ADDRESS))// address 0x01
     {
     	while(1);
     }
@@ -465,6 +467,23 @@ int main(void)
 	// Enable all interrupts
 	ENABLE_ALL_INTERRUPTS();
 	get_new_temp_data = true; //update all for first time
+
+	while(1) {
+	    uint8_t data[] = "DATA_FROM_STATION_MODULE";
+	    uint8_t buf[40];
+	    uint8_t len = sizeof(buf);
+	    uint8_t from;
+		if (RF22_recvfromAck(buf, &len, &from, NULL, NULL, NULL)) {
+			DEBUG(MAIN_DEBUG_ENABLE, name,"got request from : 0x%x",from);
+			DEBUG(MAIN_DEBUG_ENABLE, name,": ");
+			DEBUG(MAIN_DEBUG_ENABLE, name,"%s",(char*)buf);
+			// Send a reply to the second module
+			if (!RF22_sendtoWait((uint8_t*)data, sizeof(data), from))
+			{
+				DEBUG(MAIN_DEBUG_ENABLE, name,"response sending failed");
+			}
+		}
+	}
 
 	while (1)
 	{

@@ -543,7 +543,7 @@ uint8_t RF22_temperatureRead(uint8_t tsrange, uint8_t tvoffs)
 {
     spiWrite(RF22_REG_12_TEMPERATURE_SENSOR_CALIBRATION, tsrange | RF22_ENTSOFFS);
     spiWrite(RF22_REG_13_TEMPERATURE_VALUE_OFFSET, tvoffs);
-    return 1; //TODO RF22_adcRead(RF22_ADCSEL_INTERNAL_TEMPERATURE_SENSOR | RF22_ADCREF_BANDGAP_VOLTAGE);
+    return 0; //TODO RF22_adcRead(RF22_ADCSEL_INTERNAL_TEMPERATURE_SENSOR | RF22_ADCREF_BANDGAP_VOLTAGE);
 }
 
 //------------------------------------------------------------------------

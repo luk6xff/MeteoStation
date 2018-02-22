@@ -483,6 +483,7 @@ int main(void)
 				DEBUG(MAIN_DEBUG_ENABLE, name,"response sending failed");
 			}
 		}
+		watchdog_reset();
 	}
 
 	while (1)

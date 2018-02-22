@@ -201,9 +201,9 @@ void RF22_Timer4AIntHandler(void)
 #include "driverlib/sysctl.h"
 
 //------SSI0 RFM_22 CS_PIN - PF0 as stated in MeteoStationDocumentation.odt---------
-#define RFM_22_PIN_CS      			GPIO_PIN_0
-#define RFM_22_PORT_CS     			GPIO_PORTF_BASE
-#define RFM_22_PORT_CS_CLOCK()		SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF)
+#define RFM_22_PIN_CS      			GPIO_PIN_7
+#define RFM_22_PORT_CS     			GPIO_PORTA_BASE
+#define RFM_22_PORT_CS_CLOCK()		SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA)
 #define RFM_22_CS_OUTPUT()  	    GPIOPinTypeGPIOOutput(RFM_22_PORT_CS, RFM_22_PIN_CS)
 #define RFM_22_CS_HIGH()  			GPIOPinWrite(RFM_22_PORT_CS, RFM_22_PIN_CS, RFM_22_PIN_CS)
 #define RFM_22_CS_LOW()  			GPIOPinWrite(RFM_22_PORT_CS, RFM_22_PIN_CS, 0)
@@ -222,12 +222,11 @@ static void spiInit(void)
 
 static uint8_t spiWriteReadByte(uint8_t val)
 {
-	uint32_t retVal = 0xFA; // ivalid value
+	uint32_t retVal = 0x00; // ivalid value
 	SSIDataPut(SSI0_BASE, val);
 	while (SSIBusy(SSI0_BASE))
 	{}
-	//SSIDataGetNonBlocking(SSI0_BASE, &retVal);
-	SSIDataGet(SSI0_BASE, &retVal);
+	while (SSIDataGetNonBlocking(SSI0_BASE, &retVal));
 	return (uint8_t)retVal;
 }
 //------------------------------------------------------------------------
@@ -239,7 +238,7 @@ static uint8_t spiRead(uint8_t reg)
     DISABLE_ALL_INTERRUPTS();    // Disable Interrupts
     RFM_22_CS_LOW();
     spiWriteReadByte(reg & ~RF22_SPI_WRITE_MASK); // Send the address with the write mask off
-    uint8_t val = spiWriteReadByte(0); // The written value is ignored, reg value is read
+    uint8_t val = spiWriteReadByte(7); // The written value is ignored, reg value is read
     RFM_22_CS_HIGH();
     ENABLE_ALL_INTERRUPTS();     // Enable Interrupts
     return val;
@@ -569,7 +568,7 @@ uint8_t RF22_temperatureRead(uint8_t tsrange, uint8_t tvoffs)
 {
     spiWrite(RF22_REG_12_TEMPERATURE_SENSOR_CALIBRATION, tsrange | RF22_ENTSOFFS);
     spiWrite(RF22_REG_13_TEMPERATURE_VALUE_OFFSET, tvoffs);
-    return 1; //TODO RF22_adcRead(RF22_ADCSEL_INTERNAL_TEMPERATURE_SENSOR | RF22_ADCREF_BANDGAP_VOLTAGE);
+    return 0; //TODO RF22_adcRead(RF22_ADCSEL_INTERNAL_TEMPERATURE_SENSOR | RF22_ADCREF_BANDGAP_VOLTAGE);
 }
 
 //------------------------------------------------------------------------

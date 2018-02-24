@@ -110,9 +110,9 @@ int main(void)
       Error_Handler();
   }
 
-#define CLIENT_ADDRESS 1
-#define SERVER_ADDRESS 2
-  if (!RF22_DatagramInit(SERVER_ADDRESS))
+#define STATION_MODULE_ADDRESS 0x97
+#define SENSOR_MODULE_ADDRESS 0x78
+  if (!RF22_DatagramInit(SENSOR_MODULE_ADDRESS))
   {
 	  Error_Handler();
   }
@@ -123,12 +123,11 @@ int main(void)
   uint8_t len = sizeof(respBuf);
   uint8_t from;
 
-  while(1) {
-
-      if (!RF22_sendtoWait(data, sizeof(data), CLIENT_ADDRESS))
+  while(1)
+  {
+      if (!RF22_sendtoWait(data, sizeof(data), STATION_MODULE_ADDRESS))
       {
-          //DEBUG("sending request to Client failed...");
-    	  uint8_t didNotSent = 0; //TODO
+    	  uint8_t didNotSent = 0;
     	  didNotSent += 100;
       }
       else

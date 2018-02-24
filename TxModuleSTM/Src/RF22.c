@@ -192,7 +192,7 @@ static void spiInit(void)
 static uint8_t spiWriteReadByte(uint8_t val)
 {
 	uint8_t retVal = 0xFA; // ivalid value
-	switch(HAL_SPI_TransmitReceive(&hspi1, &val, &retVal, 1, 100))
+	switch(HAL_SPI_TransmitReceive(&hspi1, &val, &retVal, 1, 1000))
 	{
 		case HAL_OK:
 			/* Communication is completed */
@@ -280,7 +280,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 	if(GPIO_Pin == RFM23_IRQN_Pin)
 	{
 		static int state = 0;
-		if (state++ % 2 == 0)
+		if (state++ % 2 == 0) // TO BE REMOVED
 		{
 			HAL_GPIO_WritePin(LED_RED_GPIO_Port, LED_RED_Pin, GPIO_PIN_RESET);
 		}
@@ -391,7 +391,7 @@ bool RF22_init()
     RF22_setFrequency(434.0, 0.05);
     RF22_setModemConfig(FSK_Rb125Fd125);
     // Minimum power
-    RF22_setTxPower(RF22_TXPOW_8DBM);
+    RF22_setTxPower(RF22_TXPOW_14DBM);
     //setTxPower(RF22_TXPOW_17DBM);
     _initialized = true;
     return true;
@@ -471,14 +471,14 @@ void RF22_handleInterrupt()
             return; // Hmmm receiver buffer overflow.
         }
         spiBurstRead(RF22_REG_7F_FIFO_ACCESS, _buf + _bufLen, len - _bufLen);
-        DISABLE_ALL_INTERRUPTS();    // Disable Interrupts
+        //DISABLE_ALL_INTERRUPTS();    // Disable Interrupts
         _rxGood++;
         _bufLen = len;
         _mode = RF22_MODE_IDLE;
         _rxBufValid = true;
         // reset the fifo for next packet??
         //resetRxFifo();
-        ENABLE_ALL_INTERRUPTS();     // Enable Interrupts
+        //ENABLE_ALL_INTERRUPTS();     // Enable Interrupts
     }
     
     if (_lastInterruptFlags[0] & RF22_ICRCERROR) {
@@ -702,8 +702,9 @@ void RF22_setModemRegisters(const RF22_ModemConfig* config)
 bool RF22_setModemConfig(RF22_ModemConfigChoice index)
 {
     if (index > (sizeof(MODEM_CONFIG_TABLE) / sizeof(RF22_ModemConfig)))
+    {
         return false;
-
+    }
     RF22_ModemConfig cfg;
     memcpy(&cfg, &MODEM_CONFIG_TABLE[index], sizeof(RF22_ModemConfig));
     RF22_setModemRegisters(&cfg);

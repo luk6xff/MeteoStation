@@ -408,7 +408,7 @@ int main(void)
 
 	// Debug Console
 	debugConsoleInit();
-
+/*
 	// Display driver
 	ILI9320Init();
 
@@ -418,10 +418,10 @@ int main(void)
 	// UI
 	uiScreenSettings_init(&app_ctx.eeproparams, &app_ctx.flash_params);
     uiInit();
-
+*/
     // spi bus init
     spiCommonInit();
-
+/*
 	// touchScreenControler
 	touchScreenInit();
     // Set the touch screen event handler.
@@ -429,15 +429,15 @@ int main(void)
 
 	// do touch screen calibration if needed
 	setTouchScreenCalibration();
-
-#define CLIENT_ADDRESS 1
-#define SERVER_ADDRESS 2
+*/
+#define STATION_MODULE_ADDRESS 0x97
+#define SENSOR_MODULE_ADDRESS 0x78
     // rfm23b init
-    if (!RF22_DatagramInit(CLIENT_ADDRESS))// address 0x01
+    if (!RF22_DatagramInit(STATION_MODULE_ADDRESS))
     {
     	while(1);
     }
-
+/*
 
 	app_ctx.flash_params.connectionSetupState.wifiEnabled = true; //FOR DEBUG TODO
 
@@ -458,7 +458,7 @@ int main(void)
 	// time module initialization
 	timeInit(wifiFetchCurrentNtpTime);
 	timeSetTimeZone(timeZoneCEST);
-
+*/
 	// Enable the SysTick and its Interrupt.
 	MAP_SysTickPeriodSet(MAP_SysCtlClockGet()); //0.2[s];
 	MAP_SysTickIntEnable();
@@ -468,12 +468,15 @@ int main(void)
 	ENABLE_ALL_INTERRUPTS();
 	get_new_temp_data = true; //update all for first time
 
+	// RFM tests
+    uint8_t data[] = "DATA_FROM_STATION_MODULE";
+    uint8_t buf[40];
+    uint8_t len = sizeof(buf);
+    uint8_t from;
 	while(1) {
-	    uint8_t data[] = "DATA_FROM_STATION_MODULE";
-	    uint8_t buf[40];
-	    uint8_t len = sizeof(buf);
-	    uint8_t from;
-		if (RF22_recvfromAck(buf, &len, &from, NULL, NULL, NULL)) {
+
+		if (RF22_recvfromAck(buf, &len, &from, NULL, NULL, NULL))
+		{
 			DEBUG(MAIN_DEBUG_ENABLE, name,"got request from : 0x%x",from);
 			DEBUG(MAIN_DEBUG_ENABLE, name,": ");
 			DEBUG(MAIN_DEBUG_ENABLE, name,"%s",(char*)buf);

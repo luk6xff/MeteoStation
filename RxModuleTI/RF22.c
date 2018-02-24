@@ -235,12 +235,12 @@ static uint8_t spiWriteReadByte(uint8_t val)
 /// \return The value of the register
 static uint8_t spiRead(uint8_t reg)
 {
-    DISABLE_ALL_INTERRUPTS();    // Disable Interrupts
+    //DISABLE_ALL_INTERRUPTS();    // Disable Interrupts
     RFM_22_CS_LOW();
     spiWriteReadByte(reg & ~RF22_SPI_WRITE_MASK); // Send the address with the write mask off
     uint8_t val = spiWriteReadByte(7); // The written value is ignored, reg value is read
     RFM_22_CS_HIGH();
-    ENABLE_ALL_INTERRUPTS();     // Enable Interrupts
+    //ENABLE_ALL_INTERRUPTS();     // Enable Interrupts
     return val;
 }
 
@@ -250,13 +250,13 @@ static uint8_t spiRead(uint8_t reg)
 /// \param[in] val The value to write
 static void spiWrite(uint8_t reg, uint8_t val)
 {
-	DISABLE_ALL_INTERRUPTS();
+	//DISABLE_ALL_INTERRUPTS();
     RFM_22_CS_LOW();
     spiWriteReadByte(reg | RF22_SPI_WRITE_MASK); // Send the address with the write mask on
     spiWriteReadByte(val); // New value follows
 
     RFM_22_CS_HIGH();
-    ENABLE_ALL_INTERRUPTS();
+    //ENABLE_ALL_INTERRUPTS();
 }
 
 //------------------------------------------------------------------------
@@ -295,35 +295,37 @@ static void spiBurstWrite(uint8_t reg, const uint8_t* src, uint8_t len)
 //Configures interrupt pin supported for RF22
 //------------------INT_IRQ PB_6 - as stated in MeteoStationDocumentation.odt----------------------
 #define RFM_22_PIN_INT      			GPIO_PIN_6
-#define RFM_22_PORT_INT     			GPIO_PORTB_BASE
-#define RFM_22_INT_INTERRUPT_PORT     	INT_GPIOB
-#define RFM_22_PORT_INT_CLOCK()		    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB)
-#define RFM_22_INT_INPUT()  			GPIOPinTypeGPIOInput(RFM_22_PORT_INT, RFM_22_PIN_INT);  \
+#define RFM_22_PORT_INT     			GPIO_PORTA_BASE
+#define RFM_22_INT_INTERRUPT_PORT     	INT_GPIOA
+#define RFM_22_PORT_INT_CLOCK()		    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA)
+#define RFM_22_INT_INPUT()  			GPIOPinTypeGPIOInput(RFM_22_PORT_INT, RFM_22_PIN_INT); \
 										GPIOPadConfigSet(RFM_22_PORT_INT, RFM_22_PIN_INT, GPIO_STRENGTH_2MA, GPIO_PIN_TYPE_STD_WPU);  // Enable weak pullup resistor for the pin
 #define RFM_22_INT_CONFIG_AS_FALLING()  GPIOIntTypeSet(RFM_22_PORT_INT, RFM_22_PIN_INT, GPIO_FALLING_EDGE)
 #define RFM_22_INT_CONFIG_AS_RISING()   GPIOIntTypeSet(RFM_22_PORT_INT, RFM_22_PIN_INT, GPIO_RISING_EDGE)
-#define RFM_22_INT_INTERRUPT_ENABLE() 	GPIOPinIntEnable(RFM_22_PORT_INT, RFM_22_PIN_INT); IntEnable(RFM_22_INT_INTERRUPT_PORT);
-#define RFM_22_INT_INTERRUPT_DISABLE()  GPIOPinIntDisable(RFM_22_PORT_INT, RFM_22_PIN_INT); IntDisable(RFM_22_INT_INTERRUPT_PORT);
+#define RFM_22_INT_INTERRUPT_ENABLE() 	GPIOPinIntEnable(RFM_22_PORT_INT, RFM_22_PIN_INT);//  \
+										//IntEnable(RFM_22_INT_INTERRUPT_PORT);
+#define RFM_22_INT_INTERRUPT_DISABLE()  GPIOPinIntDisable(RFM_22_PORT_INT, RFM_22_PIN_INT); \
+										IntDisable(RFM_22_INT_INTERRUPT_PORT); 				\
+										GPIOIntClear(RFM_22_PORT_INT, RFM_22_PIN_INT);
 #define RFM_22_GET_INT_PIN() 			GPIOPinRead(RFM_22_PORT_INT, RFM_22_PIN_INT)
 
 void RF22_PinIntHandler(void)
 {
-	GPIOPinIntClear(RFM_22_PORT_INT, RFM_22_PIN_INT);
-
 	if(GPIOPinIntStatus(RFM_22_PORT_INT, false) & RFM_22_PIN_INT)
 	{
 		RF22_isr0();
 	}
+	GPIOPinIntClear(RFM_22_PORT_INT, RFM_22_PIN_INT);
 }
 
 static void RF22_IntPinInit()
 {
 	RFM_22_PORT_INT_CLOCK();
 	RFM_22_INT_INPUT();
-	RFM_22_INT_CONFIG_AS_FALLING();
 	GPIOPortIntRegister(RFM_22_PORT_INT, RF22_PinIntHandler);
-	ENABLE_ALL_INTERRUPTS();
+	RFM_22_INT_CONFIG_AS_FALLING();
 	RFM_22_INT_INTERRUPT_ENABLE();
+	ENABLE_ALL_INTERRUPTS();
 }
 
 /*******************************************************************************
@@ -496,14 +498,14 @@ void RF22_handleInterrupt()
             return; // Hmmm receiver buffer overflow.
         }
         spiBurstRead(RF22_REG_7F_FIFO_ACCESS, _buf + _bufLen, len - _bufLen);
-        //DISABLE_ALL_INTERRUPTS();    // Disable Interrupts
+        DISABLE_ALL_INTERRUPTS();    // Disable Interrupts
         _rxGood++;
         _bufLen = len;
         _mode = RF22_MODE_IDLE;
         _rxBufValid = true;
         // reset the fifo for next packet??
         //resetRxFifo();
-        //ENABLE_ALL_INTERRUPTS();     // Enable Interrupts
+        ENABLE_ALL_INTERRUPTS();     // Enable Interrupts
     }
     
     if (_lastInterruptFlags[0] & RF22_ICRCERROR) {

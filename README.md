@@ -1,2 +1,2 @@
 # MeteoStation
-Simple Meteo Statio - Project has been cancelled
+Simple Meteo Station - Project has been cancelled

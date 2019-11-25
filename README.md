@@ -1,2 +1,2 @@
 # MeteoStation
-Simple Meteo Station for my Father : ) 
+Simple Meteo Statio - Project has been cancelled
